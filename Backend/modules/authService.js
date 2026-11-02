@@ -56,12 +56,18 @@ function createAuthService(pool) {
 
     async login(identifier, password) {
       const [users] = await pool.execute(
-        `SELECT ${AUTH_USER_COLUMNS} FROM users WHERE email = ? OR phone = ? LIMIT 1`,
-        [identifier.toLowerCase(), identifier],
+        `SELECT ${AUTH_USER_COLUMNS} FROM users WHERE email = ? OR phone = ? OR username = ?`,
+        [identifier.toLowerCase(), identifier, identifier],
       );
-      const user = users[0];
+      let user = null;
+      for (const candidate of users) {
+        if (await bcrypt.compare(password, candidate.password_hash)) {
+          user = candidate;
+          break;
+        }
+      }
 
-      if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      if (!user) {
         return null;
       }
 

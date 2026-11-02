@@ -37,13 +37,13 @@ function createAuthController(authService) {
       const password = typeof body.password === "string" ? body.password : "";
 
       if (!identifier || !password) {
-        return response.status(400).json({ message: "Email/mobile number and password are required." });
+        return response.status(400).json({ message: "Username, email, or mobile number and password are required." });
       }
 
       try {
         const result = await authService.login(identifier, password);
         if (!result) {
-          return response.status(401).json({ message: "Invalid email/mobile number or password." });
+          return response.status(401).json({ message: "Invalid username, email, mobile number, or password." });
         }
         if (result.inactive) {
           return response.status(403).json({ message: "This account is inactive. Contact support for assistance." });

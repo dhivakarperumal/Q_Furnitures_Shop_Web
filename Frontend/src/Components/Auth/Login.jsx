@@ -127,10 +127,10 @@ function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* Email/Mobile */}
+            {/* Username, email, or mobile */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1 tracking-wide">
-                Email / Mobile Number
+                Username / Email / Mobile Number
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -141,7 +141,7 @@ function Login() {
                 <input
                   name="identifier"
                   type="text"
-                  placeholder="Enter your email or mobile number"
+                  placeholder="Enter your username, email, or mobile number"
                   value={form.identifier}
                   onChange={handleChange}
                   className="w-full pl-12 p-3.5 rounded-xl bg-white border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium text-gray-700"
