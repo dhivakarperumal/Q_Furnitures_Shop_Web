@@ -13,6 +13,7 @@ async function initializeDatabase(pool) {
       username VARCHAR(120) NOT NULL,
       email VARCHAR(191) NOT NULL,
       phone VARCHAR(32) NULL,
+      profile_image VARCHAR(255) NULL,
       password_hash VARCHAR(255) NOT NULL,
       role VARCHAR(32) NOT NULL DEFAULT 'customer',
       status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
@@ -33,6 +34,7 @@ async function initializeDatabase(pool) {
     ["status", "ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive') NOT NULL DEFAULT 'active'"],
     ["created_at", "ALTER TABLE users ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"],
     ["updated_at", "ALTER TABLE users ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
+    ["profile_image", "ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) NULL"],
   ];
 
   for (const [column, statement] of migrations) {

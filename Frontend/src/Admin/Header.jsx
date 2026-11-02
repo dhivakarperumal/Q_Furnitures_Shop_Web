@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../PrivateRouter/AuthContext";
+import { resolveMediaUrl } from "../utils/media";
 
 const backendUrl = (import.meta.env.VITE_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
 
@@ -105,7 +106,7 @@ const Header = ({ onMenuClick }) => {
   const profileRef = useRef(null);
 
   // ✅ CORRECT AUTH VALUES
-  const { profileName, role, email, logout } = useAuth();
+  const { user, profileName, role, email, logout } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -655,8 +656,12 @@ const Header = ({ onMenuClick }) => {
                 ? 'bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-200 shadow-md'
                 : 'bg-slate-50 border border-slate-200 hover:bg-violet-50 hover:border-violet-200'}`}
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-black shadow-md shadow-purple-500/30">
-                {userName.charAt(0).toUpperCase()}
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-black shadow-md shadow-purple-500/30 overflow-hidden">
+                {user?.profile_image ? (
+                  <img src={resolveMediaUrl(user.profile_image)} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  userName.charAt(0).toUpperCase()
+                )}
               </div>
 
               <div className="hidden md:block text-left leading-tight">

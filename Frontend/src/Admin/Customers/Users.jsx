@@ -15,6 +15,7 @@ import {
     FiList
 } from "react-icons/fi";
 import { toast, Toaster } from "react-hot-toast";
+import { resolveMediaUrl } from "../../utils/media";
 
 
 const deriveUserStatus = (user, index = 0) => {
@@ -69,7 +70,9 @@ const Users = ({ initialTab = "All" }) => {
                     status: deriveUserStatus(u, index),
                     joined: u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A',
                     rawCreated_at: u.created_at,
-                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.username)}&background=random`
+                    avatar: u.profile_image
+                        ? resolveMediaUrl(u.profile_image)
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.username)}&background=random`
                 }));
                 setUsers(fetchedUsers);
             } catch (error) {
@@ -93,7 +96,9 @@ const Users = ({ initialTab = "All" }) => {
                 status: deriveUserStatus(u, index),
                 joined: u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A',
                 rawCreated_at: u.created_at,
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.username)}&background=random`
+                avatar: u.profile_image
+                    ? resolveMediaUrl(u.profile_image)
+                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.username)}&background=random`
             }));
             setUsers(fetchedUsers);
         } catch (error) {

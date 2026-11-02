@@ -3,7 +3,7 @@ const { randomBytes, randomUUID } = require("node:crypto");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 
-const USER_COLUMNS = "id, user_id, username, email, phone, role, status, created_at, updated_at";
+const USER_COLUMNS = "id, user_id, username, email, phone, profile_image, role, status, created_at, updated_at";
 const AUTH_USER_COLUMNS = `${USER_COLUMNS}, password_hash`;
 
 function toPublicUser(user) {
@@ -14,6 +14,7 @@ function toPublicUser(user) {
     name: user.username,
     email: user.email,
     phone: user.phone,
+    profile_image: user.profile_image || null,
     role: user.role,
     status: user.status,
     created_at: user.created_at,
@@ -76,6 +77,22 @@ function createAuthService(pool) {
         return { inactive: true };
       }
       return { user: safeUser, token: createToken(safeUser) };
+    },
+
+    async updateProfileImage(userId, imageUrl) {
+      const [result] = await pool.execute(
+        "UPDATE users SET profile_image = ? WHERE id = ?",
+        [imageUrl, userId],
+      );
+      if (result.affectedRows === 0) {
+        return null;
+      }
+
+      const [users] = await pool.execute(
+        `SELECT ${USER_COLUMNS} FROM users WHERE id = ? LIMIT 1`,
+        [userId],
+      );
+      return users[0] ? toPublicUser(users[0]) : null;
     },
 
     async googleLogin(credential) {

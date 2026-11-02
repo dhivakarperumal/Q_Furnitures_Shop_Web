@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../PrivateRouter/AuthContext";
 import api from "../../api";
 import { toast, Toaster } from "react-hot-toast";
+import { resolveMediaUrl } from "../../utils/media";
 import {
     FiMail,
     FiPhone,
@@ -26,6 +27,7 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [changingPwd, setChangingPwd] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
 
     const [currentPwd, setCurrentPwd] = useState("");
     const [newPwd, setNewPwd] = useState("");
@@ -43,7 +45,8 @@ const Profile = () => {
         country: "India",
         zip_code: "",
         role: "",
-        created_at: ""
+        created_at: "",
+        profile_image: ""
     });
 
     // Fetch full profile from API
@@ -63,7 +66,8 @@ const Profile = () => {
                 country: res.data.country || "India",
                 zip_code: res.data.zip_code || "",
                 role: res.data.role || "",
-                created_at: res.data.created_at || ""
+                created_at: res.data.created_at || "",
+                profile_image: res.data.profile_image || user?.profile_image || ""
             });
         } catch (err) {
             console.error("Failed to load profile:", err);
@@ -80,7 +84,8 @@ const Profile = () => {
                 country: "India",
                 zip_code: "",
                 role: user?.role || "",
-                created_at: ""
+                created_at: "",
+                profile_image: user?.profile_image || ""
             });
         } finally {
             setLoading(false);
@@ -103,6 +108,36 @@ const Profile = () => {
 
     const closeEditModal = () => {
         setIsEditModalOpen(false);
+    };
+
+    const handleProfileImageUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("Profile image is too large. Maximum size is 5 MB.");
+            e.target.value = "";
+            return;
+        }
+
+        const uploadData = new FormData();
+        uploadData.append("image", file);
+        setUploadingImage(true);
+        try {
+            const response = await api.post("/uploads/profile-image", uploadData);
+            const token = localStorage.getItem("token");
+            login({ ...user, ...response.data.user }, token);
+            setProfileData((previous) => ({
+                ...previous,
+                profile_image: response.data.user.profile_image || response.data.url
+            }));
+            toast.success("Profile photo updated.");
+        } catch (error) {
+            console.error("Profile image upload failed:", error);
+            toast.error(error.response?.data?.message || "Failed to upload profile photo.");
+        } finally {
+            setUploadingImage(false);
+            e.target.value = "";
+        }
     };
 
     // Save profile to DB
@@ -209,12 +244,18 @@ const Profile = () => {
 
                         {/* Avatar */}
                         <div className="relative group">
-                            <div className="w-40 h-40 rounded-[2.25rem] bg-[#DFF1C9] ring-8 ring-white shadow-xl flex items-center justify-center">
-                                <span className="text-6xl font-light tracking-tight text-slate-950">{profileInitials}</span>
-                                <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.25rem] cursor-pointer">
-                                    <FiCamera className="text-slate-700 text-2xl" />
-                                </div>
-                            </div>
+                            <label className={`relative block w-40 h-40 rounded-[2.25rem] bg-[#DFF1C9] ring-8 ring-white shadow-xl overflow-hidden ${uploadingImage ? "cursor-wait" : "cursor-pointer"}`}>
+                                {profileData.profile_image ? (
+                                    <img src={resolveMediaUrl(profileData.profile_image)} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <span className="w-full h-full flex items-center justify-center text-6xl font-light tracking-tight text-slate-950">{profileInitials}</span>
+                                )}
+                                <span className="absolute inset-0 bg-black/35 flex flex-col gap-1 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white">
+                                    <FiCamera className="text-2xl" />
+                                    <span className="text-xs font-semibold">{uploadingImage ? "Uploading..." : "Change photo"}</span>
+                                </span>
+                                <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleProfileImageUpload} disabled={uploadingImage} className="sr-only" />
+                            </label>
                         </div>
 
                         {/* User Info */}

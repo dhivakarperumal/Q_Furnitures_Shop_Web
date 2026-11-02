@@ -2,10 +2,12 @@ import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../../PrivateRouter/AuthContext";
 import api from "../../../api";
 import { toast } from "react-hot-toast";
+import { resolveMediaUrl } from "../../../utils/media";
 
 export default function PersonalInfo() {
 
   const { user, setUser } = useContext(AuthContext);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [form, setForm] = useState({
     username: "",
@@ -30,6 +32,33 @@ export default function PersonalInfo() {
       ...form,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleProfileImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Profile image is too large. Maximum size is 5 MB.");
+      e.target.value = "";
+      return;
+    }
+
+    const uploadData = new FormData();
+    uploadData.append("image", file);
+    setUploadingImage(true);
+    try {
+      const response = await api.post("/uploads/profile-image", uploadData);
+      const updatedUser = { ...user, ...response.data.user };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      toast.success("Profile photo updated.");
+    } catch (error) {
+      console.error("Profile image upload failed:", error);
+      toast.error(error.response?.data?.message || "Failed to upload profile photo.");
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
+    }
   };
 
   const handleUpdate = async () => {
@@ -66,6 +95,23 @@ export default function PersonalInfo() {
       <h2 className="text-2xl font-semibold text-gray-800 mb-8">
         Personal Information
       </h2>
+
+      <div className="flex items-center gap-5 mb-8">
+        <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-2xl font-semibold text-gray-500">
+          {user?.profile_image ? (
+            <img src={resolveMediaUrl(user.profile_image)} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            (user?.username || "U").charAt(0).toUpperCase()
+          )}
+        </div>
+        <div>
+          <label className={`inline-flex cursor-pointer items-center rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${uploadingImage ? "pointer-events-none opacity-60" : ""}`}>
+            {uploadingImage ? "Uploading..." : "Change profile photo"}
+            <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleProfileImageUpload} disabled={uploadingImage} className="sr-only" />
+          </label>
+          <p className="mt-1 text-xs text-gray-500">JPG, PNG, GIF or WEBP. Maximum 5 MB.</p>
+        </div>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-6">
 
