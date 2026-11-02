@@ -22,7 +22,7 @@ import { FaRupeeSign } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api";
 import { toast, Toaster } from "react-hot-toast";
-import imageCompression from "browser-image-compression";
+import { resolveMediaUrl } from "../../utils/media";
 
 // Helper: Color to Name Utility
 const boutiqueColors = [
@@ -92,12 +92,7 @@ const getNearestColorName = (hex) => {
 };
 
 const resolveImageUrl = (image) => {
-    if (!image || typeof image !== "string") return "";
-    if (image.startsWith("http") || image.startsWith("data:") || image.startsWith("blob:")) return image;
-
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-    const cleanPath = image.replace(/\\/g, "/");
-    return `${backendUrl}${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
+    return resolveMediaUrl(typeof image === "string" ? image.replace(/\\/g, "/") : image);
 };
 
 const AddProducts = () => {

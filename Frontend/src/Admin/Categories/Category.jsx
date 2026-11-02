@@ -21,9 +21,9 @@ import {
     FiDownload,
     FiChevronDown
 } from "react-icons/fi";
-import imageCompression from "browser-image-compression";
 import { toast, Toaster } from "react-hot-toast";
 import { useAuth } from "../../PrivateRouter/AuthContext";
+import { resolveMediaUrl } from "../../utils/media";
 
 const Category = () => {
     const { user } = useAuth();
@@ -115,25 +115,26 @@ const Category = () => {
 
     const handleImageUpload = async (e) => {
         try {
-            const files = Array.from(e.target.files);
-            const imagesArray = await Promise.all(
-                files.map(async (file) => {
-                    const compressed = await imageCompression(file, {
-                        maxSizeMB: 0.2,
-                        maxWidthOrHeight: 600,
-                    });
-                    return imageCompression.getDataUrlFromFile(compressed);
-                })
-            );
+            const files = Array.from(e.target.files || []);
+            if (!files.length) return;
+
+            const uploadData = new FormData();
+            files.forEach((file) => uploadData.append("images", file));
+            const response = await api.post("/uploads/images", uploadData);
+            const imagesArray = response.data?.images;
+            if (!Array.isArray(imagesArray) || !imagesArray.length) {
+                throw new Error("The server did not return uploaded image paths.");
+            }
 
             setFormData((p) => ({
                 ...p,
                 images: [...(Array.isArray(p.images) ? p.images : []), ...imagesArray],
             }));
             toast.success("Images added!");
+            e.target.value = "";
         } catch (error) {
             console.error("Image upload failed:", error);
-            toast.error("Image upload failed");
+            toast.error(error.response?.data?.message || error.message || "Image upload failed");
         }
     };
 
@@ -591,7 +592,7 @@ const Category = () => {
                                             <div className="grid grid-cols-3 gap-2 mb-2">
                                                 {formData.images.map((imgUrl, idx) => (
                                                     <div key={idx} className="relative group w-full h-20 rounded-xl overflow-hidden border border-gray-200">
-                                                        <img src={imgUrl} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
+                                                        <img src={resolveMediaUrl(imgUrl)} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
                                                         <button
                                                             onClick={() => removeImage(idx)}
                                                             className="absolute top-1 right-1 p-1 bg-white/90 hover:bg-red-50 text-red-500 rounded opacity-0 group-hover:opacity-100 transition-all shadow-sm"

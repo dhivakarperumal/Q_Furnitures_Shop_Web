@@ -21,6 +21,7 @@ import {
 import { toast, Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import AddDealerModal from "./AddDealerModal";
+import { resolveMediaUrl } from "../../utils/media";
 
 const Dealers = () => {
     const navigate = useNavigate();
@@ -218,7 +219,7 @@ const Dealers = () => {
                                     <tr key={dealer.id} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
                                         <td className="px-4 py-4 text-center"><input type="checkbox" className="rounded border-gray-300 text-[#4318FF] focus:ring-[#4318FF]" aria-label={`Select ${dealer.name}`} /></td>
                                         <td className="px-4 py-4 text-center text-sm font-bold text-gray-400">{index + 1}</td>
-                                        <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-blue-50 overflow-hidden flex items-center justify-center text-blue-600 font-black">{dealer.image ? <img src={dealer.image} alt={dealer.name} className="w-full h-full object-cover" /> : dealer.name?.charAt(0)}</div><div><p className="font-bold text-slate-800">{dealer.name}</p><p className="text-xs text-gray-400">#{dealer.id}</p></div></div></td>
+                                        <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-blue-50 overflow-hidden flex items-center justify-center text-blue-600 font-black">{dealer.image ? <img src={resolveMediaUrl(dealer.image)} alt={dealer.name} className="w-full h-full object-cover" /> : dealer.name?.charAt(0)}</div><div><p className="font-bold text-slate-800">{dealer.name}</p><p className="text-xs text-gray-400">#{dealer.id}</p></div></div></td>
                                         <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{dealer.phone || dealer.contact || "-"}</p><p className="text-xs text-gray-400">{dealer.email || "-"}</p></td>
                                         <td className="px-6 py-4 text-sm text-gray-500">{dealer.location || "-"}</td>
                                         <td className="px-6 py-4 text-center font-bold text-amber-500"><span className="inline-flex items-center gap-1"><FiStar fill="currentColor" />{dealer.rating || "-"}</span></td>
@@ -261,7 +262,7 @@ const Dealers = () => {
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-2xl bg-gray-50 overflow-hidden border border-gray-100 flex items-center justify-center">
                                     {dealer.image ? (
-                                        <img src={dealer.image} alt={dealer.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                        <img src={resolveMediaUrl(dealer.image)} alt={dealer.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     ) : (
                                         <span className="text-xl font-black text-blue-600 bg-blue-50 w-full h-full flex items-center justify-center capitalize">{dealer.name?.charAt(0)}</span>
                                     )}

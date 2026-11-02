@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import api from "../../api";
 import imageCompression from "browser-image-compression";
 import { FiStar, FiPackage, FiUploadCloud, FiTrash2 } from "react-icons/fi";
+import { resolveMediaUrl } from "../../utils/media";
 
 const AddDealerModal = ({ isOpen, onClose, onSuccess }) => {
     const [loading, setLoading] = useState(false);
@@ -39,15 +40,14 @@ const AddDealerModal = ({ isOpen, onClose, onSuccess }) => {
 
         try {
             const compressedFile = await imageCompression(file, options);
-            const reader = new FileReader();
-            reader.readAsDataURL(compressedFile);
-            reader.onloadend = () => {
-                setFormData(prev => ({ ...prev, image: reader.result }));
-                toast.success("Image uploaded and compressed!");
-            };
+            const uploadData = new FormData();
+            uploadData.append("image", compressedFile, file.name);
+            const response = await api.post("/uploads/image", uploadData);
+            setFormData(prev => ({ ...prev, image: response.data.url }));
+            toast.success("Image uploaded and compressed!");
         } catch (error) {
-            console.error("Compression error:", error);
-            toast.error("Failed to process image");
+            console.error("Dealer image upload failed:", error);
+            toast.error(error.response?.data?.message || "Failed to upload image");
         }
     };
 
@@ -216,7 +216,7 @@ const AddDealerModal = ({ isOpen, onClose, onSuccess }) => {
                                     <div className="w-24 h-24 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden relative group">
                                         {formData.image ? (
                                             <>
-                                                <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                                                <img src={resolveMediaUrl(formData.image)} alt="Preview" className="w-full h-full object-cover" />
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormData(prev => ({ ...prev, image: "" }))}
@@ -281,4 +281,3 @@ const AddDealerModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 export default AddDealerModal;
-

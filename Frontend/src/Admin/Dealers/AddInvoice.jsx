@@ -10,6 +10,7 @@ const AddInvoice = () => {
     const preselectedDealerId = searchParams.get("dealerId");
 
     const [loading, setLoading] = useState(false);
+    const [uploadingDocument, setUploadingDocument] = useState(false);
     const [dealers, setDealers] = useState([]);
     const [products, setProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -85,11 +86,23 @@ const AddInvoice = () => {
         setFormData(prev => ({ ...prev, items, total_amount: total }));
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            setFormData(prev => ({ ...prev, document: file }));
-            toast.success(`${file.name} attached!`);
+        if (!file) return;
+
+        setUploadingDocument(true);
+        try {
+            const uploadData = new FormData();
+            uploadData.append("document", file);
+            const response = await api.post("/uploads/document", uploadData);
+            setFormData(prev => ({ ...prev, document: { name: file.name, url: response.data.url } }));
+            toast.success(`${file.name} uploaded!`);
+        } catch (error) {
+            console.error("Invoice document upload failed:", error);
+            toast.error(error.response?.data?.message || "Failed to upload document");
+        } finally {
+            setUploadingDocument(false);
+            e.target.value = "";
         }
     };
 
@@ -336,12 +349,12 @@ const AddInvoice = () => {
                                     {formData.document ? (
                                         <div>
                                             <p className="font-bold text-emerald-900">{formData.document.name}</p>
-                                            <p className="text-[10px] text-emerald-600 font-black uppercase">Ready to upload</p>
+                                            <p className="text-[10px] text-emerald-600 font-black uppercase">Uploaded</p>
                                         </div>
                                     ) : (
                                         <div>
                                             <p className="font-bold text-slate-800">Drop PDF or Image here</p>
-                                            <p className="text-[10px] text-gray-400 font-black uppercase">Max size: 10MB</p>
+                                            <p className="text-[10px] text-gray-400 font-black uppercase">{uploadingDocument ? "Uploading..." : "Max size: 10MB"}</p>
                                         </div>
                                     )}
                                 </div>
