@@ -12,7 +12,7 @@ async function initializeDatabase(pool) {
       user_id VARCHAR(255) NOT NULL UNIQUE,
       username VARCHAR(120) NOT NULL,
       email VARCHAR(191) NOT NULL,
-      phone VARCHAR(32) NOT NULL,
+      phone VARCHAR(32) NULL,
       password_hash VARCHAR(255) NOT NULL,
       role VARCHAR(32) NOT NULL DEFAULT 'customer',
       status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
@@ -39,6 +39,15 @@ async function initializeDatabase(pool) {
     if (!existingColumns.has(column)) {
       await pool.query(statement);
     }
+  }
+
+  const [phoneColumns] = await pool.execute(
+    `SELECT IS_NULLABLE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'phone'`,
+  );
+  if (phoneColumns[0]?.IS_NULLABLE === "NO") {
+    await pool.query("ALTER TABLE users MODIFY COLUMN phone VARCHAR(32) NULL");
   }
 
   if (!existingColumns.has("id")) {

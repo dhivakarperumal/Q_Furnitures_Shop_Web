@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { randomUUID } = require("node:crypto");
+const { randomBytes, randomUUID } = require("node:crypto");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 
@@ -99,16 +99,42 @@ function createAuthService(pool) {
         throw error;
       }
 
+      const email = payload.email.toLowerCase();
       const [users] = await pool.execute(
         `SELECT ${USER_COLUMNS} FROM users WHERE email = ? LIMIT 1`,
-        [payload.email.toLowerCase()],
+        [email],
       );
-      const user = users[0];
+      let user = users[0];
 
       if (!user) {
-        const error = new Error("Register with this email before using Google sign-in.");
-        error.status = 404;
-        throw error;
+        const username = (payload.name || email.split("@")[0]).trim().slice(0, 120);
+        const passwordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 12);
+        const userId = randomUUID();
+
+        try {
+          await pool.execute(
+            "INSERT INTO users (user_id, username, email, phone, password_hash, status) VALUES (?, ?, ?, NULL, ?, 'active')",
+            [userId, username || email, email, passwordHash],
+          );
+          const [createdUsers] = await pool.execute(
+            `SELECT ${USER_COLUMNS} FROM users WHERE user_id = ?`,
+            [userId],
+          );
+          user = createdUsers[0];
+        } catch (error) {
+          if (error.code !== "ER_DUP_ENTRY") {
+            throw error;
+          }
+
+          const [existingUsers] = await pool.execute(
+            `SELECT ${USER_COLUMNS} FROM users WHERE email = ? LIMIT 1`,
+            [email],
+          );
+          if (!existingUsers[0]) {
+            throw error;
+          }
+          user = existingUsers[0];
+        }
       }
 
       const safeUser = toPublicUser(user);
