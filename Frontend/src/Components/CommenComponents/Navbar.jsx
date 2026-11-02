@@ -43,7 +43,7 @@ const Navbar = () => {
     logout();
     setLogoutConfirm(false);
     setUserMenu(false);
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   // Close dropdown when clicking outside

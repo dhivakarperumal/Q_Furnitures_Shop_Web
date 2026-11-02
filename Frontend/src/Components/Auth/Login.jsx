@@ -31,9 +31,9 @@ function Login() {
       login(res.data.user, res.data.token);
       toast.success("Login successful!");
       if (res.data.user.role === "admin") {
-        navigate("/admin");
+        navigate("/admin", { replace: true });
       } else {
-        navigate("/");
+        navigate("/", { replace: true });
       }
     } catch (error) {
       console.error("Login Error:", error);
@@ -51,9 +51,9 @@ function Login() {
       login(res.data.user, res.data.token);
       toast.success("Google Login Successful!");
       if (res.data.user.role === "admin") {
-        navigate("/admin");
+        navigate("/admin", { replace: true });
       } else {
-        navigate("/");
+        navigate("/", { replace: true });
       }
     } catch (error) {
       console.error("Google Login Error:", error);

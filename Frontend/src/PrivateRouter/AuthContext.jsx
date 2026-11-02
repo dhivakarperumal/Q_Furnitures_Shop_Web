@@ -1,41 +1,56 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 export const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
+function getStoredUser() {
+  const token = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
+  if (!token || !storedUser) return null;
+
+  try {
+    const user = JSON.parse(storedUser);
+    return user && typeof user === "object" && !Array.isArray(user) ? user : null;
+  } catch (error) {
+    console.error("Stored user session is invalid:", error);
+    return null;
+  }
+}
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(getStoredUser);
   const [loginOpen, setLoginOpen] = useState(false);
+  const loading = false;
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const syncStoredSession = (event) => {
+      if (event.key !== null && event.key !== "user" && event.key !== "token") return;
+      setUser(getStoredUser());
+    };
 
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Stored user session is invalid:", error);
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-      }
-    }
-
-    setLoading(false);
+    window.addEventListener("storage", syncStoredSession);
+    return () => window.removeEventListener("storage", syncStoredSession);
   }, []);
 
-  const login = (userData, token) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+  const login = useCallback((userData, token) => {
     localStorage.setItem("token", token);
-  };
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+    setLoginOpen(false);
+  }, []);
 
-  const logout = () => {
+  const updateUser = useCallback((userData) => {
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+  }, []);
+
+  const logout = useCallback(() => {
     setUser(null);
+    setLoginOpen(false);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-  };
+  }, []);
 
   // Map user data for Header/Sidebar compatibility
   const profileName = user?.username || user?.name || "Admin";
@@ -47,7 +62,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        setUser,
+        updateUser,
         login,
         logout,
         loading,

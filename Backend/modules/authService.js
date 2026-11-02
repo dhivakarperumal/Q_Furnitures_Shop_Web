@@ -40,6 +40,13 @@ function createAuthService(pool) {
   }
 
   return {
+    async listUsers() {
+      const [users] = await pool.execute(
+        `SELECT ${USER_COLUMNS} FROM users ORDER BY created_at DESC`,
+      );
+      return users.map(toPublicUser);
+    },
+
     async register({ username, email, phone, password }) {
       const passwordHash = await bcrypt.hash(password, 12);
       const userId = randomUUID();

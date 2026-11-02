@@ -7,6 +7,7 @@ const { createPool, initializeDatabase } = require("./modules/db");
 const { createAuthService } = require("./modules/authService");
 const { createAuthController } = require("./controllers/authController");
 const createAuthRouter = require("./routers/authRouter");
+const createUserRouter = require("./routers/userRouter");
 const { createUploadRouter } = require("./routers/uploadRouter");
 
 const port = Number(process.env.PORT || 5000);
@@ -33,6 +34,8 @@ app.get("/api/health", async (request, response) => {
   }
 });
 app.use("/api/auth", createAuthRouter(authController));
+app.use("/api/users", createUserRouter(authService));
+app.use("/api/auth/users", createUserRouter(authService));
 app.use("/api", createUploadRouter(authService));
 
 app.use((error, request, response, next) => {

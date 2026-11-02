@@ -6,7 +6,7 @@ import { resolveMediaUrl } from "../../../utils/media";
 
 export default function PersonalInfo() {
 
-  const { user, setUser } = useContext(AuthContext);
+  const { user, updateUser } = useContext(AuthContext);
   const [uploadingImage, setUploadingImage] = useState(false);
 
   const [form, setForm] = useState({
@@ -49,8 +49,7 @@ export default function PersonalInfo() {
     try {
       const response = await api.post("/uploads/profile-image", uploadData);
       const updatedUser = { ...user, ...response.data.user };
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      updateUser(updatedUser);
       toast.success("Profile photo updated.");
     } catch (error) {
       console.error("Profile image upload failed:", error);
@@ -77,8 +76,7 @@ export default function PersonalInfo() {
 
       // Update AuthContext + localStorage so UI reflects new data immediately
       const updatedUser = { ...user, ...res.data.user };
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      updateUser(updatedUser);
 
       toast.success("Profile updated successfully!");
 
