@@ -206,7 +206,7 @@ const Billing = () => {
                         </div>
                         <button
                         onClick={() => navigate("/admin/orders/shop-create")}
-                        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#9A4D16] to-[#6B3212] px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-[#7A3A10] hover:to-[#4B220C] active:scale-[0.98]"
+                        className="flex items-center gap-2 rounded-md bg-gradient-to-r from-primary to-primary-dark px-5 py-3 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95"
                         >
                             <FiPlus /> Create New Order
                         </button>
