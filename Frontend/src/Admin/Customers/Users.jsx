@@ -351,8 +351,7 @@ const Users = ({ initialTab = "All" }) => {
                                 <table className="w-full text-left border-collapse whitespace-nowrap">
                                     <thead>
                                         <tr className="bg-gradient-to-r from-[#3B1A0B] to-[#6B3212] text-[11px] font-bold uppercase tracking-wider text-amber-200">
-                                            <th className="w-12 px-5 py-4"><input type="checkbox" className="rounded border-white/70 text-orange-500 focus:ring-orange-400" aria-label="Select all customers" /></th>
-                                            <th className="px-6 py-4">Customer ID</th>
+                                            <th className="px-6 py-4">S No</th>
                                             <th className="px-6 py-4">Customer</th>
                                             <th className="px-6 py-4">Email</th>
                                             <th className="px-6 py-4">Role</th>
@@ -364,31 +363,28 @@ const Users = ({ initialTab = "All" }) => {
                                     <tbody>
                                         {loading ? (
                                             <tr>
-                                                <td colSpan="8" className="px-6 py-12 text-center text-sm font-semibold text-slate-400">
+                                                <td colSpan="7" className="px-6 py-12 text-center text-sm font-semibold text-slate-400">
                                                     Loading customers...
                                                 </td>
                                             </tr>
                                         ) : loadError ? (
                                             <tr>
-                                                <td colSpan="8" className="px-6 py-12 text-center">
+                                                <td colSpan="7" className="px-6 py-12 text-center">
                                                     <p className="text-sm font-semibold text-rose-600">{loadError}</p>
                                                     <button type="button" onClick={fetchUsers} className="mt-3 rounded-lg bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 hover:bg-orange-100">Try again</button>
                                                 </td>
                                             </tr>
                                         ) : currentItems.length === 0 ? (
                                             <tr>
-                                                <td colSpan="8" className="px-6 py-12 text-center text-sm font-semibold text-slate-400">
+                                                <td colSpan="7" className="px-6 py-12 text-center text-sm font-semibold text-slate-400">
                                                     No customers found.
                                                 </td>
                                             </tr>
                                         ) : (
                                             currentItems.map((user, idx) => (
                                                     <tr key={user.id} className="border-b border-slate-100 transition-colors hover:bg-orange-50/40">
-                                                        <td className="px-6 py-4">
-                                                            <input type="checkbox" className="rounded border-slate-300 text-orange-600 focus:ring-orange-400" />
-                                                        </td>
                                                         <td className="px-6 py-4 text-[13px] font-bold text-orange-700">
-                                                            CUS{1000 + (parseInt(user.id) || idx + 1)}
+                                                            {indexOfFirstItem + idx + 1}
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-3">
@@ -486,7 +482,7 @@ const Users = ({ initialTab = "All" }) => {
                                                 <h3 className="min-w-0 truncate text-sm font-bold text-slate-800">{user.name}</h3>
                                             </div>
                                             <span className="shrink-0 rounded bg-gray-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                                                CUS{1000 + (parseInt(user.id) || idx + 1)}
+                                                S No {indexOfFirstItem + idx + 1}
                                             </span>
                                         </div>
 
