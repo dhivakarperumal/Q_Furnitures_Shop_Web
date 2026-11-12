@@ -47,7 +47,7 @@ const Billing = () => {
                     date: order.created_at ? new Date(order.created_at).toLocaleDateString("en-CA") : "-",
                     customer: order.customer_name || "Guest Customer",
                     amount: Number(order.total_amount || 0),
-                    status: order.payment_status || "Pending",
+                    status: order.status || "Order Placed",
                     method: order.payment_method || "Showroom"
                 }));
             setInvoices(shopOrders);
@@ -96,9 +96,12 @@ const Billing = () => {
 
     const getStatusStyle = (status) => {
         switch (status) {
-            case "Paid": return "bg-emerald-100 text-emerald-700";
-            case "Pending": return "bg-amber-100 text-amber-700";
-            case "Overdue": return "bg-red-100 text-red-700";
+            case "Delivered": return "bg-emerald-100 text-emerald-700";
+            case "Cancelled": return "bg-red-100 text-red-700";
+            case "Packing":
+            case "Shipping":
+            case "Out for Delivery": return "bg-amber-100 text-amber-700";
+            case "Order Placed": return "bg-blue-100 text-blue-700";
             default: return "bg-gray-100 text-gray-700";
         }
     };
@@ -176,13 +179,16 @@ const Billing = () => {
                             <select
                                 value={statusFilter}
                                 onChange={(event) => setStatusFilter(event.target.value)}
-                                aria-label="Filter orders by payment status"
+                                aria-label="Filter orders by status"
                                 className="cursor-pointer bg-transparent text-xs font-bold text-gray-600 outline-none focus:text-orange-800"
                             >
                                 <option value="all">All</option>
-                                <option value="paid">Paid</option>
-                                <option value="pending">Pending</option>
-                                <option value="overdue">Overdue</option>
+                                <option value="order placed">Order Placed</option>
+                                <option value="packing">Packing</option>
+                                <option value="shipping">Shipping</option>
+                                <option value="out for delivery">Out for Delivery</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
                             </select>
                         </div>
                             <button
