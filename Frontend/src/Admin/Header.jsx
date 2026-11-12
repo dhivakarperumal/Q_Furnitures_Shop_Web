@@ -311,9 +311,9 @@ const Header = ({ onMenuClick }) => {
 
   return (
     <header className="sticky top-0 z-30 
-      bg-white/75 backdrop-blur-sm
-      border-b border-slate-200/60
-      shadow-[0_4px_30px_rgba(0,0,0,0.04)]">
+      bg-[#FFF8F0]/75 backdrop-blur-sm
+      border-b border-orange-200/60
+      shadow-[0_4px_30px_rgba(80,35,10,0.08)]">
 
       <div className="flex items-center justify-between px-4 py-3 sm:px-6">
 
@@ -322,8 +322,8 @@ const Header = ({ onMenuClick }) => {
           <button
             onClick={onMenuClick}
             className="lg:hidden p-2 rounded-xl 
-            bg-white hover:bg-slate-50 
-            text-slate-600 border border-slate-200 shadow-sm transition-all active:scale-95"
+            bg-orange-50 hover:bg-orange-100
+            text-primary-dark border border-orange-200 shadow-sm transition-all active:scale-95"
           >
             <Menu className="w-6 h-6" />
           </button>
@@ -333,7 +333,7 @@ const Header = ({ onMenuClick }) => {
               text-slate-800 tracking-tight truncate leading-none">
               {getPageTitle()}
             </h1>
-            <p className="hidden sm:block text-[10px] text-blue-600 font-bold uppercase tracking-[0.2em] mt-1 opacity-70">
+            <p className="hidden sm:block text-[10px] text-orange-700 font-bold uppercase tracking-[0.2em] mt-1 opacity-80">
               Hi Welcome, {userName} ({userRole})
             </p>
           </div>
@@ -346,7 +346,7 @@ const Header = ({ onMenuClick }) => {
           <div className="relative flex items-center" ref={searchWrapperRef}>
             <div className={`flex items-center transition-all duration-300 overflow-visible ${showSearch ? 'w-56 sm:w-72 opacity-100 mr-2' : 'w-0 opacity-0 pointer-events-none'}`}>
               <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-600" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -418,8 +418,8 @@ const Header = ({ onMenuClick }) => {
               onClick={() => { setShowSearch(p => !p); if (showSearch) clearSearch(); }}
               className={`p-2.5 rounded-xl transition-all active:scale-95
               ${showSearch
-                ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-purple-500/30'
-                : 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md shadow-purple-500/20 hover:shadow-lg hover:scale-105'}`}
+                ? 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-orange-700/30'
+                : 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-orange-700/20 hover:shadow-lg hover:scale-105'}`}
             >
               <Search className="w-[18px] h-[18px]" />
             </button>
@@ -520,12 +520,12 @@ const Header = ({ onMenuClick }) => {
               onClick={() => setShowNotifications(p => !p)}
               className={`relative p-2.5 rounded-xl transition-all active:scale-95
               ${showNotifications
-                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:shadow-lg hover:scale-105'}`}
+                ? 'bg-gradient-to-br from-secondary-light to-secondary-dark text-white shadow-lg shadow-secondary/30'
+                : 'bg-gradient-to-br from-secondary-light to-secondary-dark text-white shadow-md shadow-secondary/20 hover:shadow-lg hover:scale-105'}`}
             >
               <Bell className="w-[18px] h-[18px]" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-blue-600 ring-2 ring-blue-400">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-secondary ring-2 ring-secondary-light">
                   {unreadCount}
                 </span>
               )}
@@ -653,10 +653,10 @@ const Header = ({ onMenuClick }) => {
               onClick={() => setShowDropdown(p => !p)}
               className={`flex items-center gap-2.5 px-2.5 py-2 rounded-2xl transition-all active:scale-95
               ${showDropdown
-                ? 'bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-200 shadow-md'
-                : 'bg-slate-50 border border-slate-200 hover:bg-violet-50 hover:border-violet-200'}`}
+                ? 'bg-orange-50 border border-orange-200 shadow-md'
+                : 'bg-white/60 border border-orange-200/70 hover:bg-orange-50 hover:border-orange-300'}`}
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-black shadow-md shadow-purple-500/30 overflow-hidden">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-xs font-black shadow-md shadow-orange-700/30 overflow-hidden">
                 {user?.profile_image ? (
                   <img src={resolveMediaUrl(user.profile_image)} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -668,13 +668,13 @@ const Header = ({ onMenuClick }) => {
                 <p className="text-xs font-black text-slate-800">
                   {userName}
                 </p>
-                <p className="text-[9px] text-purple-600 font-bold uppercase tracking-widest opacity-70">
+                <p className="text-[9px] text-orange-700 font-bold uppercase tracking-widest opacity-80">
                   {userRole}
                 </p>
               </div>
 
               <ChevronDown
-                className={`hidden sm:block w-3.5 h-3.5 text-slate-400 transition-transform duration-300
+                className={`hidden sm:block w-3.5 h-3.5 text-orange-700/70 transition-transform duration-300
                 ${showDropdown ? "rotate-180" : ""}`}
               />
             </button>
@@ -697,7 +697,7 @@ const Header = ({ onMenuClick }) => {
                   <Link
                     to="/admin/profile"
                     className="flex items-center gap-3 px-3 py-2.5 
-                    rounded-xl hover:bg-blue-50 hover:text-blue-600
+                    rounded-xl hover:bg-orange-50 hover:text-orange-700
                     text-sm text-slate-600 transition font-bold"
                   >
                     <User className="w-4 h-4 opacity-50" /> Profile
@@ -706,7 +706,7 @@ const Header = ({ onMenuClick }) => {
                   {/* <Link
                     to="/admin/settings"
                     className="flex items-center gap-3 px-3 py-2.5 
-                    rounded-xl hover:bg-blue-50 hover:text-blue-600
+                    rounded-xl hover:bg-orange-50 hover:text-orange-700
                     text-sm text-slate-600 transition font-bold"
                   >
                     <Settings className="w-4 h-4 opacity-50" /> Settings
