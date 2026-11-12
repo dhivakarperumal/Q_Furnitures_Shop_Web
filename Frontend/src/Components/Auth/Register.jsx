@@ -71,7 +71,7 @@ function Register() {
       <div className="hidden lg:block lg:w-5/12 flex-shrink-0 relative h-full">
         <div className="absolute inset-0 w-[103%] h-full bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-800 z-10" style={{ clipPath: "url(#sCurveReg)" }} />
         <div className="absolute inset-0 w-full h-full z-20" style={{ clipPath: "url(#sCurveReg)" }}>
-          <img src="/images/loginbanner.png" alt="Style Hub shoes and accessories" className="w-full h-full object-cover object-center" />
+          <img src="/images/loginbanner.png" alt="Q Furnitures" className="w-full h-full object-cover object-center" />
           <div className="absolute inset-0 bg-gradient-to-t from-primary/85 via-black/20 to-transparent" />
           <div className="absolute bottom-10 left-0 right-[15%] px-10 py-8 z-30">
             <svg className="w-7 h-7 text-yellow-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

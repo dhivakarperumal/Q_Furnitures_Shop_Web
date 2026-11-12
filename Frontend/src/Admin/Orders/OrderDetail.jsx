@@ -120,7 +120,7 @@ const OrderDetail = () => {
     
             <div style="flex:1; min-width:240px; font-size:14px;">
               <h3 style="font-size:12px;text-transform:uppercase;color:#94a3b8;letter-spacing:1.5px;margin-bottom:15px;font-weight:900;">Order Info</h3>
-              <p style="margin:5px 0;"><strong>Shop:</strong> Sri Saravana Bangles</p>
+              <p style="margin:5px 0;"><strong>Shop:</strong> Q Furnitures</p>
               <p style="font-size:12px; color:#64748b; margin-bottom:10px; line-height:1.4;">
                 78/3, Chetty Street Tirupattur,<br/>
                 Near AVS Mahal and Jain Temple 635601<br/>
@@ -166,8 +166,8 @@ const OrderDetail = () => {
           </div>
     
           <div style="text-align:center;margin-top:60px;font-size:12px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:20px;">
-            <p style="margin:0; font-weight:bold; color:#64748b;">Thank you for shopping with Sri Saravana Bangles!</p>
-            <p style="margin:5px 0 0 0;">For any support, please contact us at support@saravanashoppings.in</p>
+            <p style="margin:0; font-weight:bold; color:#64748b;">Thank you for shopping with Q Furnitures!</p>
+            <p style="margin:5px 0 0 0;">For any support, please contact us at support@qfurnitures.in</p>
           </div>
         </div>
       `;

@@ -13,10 +13,10 @@ const Loader = () => {
 
       <div className="mt-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
         <h1 className="text-4xl font-black tracking-[0.3em] bg-clip-text text-transparent bg-gradient-to-r from-[#A85B20] via-[#D99A32] to-[#A85B20] animate-gradient-x">
-          STYLE HUB
+          Q FURNITURES
         </h1>
         <p className="text-[10px] text-[#A85B20] font-bold uppercase tracking-[0.4em] mt-3 opacity-70">
-          Shoes, Bags & Leather Goods
+          Furniture & Home Essentials
         </p>
       </div>
 

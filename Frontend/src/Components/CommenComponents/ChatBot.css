@@ -608,8 +608,8 @@
 
 /* ── Floating Action Button (FAB) ── */
 .chatbot-fab {
-  width: 58px;
-  height: 58px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: none;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
@@ -648,11 +648,4 @@
   100% { transform: scale(1.25); opacity: 0; }
 }
 
-/* Resize FAB slightly on mobile */
-@media (max-width: 480px) {
-  .chatbot-fab {
-    width: 52px;
-    height: 52px;
-  }
-}
 

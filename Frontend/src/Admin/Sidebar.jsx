@@ -188,10 +188,10 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
             {!collapsed && (
               <div className="overflow-hidden">
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#D4AF37] mb-1">
-                  Saree World
+                  Q Furnitures
                 </p>
                 <p className="text-sm font-semibold tracking-wide text-white">
-                  Fashion Store Admin
+                  Furniture Store Admin
                 </p>
               </div>
             )}
