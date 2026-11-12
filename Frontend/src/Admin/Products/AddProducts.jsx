@@ -27,8 +27,8 @@ const initialForm = {
     name: "", product_code: "", category: "", subcategory: "", brand: "", model_number: "",
     description: "", tags: "", product_type: "Standard", featured: false,
     trending_product: false, offer_product: false, status: "Active",
-    mrp: "", offer_type: "Percentage", offer: "", offer_price: "0", selling_price_mode: "auto",
-    selling_price: "", material_type: "", wood_type: "", colour: "", finish_type: "",
+    mrp: "", offer_type: "Percentage", offer: "", offer_price: "0",
+    material_type: "", wood_type: "", colour: "", finish_type: "",
     height: "", width: "", depth: "", weight: "", seating_capacity: "", doors: "",
     drawers: "", mattress_size: "", warranty_period: "", country_of_origin: "India",
     total_stock: "0", warehouse: "", package_length: "", package_width: "", package_height: "",
@@ -152,9 +152,6 @@ const AddProducts = () => {
         if (form.offer_type === "Percentage") return Math.max(0, mrp * (1 - offer / 100));
         return Math.max(0, mrp - offer);
     }, [form.mrp, form.offer, form.offer_type]);
-    const finalPrice = form.selling_price_mode === "manual" && form.selling_price !== ""
-        ? Number(form.selling_price) || 0
-        : calculatedOfferPrice;
     const stockState = Number(form.total_stock) <= 0 ? "Out of stock" : Number(form.total_stock) <= 5 ? "Low stock" : "In stock";
 
     useEffect(() => {
@@ -209,8 +206,6 @@ const AddProducts = () => {
                         offer_type: product.offer_type || "Percentage",
                         offer: String(product.offer ?? ""),
                         rating: String(product.rating ?? "5"),
-                        selling_price_mode: product.selling_price_mode || "auto",
-                        selling_price: String(product.selling_price ?? ""),
                         customization_enabled: Boolean(product.customization_enabled),
                     }));
                     const parsedVariants = Array.isArray(product.variants)
@@ -372,10 +367,6 @@ const AddProducts = () => {
             toast.error("Enter a valid offer value.");
             return;
         }
-        if (form.selling_price_mode === "manual" && Number(form.selling_price) > Number(form.mrp)) {
-            toast.error("Selling price cannot be higher than MRP.");
-            return;
-        }
         if (Number(form.rating) < 1 || Number(form.rating) > 5) {
             toast.error("Product rating must be between 1 and 5.");
             return;
@@ -389,7 +380,8 @@ const AddProducts = () => {
             mrp: String(form.mrp),
             offer: String(form.offer || "0"),
             offer_price: calculatedOfferPrice.toFixed(2),
-            selling_price: finalPrice.toFixed(2),
+            selling_price: calculatedOfferPrice.toFixed(2),
+            selling_price_mode: "auto",
             product_code: form.product_code.trim(),
             total_stock: String(form.total_stock || "0"),
             rating: Number(form.rating).toFixed(1),
@@ -509,20 +501,12 @@ const AddProducts = () => {
                         </div>
                     </SectionCard>
 
-                    <SectionCard id="pricing" title="Pricing" description="Set your list price, offer, and customer selling price." icon={CircleDollarSign}>
+                    <SectionCard id="pricing" title="Pricing" description="Set your list price and offer details." icon={CircleDollarSign}>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <Field label="MRP" name="mrp" value={form.mrp} onChange={handleChange} type="number" min="0" step="0.01" placeholder="20000" prefix="₹" required />
                             <SelectField label="Offer type" name="offer_type" value={form.offer_type} onChange={handleChange} options={["Percentage", "Fixed Amount"]} />
                             <Field label={form.offer_type === "Percentage" ? "Offer (%)" : "Offer amount (₹)"} name="offer" value={form.offer} onChange={handleChange} type="number" min="0" max={form.offer_type === "Percentage" ? "100" : undefined} step="0.01" placeholder="10" prefix={form.offer_type === "Fixed Amount" ? "₹" : undefined} suffix={form.offer_type === "Percentage" ? "%" : undefined} />
                             <Field label="Offer price" name="offer_price" value={calculatedOfferPrice.toFixed(2)} readOnly type="number" prefix="₹" />
-                        </div>
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <SelectField label="Selling price" name="selling_price_mode" value={form.selling_price_mode} onChange={handleChange} options={[{ value: "auto", label: "Automatically use offer price" }, { value: "manual", label: "Enter manually" }]} />
-                            <Field label="Final selling price" name="selling_price" value={form.selling_price_mode === "auto" ? (calculatedOfferPrice ? calculatedOfferPrice.toFixed(2) : "") : form.selling_price} onChange={handleChange} type="number" min="0" step="0.01" readOnly={form.selling_price_mode === "auto"} prefix="₹" />
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3">
-                            <p className="text-sm text-slate-600">Customer price <span className="font-bold text-slate-900">₹{finalPrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>{Number(form.mrp) > finalPrice && <span className="ml-2 text-slate-400 line-through">₹{Number(form.mrp).toLocaleString("en-IN")}</span>}<span className="ml-2 text-xs text-emerald-700">Save ₹{Math.max(0, Number(form.mrp || 0) - finalPrice).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></p>
-                            <span className="text-xs font-medium text-emerald-700">{form.selling_price_mode === "auto" ? "Calculated automatically" : "Manual override"}</span>
                         </div>
                     </SectionCard>
 
@@ -665,9 +649,6 @@ const AddProducts = () => {
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
                         <h2 className="text-sm font-bold text-slate-900">Listing overview</h2>
                         <p className="mt-1 truncate text-sm text-slate-500">{form.name || "New furniture product"}</p>
-                        <div className="my-4 flex items-center justify-between border-y border-slate-100 py-3">
-                            <span className="text-xs text-slate-500">Selling price</span><strong className="text-base text-slate-900">₹{finalPrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
-                        </div>
                         <div className="space-y-3 text-xs">
                             <div className="flex justify-between gap-3"><span className="text-slate-500">SKU</span><span className="truncate font-semibold text-slate-700">{form.product_code || "Not set"}</span></div>
                             <div className="flex justify-between gap-3"><span className="text-slate-500">Category</span><span className="truncate font-semibold text-slate-700">{form.category || "Not selected"}</span></div>
