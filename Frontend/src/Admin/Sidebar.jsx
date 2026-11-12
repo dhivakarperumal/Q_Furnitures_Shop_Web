@@ -198,14 +198,9 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
           <img
             src="/images/logo2.png"
             alt="Q Living Furniture"
-            className={collapsed ? "h-8 w-12 object-contain" : "h-auto w-full object-contain"}
+            className={collapsed ? "h-8 w-12 object-contain" : "h-24 w-[92%] object-fill"}
           />
           <div className="relative flex w-full items-center justify-center">
-            {!collapsed && (
-              <p className="text-xs font-bold tracking-wide text-white">
-                Admin Panel
-              </p>
-            )}
             <button
               onClick={onClose}
               className="absolute right-0 rounded-xl border border-transparent p-2 text-white/70 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white lg:hidden"
