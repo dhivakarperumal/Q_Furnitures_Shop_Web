@@ -53,7 +53,7 @@ const CreateOrder = () => {
         zip_code: "",
         order_type: "Shop",
         payment_method: "Cash",
-        status: "Order Placed",
+        status: "Delivered",
         items: [],
         discount_type: "percentage",
         discount_value: 0,
