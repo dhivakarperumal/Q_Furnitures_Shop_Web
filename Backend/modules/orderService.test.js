@@ -86,6 +86,7 @@ test("creates an order, derives price, and decrements product and variant stock 
   let updatedProduct;
   let insertedOrder;
   let insertedOrderSql;
+  let persistedOrderId;
   let insertedAddress;
   const insertedItems = [];
   let committed = false;
@@ -102,6 +103,10 @@ test("creates an order, derives price, and decrements product and variant stock 
         insertedOrderSql = query;
         insertedOrder = parameters;
         return [{ insertId: 21 }];
+      }
+      if (query.startsWith("UPDATE orders SET order_id")) {
+        persistedOrderId = parameters;
+        return [{ affectedRows: 1 }];
       }
       if (query.startsWith("INSERT INTO `address`")) {
         insertedAddress = parameters;
@@ -127,6 +132,8 @@ test("creates an order, derives price, and decrements product and variant stock 
   }));
 
   assert.equal(order.id, 21);
+  assert.equal(order.order_id, "ORD0021");
+  assert.deepEqual(persistedOrderId, ["ORD0021", 21]);
   assert.equal(order.subtotal, 220);
   assert.equal(order.discount_amount, 22);
   assert.equal(order.gst_amount, 6.6);
@@ -176,6 +183,7 @@ test("loads normalized address and item rows in the existing order response shap
       if (query.startsWith("SELECT * FROM orders")) {
         return [[{
           id: 21,
+          order_id: "ORD0021",
           customer_name: "Customer One",
           subtotal: "220.00",
           discount_type: "percentage",
@@ -222,6 +230,7 @@ test("loads normalized address and item rows in the existing order response shap
   };
   const order = await createOrderService(pool).getById(21);
 
+  assert.equal(order.order_id, "ORD0021");
   assert.equal(order.street_address, "10 Market Road");
   assert.equal(order.shipping_address.user_id, "customer-123");
   assert.equal(order.shipping_address.customer_name, "Customer One");

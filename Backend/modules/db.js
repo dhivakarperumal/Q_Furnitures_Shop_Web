@@ -239,6 +239,7 @@ async function initializeDatabase(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      order_id VARCHAR(32) NULL,
       user_id VARCHAR(255) NULL,
       customer_name VARCHAR(191) NOT NULL,
       customer_email VARCHAR(191) NULL,
@@ -261,6 +262,7 @@ async function initializeDatabase(pool) {
       cancelled_at DATETIME NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY orders_order_id_unique (order_id),
       KEY orders_status_created_idx (status, created_at),
       KEY orders_type_created_idx (order_type, created_at),
       KEY orders_customer_phone_idx (customer_phone)
@@ -371,6 +373,7 @@ async function initializeDatabase(pool) {
   );
   const existingOrderColumns = new Set(orderColumns.map((column) => column.COLUMN_NAME));
   const orderMigrations = [
+    ["order_id", "ALTER TABLE orders ADD COLUMN order_id VARCHAR(32) NULL"],
     ["subtotal", "ALTER TABLE orders ADD COLUMN subtotal DECIMAL(12,2) NOT NULL DEFAULT 0"],
     ["discount_type", "ALTER TABLE orders ADD COLUMN discount_type VARCHAR(16) NOT NULL DEFAULT 'percentage'"],
     ["discount_value", "ALTER TABLE orders ADD COLUMN discount_value DECIMAL(12,2) NOT NULL DEFAULT 0"],
@@ -383,6 +386,18 @@ async function initializeDatabase(pool) {
       await pool.query(statement);
     }
   }
+  const [orderIndexes] = await pool.execute(
+    `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders'`,
+  );
+  if (!orderIndexes.some((index) => index.INDEX_NAME === "orders_order_id_unique")) {
+    await pool.query("ALTER TABLE orders ADD UNIQUE KEY orders_order_id_unique (order_id)");
+  }
+  await pool.query(
+    `UPDATE orders
+     SET order_id = CONCAT('ORD', LPAD(CAST(id AS CHAR), GREATEST(4, CHAR_LENGTH(CAST(id AS CHAR))), '0'))
+     WHERE order_id IS NULL OR TRIM(order_id) = ''`,
+  );
   await pool.query(
     `UPDATE orders
      SET subtotal = total_amount

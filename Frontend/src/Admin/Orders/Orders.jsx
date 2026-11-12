@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import api from "../../api";
 
-const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(5, "0")}`;
+const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
 import { Link } from "react-router-dom";
 import { useAdmin } from "../../PrivateRouter/AdminContext";
 import {

@@ -42,7 +42,7 @@ const Billing = () => {
                 .filter((order) => String(order.order_type || "").toLowerCase() === "shop")
                 .map((order) => ({
                     orderId: order.id,
-                    id: `#ORD-${order.id}`,
+                    id: order.order_id || `ORD${String(order.id).padStart(4, "0")}`,
                     createdAt: order.created_at,
                     date: order.created_at ? new Date(order.created_at).toLocaleDateString("en-CA") : "-",
                     customer: order.customer_name || "Guest Customer",

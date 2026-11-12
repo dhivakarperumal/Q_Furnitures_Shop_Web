@@ -245,7 +245,7 @@ function mapOrder(row, address, items) {
     ...row,
     ...shippingAddress,
     shipping_address: address ? shippingAddress : null,
-    order_id: `ORD${String(row.id).padStart(5, "0")}`,
+    order_id: row.order_id || `ORD${String(row.id).padStart(4, "0")}`,
     total_amount: Number(row.total_amount),
     subtotal: Number(row.subtotal ?? row.total_amount),
     discount_type: row.discount_type || "percentage",
@@ -394,6 +394,11 @@ function createOrderService(pool) {
             totalAmount,
           ],
         );
+        const orderId = `ORD${String(result.insertId).padStart(4, "0")}`;
+        await connection.execute(
+          "UPDATE orders SET order_id = ? WHERE id = ?",
+          [orderId, result.insertId],
+        );
 
         await connection.execute(
           `INSERT INTO \`address\`
@@ -438,7 +443,7 @@ function createOrderService(pool) {
         await connection.commit();
         return {
           id: result.insertId,
-          order_id: `ORD${String(result.insertId).padStart(5, "0")}`,
+          order_id: orderId,
           order_type: order.orderType,
           status: order.status,
           payment_status: "Pending",

@@ -20,7 +20,7 @@ import api from "../../api";
 import { toast, Toaster } from "react-hot-toast";
 
 const logo = "/images/logo.png";
-const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(5, "0")}`;
+const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
 const formatCurrency = (value) => Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const getDiscountLabel = (order) => order.discount_type === "percentage"
     ? `Discount (${Number(order.discount_value || 0)}%)`
