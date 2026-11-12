@@ -1,34 +1,35 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import api from "../../api";
 import {
     FiSearch,
     FiFilter,
     FiUserPlus,
-    FiMoreVertical,
+    FiEye,
+    FiEdit2,
+    FiTrash2,
     FiMail,
     FiPhone,
     FiCalendar,
     FiUserX,
     FiX,
-    FiEdit2,
     FiGrid,
     FiList
 } from "react-icons/fi";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { resolveMediaUrl } from "../../utils/media";
 
 
-const deriveUserStatus = (user, index = 0) => {
+const deriveUserStatus = (user) => {
     if (user?.status) {
         return String(user.status).toLowerCase() === "inactive" ? "Inactive" : "Active";
     }
-    const numericId = Number(user?.id ?? index + 1) || index + 1;
-    return numericId % 6 === 0 || numericId % 9 === 0 ? "Inactive" : "Active";
+    return "Active";
 };
 
 const Users = ({ initialTab = "All" }) => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
     const [selectedTab, setSelectedTab] = useState(initialTab);
     const [selectedRole, setSelectedRole] = useState("all");
     const [searchTerm, setSearchTerm] = useState("");
@@ -45,6 +46,7 @@ const Users = ({ initialTab = "All" }) => {
 
     // ---- Modal State for Registering/Editing User ----
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [viewingUser, setViewingUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editUserId, setEditUserId] = useState(null);
     const [formData, setFormData] = useState({
@@ -57,56 +59,41 @@ const Users = ({ initialTab = "All" }) => {
     });
     const [submitLoading, setSubmitLoading] = useState(false);
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await api.get("/auth/users");
-                // Transform data if needed for UI
-                const fetchedUsers = response.data.map((u, index) => ({
-                    id: u.id || u.user_id,
-                    name: u.name || u.username,
-                    email: u.email,
-                    role: u.role ? u.role.toLowerCase() : 'user',
-                    status: deriveUserStatus(u, index),
-                    joined: u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A',
-                    rawCreated_at: u.created_at,
-                    avatar: u.profile_image
-                        ? resolveMediaUrl(u.profile_image)
-                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.username)}&background=random`
-                }));
-                setUsers(fetchedUsers);
-            } catch (error) {
-                console.error("Failed to fetch users:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchUsers();
-    }, []);
-
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         setLoading(true);
+        setLoadError("");
         try {
             const response = await api.get("/auth/users");
-            const fetchedUsers = response.data.map((u, index) => ({
+            if (!Array.isArray(response.data)) {
+                throw new Error("The customer list response was invalid.");
+            }
+            const fetchedUsers = response.data.map((u) => ({
                 id: u.id || u.user_id,
                 name: u.name || u.username,
                 email: u.email,
+                phone: u.phone || "",
                 role: u.role ? u.role.toLowerCase() : 'user',
-                status: deriveUserStatus(u, index),
+                status: deriveUserStatus(u),
                 joined: u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A',
                 rawCreated_at: u.created_at,
                 avatar: u.profile_image
                     ? resolveMediaUrl(u.profile_image)
-                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.username)}&background=random`
+                    : ""
             }));
             setUsers(fetchedUsers);
         } catch (error) {
             console.error("Failed to fetch users:", error);
+            const message = error.response?.data?.message || error.message || "Could not load customer accounts.";
+            setLoadError(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -210,6 +197,7 @@ const Users = ({ initialTab = "All" }) => {
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const pageCount = Math.max(1, totalPages);
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
@@ -224,107 +212,115 @@ const Users = ({ initialTab = "All" }) => {
     const activeUsers = users.filter(u => u.status === 'Active').length;
     const inactiveUsers = users.filter(u => u.status === 'Inactive').length;
     const adminUsers = users.filter(u => u.role === 'admin').length;
-    const regularUsers = users.filter(u => u.role === 'user' || !u.role).length;
     const adminPct = totalUsers ? Math.round((adminUsers / totalUsers) * 100) : 0;
-    const userPct = totalUsers ? Math.round((regularUsers / totalUsers) * 100) : 0;
 
     return (
-        <div className="bg-[#f8f9fc] min-h-screen pb-10 font-sans">
-            <div className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-2 py-6 space-y-6">
-                
-                {/* Header */}
-               
+        <div className="min-h-full pb-8 font-sans">
+            <div className="mx-auto max-w-[1600px] space-y-6 px-1 py-2 sm:px-2">
+           
 
                 {/* Stat Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-5">
-                    <div className="min-h-[116px] bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shrink-0">
+                <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
+                    <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                        <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-orange-400 to-orange-700" />
+                        <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-800 text-white shadow-lg shadow-orange-200/70 transition-transform duration-200 group-hover:scale-105">
                             <FiUserPlus size={22} />
                         </div>
-                        <div>
-                            <p className="text-xs text-gray-400 font-medium">Total Customers</p>
-                            <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{totalUsers.toLocaleString()}</h3>
-                            <p className="text-[10px] text-gray-400">All registered customers</p>
+                        <div className="relative z-10">
+                            <p className="mb-1 text-xs font-bold tracking-wide text-orange-800">Total accounts</p>
+                            <h3 className="mb-1 text-3xl font-black leading-none text-slate-900">{totalUsers.toLocaleString()}</h3>
+                            <p className="text-[10px] font-medium text-stone-500">All registered users</p>
                         </div>
+                        <FiUserPlus className="pointer-events-none absolute -right-1 bottom-1 text-orange-300/20" size={60} />
                     </div>
-                    <div className="min-h-[116px] bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-lg shrink-0">
+                    <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-emerald-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                        <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-emerald-400 to-emerald-600" />
+                        <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200/70 transition-transform duration-200 group-hover:scale-105">
                             <FiUserPlus size={22} />
                         </div>
-                        <div>
-                            <p className="text-xs text-gray-400 font-medium">Active Customers</p>
-                            <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{activeUsers.toLocaleString()}</h3>
-                            <p className="text-[10px] text-gray-400">Active accounts</p>
+                        <div className="relative z-10">
+                            <p className="mb-1 text-xs font-bold tracking-wide text-emerald-800">Active</p>
+                            <h3 className="mb-1 text-3xl font-black leading-none text-slate-900">{activeUsers.toLocaleString()}</h3>
+                            <p className="text-[10px] font-medium text-stone-500">Accounts in good standing</p>
                         </div>
+                        <FiUserPlus className="pointer-events-none absolute -right-1 bottom-1 text-emerald-300/20" size={60} />
                     </div>
-                    <div className="min-h-[116px] bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white shadow-lg shrink-0">
+                    <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-amber-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                        <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-amber-400 to-amber-600" />
+                        <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg shadow-amber-200/70 transition-transform duration-200 group-hover:scale-105">
                             <FiUserX size={22} />
                         </div>
-                        <div>
-                            <p className="text-xs text-gray-400 font-medium">Inactive Customers</p>
-                            <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{inactiveUsers.toLocaleString()}</h3>
-                            <p className="text-[10px] text-gray-400">Inactive accounts</p>
+                        <div className="relative z-10">
+                            <p className="mb-1 text-xs font-bold tracking-wide text-amber-800">Inactive</p>
+                            <h3 className="mb-1 text-3xl font-black leading-none text-slate-900">{inactiveUsers.toLocaleString()}</h3>
+                            <p className="text-[10px] font-medium text-stone-500">Accounts needing review</p>
                         </div>
+                        <FiUserX className="pointer-events-none absolute -right-1 bottom-1 text-amber-300/20" size={60} />
                     </div>
-                    <div className="min-h-[116px] bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white shadow-lg shrink-0">
+                    <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                        <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-orange-400 to-orange-700" />
+                        <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-800 text-white shadow-lg shadow-orange-200/70 transition-transform duration-200 group-hover:scale-105">
                             <FiUserPlus size={22} />
                         </div>
-                        <div>
-                            <p className="text-xs text-gray-400 font-medium">Admin Users</p>
-                            <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{adminUsers.toLocaleString()}</h3>
-                            <p className="text-[10px] text-gray-400">{adminPct}% of total</p>
+                        <div className="relative z-10">
+                            <p className="mb-1 text-xs font-bold tracking-wide text-orange-800">Administrators</p>
+                            <h3 className="mb-1 text-3xl font-black leading-none text-slate-900">{adminUsers.toLocaleString()}</h3>
+                            <p className="text-[10px] font-medium text-stone-500">{adminPct}% of all accounts</p>
                         </div>
-                    </div>
-                    <div className="min-h-[116px] bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white shadow-lg shrink-0">
-                            <FiUserPlus size={22} />
-                        </div>
-                        <div>
-                            <p className="text-xs text-gray-400 font-medium">Regular Users</p>
-                            <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{regularUsers.toLocaleString()}</h3>
-                            <p className="text-[10px] text-gray-400">{userPct}% of total</p>
-                        </div>
+                        <FiUserPlus className="pointer-events-none absolute -right-1 bottom-1 text-orange-300/20" size={60} />
                     </div>
                 </div>
 
                 {/* Filter Bar */}
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-4 flex-1">
-                        <div className="relative w-full md:w-64">
+                <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+                        <div className="relative w-full sm:w-72">
                             <input
                                 type="text"
                                 placeholder="Search by name, email, phone..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-medium focus:outline-none focus:border-[#4318FF]"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100"
                             />
-                            <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         </div>
-
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-end gap-4 w-full md:w-auto">
+                        <div className="flex items-center rounded-xl bg-slate-100 p-1">
+                            {[
+                                { label: "All", count: totalUsers },
+                                { label: "New today", count: newUsersCount },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.label}
+                                    type="button"
+                                    onClick={() => setSelectedTab(tab.label === "New today" ? "New" : "All")}
+                                    className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${selectedTab === (tab.label === "New today" ? "New" : "All") ? "bg-white text-orange-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
+                                >
+                                    {tab.label} <span className="ml-1 text-[10px] opacity-70">{tab.count}</span>
+                                </button>
+                            ))}
+                        </div>
                         <div className="relative">
                             <select
                                 value={selectedRole}
                                 onChange={(e) => setSelectedRole(e.target.value)}
-                                className="w-36 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-medium focus:outline-none focus:border-[#4318FF] appearance-none"
+                                className="w-40 appearance-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-9 text-sm font-medium text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                             >
-                                <option value="all">All Roles</option>
+                                <option value="all">All roles</option>
+                                <option value="customer">Customer</option>
+                                <option value="user">User</option>
                                 <option value="admin">Admin</option>
                                 <option value="manager">Manager</option>
-                                <option value="user">User</option>
+                                <option value="dealer">Dealer</option>
                             </select>
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">▼</span>
+                            <FiFilter className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         </div>
-
-                        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-1">
+                    </div>
+                    <div className="flex flex-wrap items-center justify-end gap-3">
+                        <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
                             <button
                                 type="button"
                                 onClick={() => setViewMode("table")}
-                                className={`p-2 rounded-md transition-colors ${viewMode === "table" ? "bg-white text-[#4318FF] shadow-sm" : "text-gray-500 hover:text-[#4318FF]"}`}
+                                className={`rounded-lg p-2 transition-colors ${viewMode === "table" ? "bg-white text-orange-700 shadow-sm" : "text-slate-500 hover:text-orange-700"}`}
                                 aria-label="Table mode"
                             >
                                 <FiList size={16} />
@@ -332,31 +328,30 @@ const Users = ({ initialTab = "All" }) => {
                             <button
                                 type="button"
                                 onClick={() => setViewMode("card")}
-                                className={`p-2 rounded-md transition-colors ${viewMode === "card" ? "bg-white text-[#4318FF] shadow-sm" : "text-gray-500 hover:text-[#4318FF]"}`}
+                                className={`rounded-lg p-2 transition-colors ${viewMode === "card" ? "bg-white text-orange-700 shadow-sm" : "text-slate-500 hover:text-orange-700"}`}
                                 aria-label="Card mode"
                             >
                                 <FiGrid size={16} />
                             </button>
                         </div>
-
                         <button
                             onClick={() => { setIsEditing(false); setFormData({ username: "", name: "", email: "", phone: "", role: "user", password: "" }); setIsModalOpen(true); }}
-                            className="flex items-center gap-2 bg-[#4b0b78] hover:bg-[#260642] text-white px-5 py-3 rounded-md font-bold text-sm transition-all shadow-lg shadow-purple-500/25 active:scale-95"
+                            className="flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-[0.98]"
                         >
-                            <span className="text-lg leading-none ">+</span> Add New Customer
+                            <FiUserPlus size={16} /> Add customer
                         </button>
                     </div>
                 </div>
 
                 {/* Table / Card View */}
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
                     {viewMode === "table" ? (
                         <>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse whitespace-nowrap">
                                     <thead>
-                                        <tr className="bg-gradient-to-r from-[#260642] to-[#4b0b78] text-[11px] font-black text-[#facc15] uppercase tracking-wider">
-                                            <th className="px-6 py-4 w-12"><input type="checkbox" className="rounded border-white/70 text-[#facc15] focus:ring-[#facc15]" aria-label="Select all customers" /></th>
+                                        <tr className="bg-gradient-to-r from-[#3B1A0B] to-[#6B3212] text-[11px] font-bold uppercase tracking-wider text-amber-200">
+                                            <th className="w-12 px-5 py-4"><input type="checkbox" className="rounded border-white/70 text-orange-500 focus:ring-orange-400" aria-label="Select all customers" /></th>
                                             <th className="px-6 py-4">Customer ID</th>
                                             <th className="px-6 py-4">Customer</th>
                                             <th className="px-6 py-4">Email</th>
@@ -369,179 +364,234 @@ const Users = ({ initialTab = "All" }) => {
                                     <tbody>
                                         {loading ? (
                                             <tr>
-                                                <td colSpan="8" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">
+                                                <td colSpan="8" className="px-6 py-12 text-center text-sm font-semibold text-slate-400">
                                                     Loading customers...
+                                                </td>
+                                            </tr>
+                                        ) : loadError ? (
+                                            <tr>
+                                                <td colSpan="8" className="px-6 py-12 text-center">
+                                                    <p className="text-sm font-semibold text-rose-600">{loadError}</p>
+                                                    <button type="button" onClick={fetchUsers} className="mt-3 rounded-lg bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 hover:bg-orange-100">Try again</button>
                                                 </td>
                                             </tr>
                                         ) : currentItems.length === 0 ? (
                                             <tr>
-                                                <td colSpan="8" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">
+                                                <td colSpan="8" className="px-6 py-12 text-center text-sm font-semibold text-slate-400">
                                                     No customers found.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            currentItems.map((user, idx) => {
-                                                const mockPhone = user.phone || "+91 98765 4321" + (idx % 10);
-
-                                                return (
-                                                    <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
+                                            currentItems.map((user, idx) => (
+                                                    <tr key={user.id} className="border-b border-slate-100 transition-colors hover:bg-orange-50/40">
                                                         <td className="px-6 py-4">
-                                                            <input type="checkbox" className="rounded border-gray-300 text-[#4318FF] focus:ring-[#4318FF]" />
+                                                            <input type="checkbox" className="rounded border-slate-300 text-orange-600 focus:ring-orange-400" />
                                                         </td>
-                                                        <td className="px-6 py-4 text-[13px] font-black text-[#4318FF]">
+                                                        <td className="px-6 py-4 text-[13px] font-bold text-orange-700">
                                                             CUS{1000 + (parseInt(user.id) || idx + 1)}
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-3">
-                                                                <img src={user.avatar} alt="avatar" className="w-8 h-8 rounded-full shadow-sm shrink-0" />
+                                                                <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-xs font-bold text-orange-700">
+                                                                    {(user.name || "?").trim().charAt(0).toUpperCase()}
+                                                                    {user.avatar && <img src={user.avatar} alt="" className="absolute inset-0 h-full w-full object-cover" onError={(event) => event.currentTarget.remove()} />}
+                                                                </div>
                                                                 <div>
-                                                                    <div className="text-[13px] font-bold text-[#2B3674]">{user.name}</div>
-                                                                    <div className="text-[11px] text-gray-400 font-medium mt-0.5">{mockPhone}</div>
+                                                                    <div className="text-[13px] font-bold text-slate-800">{user.name}</div>
+                                                                    <div className="mt-0.5 text-[11px] font-medium text-slate-400">{user.phone || "No phone provided"}</div>
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-4 text-[13px] font-semibold text-[#2B3674]">{user.email}</td>
+                                                        <td className="px-6 py-4 text-[13px] font-medium text-slate-600">{user.email}</td>
                                                         <td className="px-6 py-4">
-                                                            <span className={`px-3 py-1 rounded text-[11px] font-bold ${
+                                                            <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
                                                                 user.role === 'admin' ? 'bg-slate-100 text-slate-700' :
                                                                 user.role === 'manager' ? 'bg-indigo-50 text-indigo-600' :
-                                                                'bg-violet-50 text-violet-600'
+                                                                user.role === 'dealer' ? 'bg-amber-50 text-amber-700' :
+                                                                'bg-orange-50 text-orange-700'
                                                             }`}>
                                                                 {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 text-center">
-                                                            <span className={`px-3 py-1 rounded text-[11px] font-bold ${user.status === 'Active' ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#ffedd5] text-[#ea580c]'}`}>
+                                                            <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${user.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                                                                 {user.status || 'Active'}
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4">
-                                                            <div className="text-[12px] font-bold text-[#2B3674]">{user.joined}</div>
-                                                            <div className="text-[11px] text-gray-500 font-medium">10:30 AM</div>
+                                                            <div className="text-[12px] font-semibold text-slate-700">{user.joined}</div>
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center justify-center gap-2">
-                                                                <button className="p-1.5 border border-gray-200 rounded hover:bg-gray-100 text-[#4318FF] transition-colors shadow-sm">
-                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setViewingUser(user)}
+                                                                    aria-label={`View ${user.name}`}
+                                                                    title="View customer"
+                                                                    className="rounded-lg border border-slate-200 p-1.5 text-orange-700 shadow-sm transition-colors hover:bg-orange-50"
+                                                                >
+                                                                    <FiEye size={14} />
                                                                 </button>
                                                                 <button
+                                                                    type="button"
                                                                     onClick={() => openEditModal(user)}
-                                                                    className="p-1.5 border border-gray-200 rounded hover:bg-gray-100 text-[#4318FF] transition-colors shadow-sm"
+                                                                    aria-label={`Edit ${user.name}`}
+                                                                    title="Edit customer"
+                                                                    className="rounded-lg border border-slate-200 p-1.5 text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-800"
                                                                 >
-                                                                    <FiMoreVertical size={14} />
+                                                                    <FiEdit2 size={14} />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteUser(user.id)}
+                                                                    aria-label={`Delete ${user.name}`}
+                                                                    title="Delete customer"
+                                                                    className="rounded-lg border border-slate-200 p-1.5 text-rose-600 shadow-sm transition-colors hover:bg-rose-50"
+                                                                >
+                                                                    <FiTrash2 size={14} />
                                                                 </button>
                                                             </div>
                                                         </td>
                                                     </tr>
-                                                );
-                                            })
+                                                ))
                                         )}
                                     </tbody>
                                 </table>
                             </div>
                         </>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-5 bg-gray-50/40">
+                        <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {loading ? (
-                                <div className="col-span-full px-6 py-10 text-center text-gray-400 text-sm font-semibold">
+                                <div className="col-span-full px-6 py-12 text-center text-sm font-semibold text-slate-400">
                                     Loading customers...
                                 </div>
+                            ) : loadError ? (
+                                <div className="col-span-full px-6 py-12 text-center">
+                                    <p className="text-sm font-semibold text-rose-600">{loadError}</p>
+                                    <button type="button" onClick={fetchUsers} className="mt-3 rounded-lg bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 hover:bg-orange-100">Try again</button>
+                                </div>
                             ) : currentItems.length === 0 ? (
-                                <div className="col-span-full px-6 py-10 text-center text-gray-400 text-sm font-semibold">
+                                <div className="col-span-full px-6 py-12 text-center text-sm font-semibold text-slate-400">
                                     No customers found.
                                 </div>
                             ) : (
-                                currentItems.map((user, idx) => {
-                                    const mockPhone = user.phone || "+91 98765 4321" + (idx % 10);
-
-                                    return (
-                                        <article key={user.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-lg transition-all">
-                                            <div className="flex items-start justify-between gap-3 pb-4 border-b border-gray-100">
-                                                <div className="flex items-center gap-3">
-                                                    <img src={user.avatar} alt="avatar" className="w-12 h-12 rounded-full shadow-sm" />
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.16em]">Customer</p>
-                                                        <h4 className="text-[15px] font-black text-[#2B3674] mt-1">{user.name}</h4>
-                                                        <p className="text-[11px] text-gray-500 mt-0.5">CUS{1000 + (parseInt(user.id) || idx + 1)}</p>
-                                                    </div>
+                                currentItems.map((user, idx) => (
+                                    <article key={user.id} className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md">
+                                        <div className="mb-4 flex items-start justify-between gap-3">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-100 bg-orange-50 text-sm font-bold text-orange-700">
+                                                    {(user.name || "?").trim().charAt(0).toUpperCase()}
+                                                    {user.avatar && <img src={user.avatar} alt="" className="absolute inset-0 h-full w-full object-cover" onError={(event) => event.currentTarget.remove()} />}
                                                 </div>
-                                                <span className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap ${user.status === 'Active' ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-[#ffedd5] text-[#ea580c]'}`}>
-                                                    {user.status || 'Active'}
-                                                </span>
+                                                <h3 className="min-w-0 truncate text-sm font-bold text-slate-800">{user.name}</h3>
+                                            </div>
+                                            <span className="shrink-0 rounded bg-gray-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                                CUS{1000 + (parseInt(user.id) || idx + 1)}
+                                            </span>
+                                        </div>
+
+                                        <div className="mb-4 flex-1">
+                                            <div className="mb-4 flex min-w-0 items-center gap-2 text-xs text-gray-500">
+                                                <FiMail size={13} className="shrink-0 text-orange-600" />
+                                                <span className="truncate">{user.email}</span>
+                                            </div>
+                                            <div className="mb-4 flex items-center gap-2 text-xs text-gray-500">
+                                                <FiCalendar size={13} className="shrink-0 text-orange-600" />
+                                                Joined {user.joined}
                                             </div>
 
-                                            <div className="mt-5 space-y-3 text-[12px] text-gray-600">
-                                                <div className="flex items-center gap-3 min-w-0"><FiMail size={14} className="text-violet-500 shrink-0" /> <span className="truncate">{user.email}</span></div>
-                                                <div className="flex items-center gap-3"><FiPhone size={14} className="text-violet-500 shrink-0" /> {mockPhone}</div>
-                                                <div className="flex items-center gap-3"><FiCalendar size={14} className="text-violet-500 shrink-0" /> Joined {user.joined}</div>
-                                            </div>
-
-                                            <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between gap-2">
-                                                <span className={`px-3 py-1 rounded text-[11px] font-bold ${
-                                                    user.role === 'admin' ? 'bg-slate-100 text-slate-700' :
-                                                    user.role === 'manager' ? 'bg-indigo-50 text-indigo-600' :
-                                                    'bg-violet-50 text-violet-600'
-                                                }`}>
-                                                    {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
-                                                </span>
-                                                <div className="flex items-center gap-2">
-                                                    <button className="p-1.5 border border-gray-200 rounded hover:bg-gray-100 text-[#4318FF] transition-colors shadow-sm">
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => openEditModal(user)}
-                                                        className="p-1.5 border border-gray-200 rounded hover:bg-gray-100 text-[#4318FF] transition-colors shadow-sm"
-                                                    >
-                                                        <FiMoreVertical size={14} />
-                                                    </button>
+                                            <div className="flex items-center gap-4">
+                                                <div>
+                                                    <p className="text-[10px] font-medium text-gray-400">Role</p>
+                                                    <p className="mt-0.5 text-xs font-bold capitalize text-gray-800">{user.role || "User"}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-medium text-gray-400">Status</p>
+                                                    <span className={`mt-0.5 inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${user.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>
+                                                        {user.status || "Active"}
+                                                    </span>
                                                 </div>
                                             </div>
-                                        </article>
-                                    );
-                                })
+                                        </div>
+
+                                        <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-gray-50 pt-4">
+                                            <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-xs text-gray-500">
+                                                <FiPhone size={12} className="shrink-0" />
+                                                {user.phone || "No phone provided"}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViewingUser(user)}
+                                                aria-label={`View ${user.name}`}
+                                                title="View customer"
+                                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-orange-700 transition-colors hover:bg-orange-50"
+                                            >
+                                                <FiEye size={14} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => openEditModal(user)}
+                                                aria-label={`Edit ${user.name}`}
+                                                title="Edit customer"
+                                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-slate-600 transition-colors hover:bg-slate-50"
+                                            >
+                                                <FiEdit2 size={14} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteUser(user.id)}
+                                                aria-label={`Delete ${user.name}`}
+                                                title="Delete customer"
+                                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-rose-600 transition-colors hover:bg-rose-50"
+                                            >
+                                                <FiTrash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </article>
+                                    ))
                             )}
                         </div>
                     )}
 
                     {/* Pagination */}
-                    <div className="px-6 py-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
-                        <p className="text-[13px] font-bold text-[#2B3674]">
-                            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredUsers.length)} of {filteredUsers.length} customers
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 px-5 py-4">
+                        <p className="text-[13px] font-medium text-slate-500">
+                            Showing {filteredUsers.length ? indexOfFirstItem + 1 : 0} to {Math.min(indexOfLastItem, filteredUsers.length)} of {filteredUsers.length} accounts
                         </p>
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] font-bold text-[#2B3674] shadow-sm">
-                                10 per page <span className="text-gray-400 text-[10px] ml-1">▼</span>
+                            <div className="rounded-lg border border-slate-200 px-3 py-1.5 text-[13px] font-medium text-slate-500">
+                                10 per page
                             </div>
                             <div className="flex items-center gap-1">
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                     disabled={currentPage === 1}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 shadow-sm font-bold text-[13px]"
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 shadow-sm transition hover:bg-orange-50 disabled:opacity-40"
                                 >
                                     &lt;
                                 </button>
-                                {[...Array(Math.min(totalPages || 1, 3))].map((_, i) => (
+                                {[...Array(Math.min(pageCount, 3))].map((_, i) => (
                                     <button
                                         key={i}
                                         onClick={() => setCurrentPage(i + 1)}
-                                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-[13px] font-bold shadow-sm ${currentPage === i + 1 ? 'bg-[#4318FF] text-white border border-[#4318FF]' : 'border border-gray-200 text-[#2B3674] hover:bg-gray-50'}`}
+                                        className={`flex h-8 w-8 items-center justify-center rounded-lg text-[13px] font-semibold shadow-sm ${currentPage === i + 1 ? 'border border-orange-600 bg-orange-600 text-white' : 'border border-slate-200 text-slate-600 hover:bg-orange-50'}`}
                                     >
                                         {i + 1}
                                     </button>
                                 ))}
-                                {totalPages > 3 && <span className="w-8 h-8 flex items-center justify-center text-gray-400">...</span>}
+                                {pageCount > 3 && <span className="flex h-8 w-8 items-center justify-center text-slate-400">...</span>}
                                 {totalPages > 3 && (
                                     <button
                                         onClick={() => setCurrentPage(totalPages)}
-                                        className="w-8 h-8 flex items-center justify-center rounded-lg text-[13px] font-bold border border-gray-200 text-[#2B3674] hover:bg-gray-50 shadow-sm"
+                                        className={`flex h-8 w-8 items-center justify-center rounded-lg border text-[13px] font-semibold shadow-sm ${currentPage === totalPages ? "border-orange-600 bg-orange-600 text-white" : "border-slate-200 text-slate-600 hover:bg-orange-50"}`}
                                     >
-                                        125
+                                        {totalPages}
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 shadow-sm font-bold text-[13px]"
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
+                                    disabled={currentPage === pageCount}
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 shadow-sm transition hover:bg-orange-50 disabled:opacity-40"
                                 >
                                     &gt;
                                 </button>
@@ -553,95 +603,158 @@ const Users = ({ initialTab = "All" }) => {
                 {/* Add/Edit User Modal */}
                 {isModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-                            <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
+                        <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+                            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 p-6">
                                 <div>
-                                    <h2 className="text-xl font-bold text-slate-800">{isEditing ? 'Modify Domain Privileges' : 'Register New Customer'}</h2>
-                                    <p className="text-xs text-gray-500 mt-1">{isEditing ? `Updating permissions for ID: ${editUserId}` : 'Add a new customer to your system'}</p>
+                                    <h2 className="text-xl font-bold text-slate-900">{isEditing ? 'Update customer' : 'Add customer'}</h2>
+                                    <p className="mt-1 text-xs text-slate-500">{isEditing ? `Update account ${editUserId}` : 'Create a customer account'}</p>
                                 </div>
                                 <button
                                     onClick={() => setIsModalOpen(false)}
-                                    className="p-2 text-gray-400 hover:bg-gray-50 rounded-full transition-colors"
+                                    aria-label="Close dialog"
+                                    className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                                 >
                                     <FiX className="text-xl" />
                                 </button>
                             </div>
 
-                            <div className="p-6 overflow-y-auto space-y-4">
+                            <div className="space-y-4 overflow-y-auto p-6">
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2">Username *</label>
+                                    <label className="mb-2 block text-xs font-semibold text-slate-600">Username *</label>
                                     <input
                                         type="text"
                                         name="username"
                                         value={formData.username}
                                         onChange={handleInputChange}
                                         placeholder="e.g. johndoe"
-                                        className="w-full bg-white border border-gray-200 text-slate-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-[#4318FF] focus:border-[#4318FF] transition-all text-sm font-medium"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2">Full Name</label>
+                                    <label className="mb-2 block text-xs font-semibold text-slate-600">Full name</label>
                                     <input
                                         type="text"
                                         name="name"
                                         value={formData.name}
                                         onChange={handleInputChange}
                                         placeholder="e.g. Priya Sharma"
-                                        className="w-full bg-white border border-gray-200 text-slate-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-[#4318FF] focus:border-[#4318FF] transition-all text-sm font-medium"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2">Email Address *</label>
+                                    <label className="mb-2 block text-xs font-semibold text-slate-600">Email address *</label>
                                     <input
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleInputChange}
                                         placeholder="priya.sharma@gmail.com"
-                                        className="w-full bg-white border border-gray-200 text-slate-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-[#4318FF] focus:border-[#4318FF] transition-all text-sm font-medium"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2">Phone Number</label>
+                                    <label className="mb-2 block text-xs font-semibold text-slate-600">Phone number</label>
                                     <input
                                         type="text"
                                         name="phone"
                                         value={formData.phone}
                                         onChange={handleInputChange}
                                         placeholder="+91 98765 43210"
-                                        className="w-full bg-white border border-gray-200 text-slate-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-[#4318FF] focus:border-[#4318FF] transition-all text-sm font-medium"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                                     />
                                 </div>
                                 {!isEditing && (
                                     <div>
-                                        <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2">Password *</label>
+                                        <label className="mb-2 block text-xs font-semibold text-slate-600">Password *</label>
                                         <input
                                             type="password"
                                             name="password"
                                             value={formData.password}
                                             onChange={handleInputChange}
                                             placeholder="••••••••"
-                                            className="w-full bg-white border border-gray-200 text-slate-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-[#4318FF] focus:border-[#4318FF] transition-all text-sm font-medium"
+                                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                                         />
                                     </div>
                                 )}
+
                             </div>
 
-                            <div className="p-6 border-t border-gray-100 shrink-0 flex gap-4">
+                            <div className="flex shrink-0 gap-3 border-t border-slate-100 p-6">
                                 <button
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg font-bold text-gray-500 hover:bg-gray-50 transition-colors text-sm"
+                                    className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveUser}
                                     disabled={submitLoading || !formData.username || !formData.email}
-                                    className="flex-1 bg-[#4318FF] hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 text-sm"
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                                 >
                                     {submitLoading ? (
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : isEditing ? 'Update Customer' : 'Register Customer'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {viewingUser && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+                        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                            <div className="flex items-start justify-between border-b border-slate-100 p-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-orange-50 text-sm font-bold text-orange-700">
+                                        {(viewingUser.name || "?").trim().charAt(0).toUpperCase()}
+                                        {viewingUser.avatar && <img src={viewingUser.avatar} alt="" className="absolute inset-0 h-full w-full object-cover" onError={(event) => event.currentTarget.remove()} />}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-bold text-slate-900">{viewingUser.name}</h2>
+                                        <p className="text-xs text-slate-500">Customer account details</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewingUser(null)}
+                                    aria-label="Close customer details"
+                                    className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                                >
+                                    <FiX className="text-xl" />
+                                </button>
+                            </div>
+                            <dl className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
+                                <div className="min-w-0">
+                                    <dt className="text-xs font-medium text-slate-500">Email</dt>
+                                    <dd className="mt-1 break-words text-sm font-semibold text-slate-800">{viewingUser.email}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs font-medium text-slate-500">Phone</dt>
+                                    <dd className="mt-1 text-sm font-semibold text-slate-800">{viewingUser.phone || "No phone provided"}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs font-medium text-slate-500">Role</dt>
+                                    <dd className="mt-1 text-sm font-semibold capitalize text-slate-800">{viewingUser.role || "User"}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs font-medium text-slate-500">Status</dt>
+                                    <dd className="mt-1 text-sm font-semibold text-slate-800">{viewingUser.status || "Active"}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs font-medium text-slate-500">Joined</dt>
+                                    <dd className="mt-1 text-sm font-semibold text-slate-800">{viewingUser.joined}</dd>
+                                </div>
+                            </dl>
+                            <div className="flex justify-end gap-2 border-t border-slate-100 p-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        openEditModal(viewingUser);
+                                        setViewingUser(null);
+                                    }}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+                                >
+                                    <FiEdit2 size={14} /> Edit customer
                                 </button>
                             </div>
                         </div>
