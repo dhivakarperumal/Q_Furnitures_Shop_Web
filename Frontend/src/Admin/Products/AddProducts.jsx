@@ -40,12 +40,21 @@ const initialForm = {
 
 const initialVariant = () => ({
     color: "", size: "", material: "", sku: "", mrp: "", offer_type: "Percentage",
-    offer: "", selling_price: "", stock: "0", image: "",
+    offer: "", selling_price: "", stock: "0", image: "", images: [],
 });
 
 const initialCustomization = () => ({
     name: "", type: "Dropdown Selection", options: "", additionalPrice: "0", required: false,
 });
+
+const calculateVariantSellingPrice = (variant) => {
+    const mrp = Number(variant.mrp) || 0;
+    const offer = Number(variant.offer) || 0;
+    const price = variant.offer_type === "Percentage"
+        ? mrp * (1 - offer / 100)
+        : mrp - offer;
+    return Math.max(0, price);
+};
 
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100";
 const selectClass = `${inputClass} cursor-pointer`;
@@ -110,7 +119,7 @@ function Toggle({ label, description, checked, onChange }) {
 
 function SectionCard({ id, title, description, icon: Icon, children, action }) {
     return (
-        <section id={id} className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
+        <section id={id} className="mb-5 inline-block w-full break-inside-avoid scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
                 <div className="flex items-center gap-3">
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><Icon size={19} /></span>
@@ -222,6 +231,7 @@ const AddProducts = () => {
                         color: variant.color || variant.colorName || "",
                         stock: String(variant.stock ?? Object.values(variant.sizesStock || {}).reduce((sum, qty) => sum + (Number(qty) || 0), 0)),
                         image: variant.image || variant.images?.[0] || "",
+                        images: Array.isArray(variant.images) ? variant.images : variant.image ? [variant.image] : [],
                     })));
                     setImages(Array.isArray(product.images) ? product.images : []);
                     setImageRoles(Array.isArray(product.image_roles) ? product.image_roles : (product.images || []).map(() => "Product view"));
@@ -299,6 +309,59 @@ const AddProducts = () => {
     const addVariant = () => setVariants((previous) => [...previous, initialVariant()]);
     const updateVariant = (index, key, value) => setVariants((previous) => previous.map((item, i) => i === index ? { ...item, [key]: value } : item));
     const removeVariant = (index) => setVariants((previous) => previous.filter((_, i) => i !== index));
+
+    const handleVariantImageUpload = async (index, fileList) => {
+        const files = Array.from(fileList || []);
+        const validFiles = files.filter((file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type));
+        if (validFiles.length !== files.length) toast.error("Only JPG, PNG, and WEBP images are supported.");
+        const currentImages = variants[index]?.images || [];
+        const batch = validFiles.slice(0, Math.max(0, 10 - currentImages.length));
+        if (batch.length < validFiles.length) toast.error("A variant can have up to 10 images.");
+        if (!batch.length) return;
+
+        setUploading(true);
+        setUploadProgress(0);
+        try {
+            let completed = 0;
+            for (let offset = 0; offset < batch.length; offset += 5) {
+                const chunk = batch.slice(offset, offset + 5);
+                const payload = new FormData();
+                chunk.forEach((file) => payload.append("images", file));
+                const response = await api.post("/products/upload", payload, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                    onUploadProgress: (event) => {
+                        if (event.total) {
+                            setUploadProgress(Math.round(((completed + (event.loaded / event.total) * chunk.length) / batch.length) * 100));
+                        }
+                    },
+                });
+                const uploaded = response.data?.images || [];
+                if (!uploaded.length) throw new Error("The upload completed without returning image URLs.");
+                setVariants((previous) => previous.map((variant, variantIndex) => (
+                    variantIndex === index
+                        ? { ...variant, images: [...(variant.images || []), ...uploaded], image: variant.image || uploaded[0] }
+                        : variant
+                )));
+                completed += chunk.length;
+                setUploadProgress(Math.round((completed / batch.length) * 100));
+            }
+            toast.success(`${batch.length} variant image${batch.length === 1 ? "" : "s"} uploaded.`);
+        } catch (error) {
+            console.error("Variant image upload failed:", error);
+            toast.error(error.response?.data?.message || error.message || "Variant image upload failed.");
+        } finally {
+            setUploading(false);
+            setUploadProgress(0);
+        }
+    };
+
+    const removeVariantImage = (variantIndex, imageIndex) => {
+        setVariants((previous) => previous.map((variant, index) => {
+            if (index !== variantIndex) return variant;
+            const images = (variant.images || []).filter((_, currentIndex) => currentIndex !== imageIndex);
+            return { ...variant, images, image: images[0] || "" };
+        }));
+    };
 
     const addFiles = async (fileList) => {
         const files = Array.from(fileList || []);
@@ -396,7 +459,10 @@ const AddProducts = () => {
             total_stock: String(form.total_stock || "0"),
             rating: Number(form.rating).toFixed(1),
             material: form.material_type,
-            variants,
+            variants: variants.map((variant) => ({
+                ...variant,
+                selling_price: calculateVariantSellingPrice(variant).toFixed(2),
+            })),
             images,
             image_roles: imageRoles,
             main_image_index: mainImageIndex,
@@ -478,8 +544,8 @@ const AddProducts = () => {
                 ].map(([href, label]) => <a key={href} href={href} className="whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-orange-50 hover:text-orange-700">{label}</a>)}
             </nav>
 
-            <form onSubmit={saveProduct} className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-                <div className="space-y-5">
+            <form onSubmit={saveProduct} className="space-y-5">
+                <div className="columns-1 lg:columns-2 lg:gap-x-5">
                     <SectionCard id="basic" title="Basic information" description="Give your product a clear identity." icon={Layers3}>
                         <div className="grid gap-4 md:grid-cols-2">
                             <Field label="Product name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. Aria solid wood king bed" required />
@@ -505,14 +571,14 @@ const AddProducts = () => {
                             <textarea className={`${inputClass} min-h-28 resize-y`} name="description" value={form.description} onChange={handleChange} placeholder="Describe the materials, craftsmanship, comfort, and care details…" rows={4} />
                         </label>
                         <div className="grid gap-3 md:grid-cols-3">
-                            <Toggle label="Featured product" description="Highlight in featured collections." checked={form.featured} onChange={(checked) => setForm((previous) => ({ ...previous, featured: checked }))} />
-                            <Toggle label="Trending product" description="Highlight in trending products." checked={form.trending_product} onChange={(checked) => setForm((previous) => ({ ...previous, trending_product: checked }))} />
-                            <Toggle label="Offer product" description="Mark as a promotional offer." checked={form.offer_product} onChange={(checked) => setForm((previous) => ({ ...previous, offer_product: checked }))} />
+                            <Toggle label="Featured" checked={form.featured} onChange={(checked) => setForm((previous) => ({ ...previous, featured: checked }))} />
+                            <Toggle label="Trending" checked={form.trending_product} onChange={(checked) => setForm((previous) => ({ ...previous, trending_product: checked }))} />
+                            <Toggle label="Offer" checked={form.offer_product} onChange={(checked) => setForm((previous) => ({ ...previous, offer_product: checked }))} />
                         </div>
                     </SectionCard>
 
                     <SectionCard id="pricing" title="Pricing" description="Set your list price and offer details." icon={CircleDollarSign}>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <Field label="MRP" name="mrp" value={form.mrp} onChange={handleChange} type="number" min="0" step="0.01" placeholder="20000" prefix="₹" required />
                             <SelectField label="Offer type" name="offer_type" value={form.offer_type} onChange={handleChange} options={["Percentage", "Fixed Amount"]} />
                             <Field label={form.offer_type === "Percentage" ? "Offer (%)" : "Offer amount (₹)"} name="offer" value={form.offer} onChange={handleChange} type="number" min="0" max={form.offer_type === "Percentage" ? "100" : undefined} step="0.01" placeholder="10" prefix={form.offer_type === "Fixed Amount" ? "₹" : undefined} suffix={form.offer_type === "Percentage" ? "%" : undefined} />
@@ -529,7 +595,7 @@ const AddProducts = () => {
                     </SectionCard>
 
                     <SectionCard id="specifications" title="Furniture specifications" description="Add dimensions, material, and construction details." icon={ClipboardList}>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <SelectField label="Material type" name="material_type" value={form.material_type} onChange={handleChange} options={[{ value: "", label: "Select material" }, "Solid Wood", "Engineered Wood", "Plywood", "Metal", "Plastic", "Glass", "Upholstered"]} />
                             <SelectField label="Wood type" name="wood_type" value={form.wood_type} onChange={handleChange} options={[{ value: "", label: "Select wood" }, "Teak", "Sheesham", "Mango", "Oak", "Acacia", "Pine", "Other"]} />
                             <Field label="Furniture colour" name="colour" value={form.colour} onChange={handleChange} placeholder="e.g. Natural teak" />
@@ -556,17 +622,37 @@ const AddProducts = () => {
                                         <p className="text-sm font-bold text-slate-800">Variant {index + 1}</p>
                                         <button type="button" aria-label={`Remove variant ${index + 1}`} onClick={() => removeVariant(index)} className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700"><Trash2 size={14} /> Remove</button>
                                     </div>
-                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                    <div className="grid gap-3 sm:grid-cols-2">
                                         <Field label="Colour" value={variant.color} onChange={(event) => updateVariant(index, "color", event.target.value)} placeholder="Walnut brown" />
                                         <Field label="Size" value={variant.size} onChange={(event) => updateVariant(index, "size", event.target.value)} placeholder="King / 3-seater" />
                                         <Field label="Material" value={variant.material} onChange={(event) => updateVariant(index, "material", event.target.value)} placeholder="Teak wood" />
-                                        <Field label="Variant SKU" value={variant.sku} onChange={(event) => updateVariant(index, "sku", event.target.value)} placeholder="QF-ARIA-WAL-K" />
                                         <Field label="MRP" value={variant.mrp} onChange={(event) => updateVariant(index, "mrp", event.target.value)} type="number" min="0" step="0.01" />
                                         <SelectField label="Offer type" value={variant.offer_type} onChange={(event) => updateVariant(index, "offer_type", event.target.value)} options={["Percentage", "Fixed Amount"]} />
                                         <Field label="Offer" value={variant.offer} onChange={(event) => updateVariant(index, "offer", event.target.value)} type="number" min="0" />
-                                        <Field label="Selling price" value={variant.selling_price} onChange={(event) => updateVariant(index, "selling_price", event.target.value)} type="number" min="0" step="0.01" />
+                                        <Field label="Selling price" value={calculateVariantSellingPrice(variant).toFixed(2)} readOnly type="number" min="0" step="0.01" prefix="₹" />
                                         <Field label="Stock quantity" value={variant.stock} onChange={(event) => updateVariant(index, "stock", event.target.value)} type="number" min="0" />
-                                        <Field label="Variant image URL" value={variant.image} onChange={(event) => updateVariant(index, "image", event.target.value)} placeholder="Optional uploaded image URL" />
+                                    </div>
+                                    <div className="mt-4 space-y-3">
+                                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">
+                                            <UploadCloud size={14} /> Upload variant images
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                                multiple
+                                                onChange={(event) => {
+                                                    handleVariantImageUpload(index, event.target.files);
+                                                    event.target.value = "";
+                                                }}
+                                            />
+                                        </label>
+                                        {uploading && <span className="ml-3 text-xs text-slate-500">Uploading… {uploadProgress}%</span>}
+                                        {!!variant.images?.length && <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                            {variant.images.map((image, imageIndex) => <div key={`${image}-${imageIndex}`} className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                                                <img src={resolveMediaUrl(image)} alt={`Variant ${index + 1} image ${imageIndex + 1}`} className="h-full w-full object-cover" />
+                                                <button type="button" onClick={() => removeVariantImage(index, imageIndex)} aria-label={`Remove variant image ${imageIndex + 1}`} className="absolute right-1 top-1 rounded-full bg-white/95 p-1 text-slate-600 shadow transition hover:bg-rose-50 hover:text-rose-600"><X size={12} /></button>
+                                            </div>)}
+                                        </div>}
                                     </div>
                                 </div>
                             ))}
@@ -592,7 +678,7 @@ const AddProducts = () => {
                             <span className="mt-1 text-xs text-slate-500">JPG, PNG, WEBP · up to 10 images</span>
                             {uploading && <span className="mt-3 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-orange-100"><span className="block h-full rounded-full bg-orange-500 transition-all" style={{ width: `${uploadProgress}%` }} /></span>}
                         </button>
-                        {images.length > 0 && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {images.length > 0 && <div className="grid gap-3 sm:grid-cols-2">
                             {images.map((image, index) => (
                                 <div key={`${image}-${index}`} className={`overflow-hidden rounded-xl border ${mainImageIndex === index ? "border-orange-400 ring-2 ring-orange-100" : "border-slate-200"}`}>
                                     <div className="group relative aspect-[4/3] bg-slate-100">
@@ -617,7 +703,7 @@ const AddProducts = () => {
                     </SectionCard>
 
                     <SectionCard id="shipping" title="Delivery & shipping" description="Set delivery preferences and package details." icon={Truck}>
-                        <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <Field label="Package length" name="package_length" value={form.package_length} onChange={handleChange} type="number" min="0" suffix="cm" />
                             <Field label="Package width" name="package_width" value={form.package_width} onChange={handleChange} type="number" min="0" suffix="cm" />
                             <Field label="Package height" name="package_height" value={form.package_height} onChange={handleChange} type="number" min="0" suffix="cm" />
@@ -663,20 +749,16 @@ const AddProducts = () => {
 
                 </div>
 
-                <aside className="space-y-4 xl:sticky xl:top-5">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
+                <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
                         <div className="mb-4 flex items-center gap-2"><ShieldCheck size={17} className="text-emerald-600" /><h2 className="text-sm font-bold text-slate-900">Ready to publish?</h2></div>
                         <p className="text-xs leading-5 text-slate-500">Complete the required fields, check pricing, then save this listing. You can update it at any time.</p>
-                        <div className="mt-5 grid gap-2">
-                            <button type="submit" disabled={loading || uploading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60">
+                        <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+                            <button type="button" disabled={loading || uploading} onClick={() => navigate(-1)} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60"><X size={14} /> Cancel</button>
+                            <button type="submit" disabled={loading || uploading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60">
                                 {loading ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}{loading ? "Saving…" : isEdit ? "Update product" : "Save product"}
                             </button>
-                            <button type="button" disabled={loading || uploading} onClick={(event) => saveProduct(event, true)} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60">Save as draft</button>
-                            <button type="button" disabled={loading || uploading} onClick={resetForm} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-60"><RotateCcw size={14} /> Reset form</button>
-                            <button type="button" disabled={loading || uploading} onClick={() => navigate(-1)} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60"><X size={14} /> Cancel</button>
+                            
                         </div>
-                    </div>
-                    <div className="flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs leading-5 text-emerald-800"><Check size={15} className="mt-0.5 shrink-0" /> Variant and customization settings are saved with the product.</div>
                 </aside>
             </form>
         </div>
