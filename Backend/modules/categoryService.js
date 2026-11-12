@@ -2,6 +2,7 @@ const furnitureCategories = require("./furnitureCategories");
 
 const CATEGORY_COLUMNS = "id, cat_id AS catId, name, description, subcategory, images, status, created_at, updated_at";
 const DEFAULT_CATEGORIES_SEED_KEY = "default-furniture-categories-v1";
+const CATEGORY_OWNER_MIGRATION_KEY = "category-owner-assigned-v1";
 
 function parseArray(value, fieldName) {
   if (value == null) {
@@ -89,6 +90,36 @@ function createCategoryService(pool) {
           }
         }
 
+        await connection.commit();
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    },
+
+    async assignExistingToUser(userId) {
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+        try {
+          await connection.execute(
+            "INSERT INTO app_seed_history (seed_key) VALUES (?)",
+            [CATEGORY_OWNER_MIGRATION_KEY],
+          );
+        } catch (error) {
+          if (error.code === "ER_DUP_ENTRY") {
+            await connection.rollback();
+            return;
+          }
+          throw error;
+        }
+
+        await connection.execute(
+          "UPDATE categories SET user_id = ?",
+          [userId],
+        );
         await connection.commit();
       } catch (error) {
         await connection.rollback();

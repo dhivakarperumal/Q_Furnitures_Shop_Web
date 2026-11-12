@@ -13,6 +13,7 @@ const createUserRouter = require("./routers/userRouter");
 const { createUploadRouter } = require("./routers/uploadRouter");
 
 const port = Number(process.env.PORT || 5000);
+const categoryOwnerUserId = "0af825ec-57bc-4be2-b60a-51c1d301071e";
 
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error(`Invalid PORT value: ${process.env.PORT}`);
@@ -54,6 +55,7 @@ async function start() {
   try {
     await initializeDatabase(pool);
     await categoryService.seedDefaults();
+    await categoryService.assignExistingToUser(categoryOwnerUserId);
 
     app.listen(port, () => {
       console.log(`Backend listening on http://localhost:${port} (database connected)`);

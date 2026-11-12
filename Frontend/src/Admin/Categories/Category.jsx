@@ -120,7 +120,7 @@ const Category = () => {
 
             const uploadData = new FormData();
             files.forEach((file) => uploadData.append("images", file));
-            const response = await api.post("/uploads/images", uploadData);
+            const response = await api.post("/uploads/categories", uploadData);
             const imagesArray = response.data?.images;
             if (!Array.isArray(imagesArray) || !imagesArray.length) {
                 throw new Error("The server did not return uploaded image paths.");
@@ -368,7 +368,7 @@ const Category = () => {
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
                                                         {cat.images && cat.images.length > 0 ? (
-                                                            <img src={Array.isArray(cat.images) ? cat.images[0] : cat.images} alt={cat.name} className="w-full h-full object-cover" />
+                                                            <img src={resolveMediaUrl(Array.isArray(cat.images) ? cat.images[0] : cat.images)} alt={cat.name} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center"><FiImage className="text-gray-400" /></div>
                                                         )}
@@ -434,7 +434,7 @@ const Category = () => {
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="w-14 h-14 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
                                         {cat.images && cat.images.length > 0 ? (
-                                            <img src={Array.isArray(cat.images) ? cat.images[0] : cat.images} alt={cat.name} className="w-full h-full object-cover" />
+                                            <img src={resolveMediaUrl(Array.isArray(cat.images) ? cat.images[0] : cat.images)} alt={cat.name} className="w-full h-full object-cover" />
                                         ) : (
                                             <FiImage className="text-gray-400 text-xl" />
                                         )}
