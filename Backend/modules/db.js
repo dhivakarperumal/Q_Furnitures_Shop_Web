@@ -1,3 +1,4 @@
+const { randomUUID } = require("node:crypto");
 const mysql = require("mysql2/promise");
 const { getDatabaseConfig } = require("../config/db");
 
@@ -37,6 +38,57 @@ async function initializeDatabase(pool) {
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS products (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      product_code VARCHAR(128) NULL,
+      name VARCHAR(191) NOT NULL,
+      category VARCHAR(191) NOT NULL,
+      subcategory VARCHAR(191) NULL,
+      mrp DECIMAL(12,2) NOT NULL,
+      offer DECIMAL(12,2) NOT NULL DEFAULT 0,
+      offer_type VARCHAR(32) NOT NULL DEFAULT 'Percentage',
+      offer_price DECIMAL(12,2) NOT NULL,
+      selling_price DECIMAL(12,2) NOT NULL,
+      total_stock INT UNSIGNED NOT NULL DEFAULT 0,
+      rating DECIMAL(2,1) NOT NULL DEFAULT 5.0,
+      status VARCHAR(32) NOT NULL DEFAULT 'Active',
+      product_data JSON NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY products_product_code_unique (product_code),
+      KEY products_category_idx (category),
+      KEY products_status_stock_idx (status, total_stock),
+      KEY products_name_idx (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  const [productsMissingCode] = await pool.execute(
+    `SELECT id, created_at
+     FROM products
+     WHERE product_code IS NULL OR TRIM(product_code) = ''`,
+  );
+  for (const product of productsMissingCode) {
+    const date = new Date(product.created_at);
+    const year = Number.isNaN(date.getTime()) ? new Date().getFullYear() : date.getFullYear();
+    const baseCode = `QF-${year}-${String(product.id).padStart(5, "0")}`;
+    let productCode = baseCode;
+
+    while (true) {
+      const [matches] = await pool.execute(
+        "SELECT id FROM products WHERE product_code = ? AND id <> ? LIMIT 1",
+        [productCode, product.id],
+      );
+      if (!matches.length) break;
+      productCode = `${baseCode}-${randomUUID().slice(0, 8).toUpperCase()}`;
+    }
+
+    await pool.execute(
+      `UPDATE products
+       SET product_code = ?, product_data = JSON_SET(product_data, '$.product_code', ?)
+       WHERE id = ?`,
+      [productCode, productCode, product.id],
+    );
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_seed_history (
       seed_key VARCHAR(100) NOT NULL PRIMARY KEY,

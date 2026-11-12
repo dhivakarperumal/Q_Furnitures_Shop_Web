@@ -170,10 +170,18 @@ const AddProducts = () => {
         let isMounted = true;
         const loadProduct = async () => {
             try {
-                const requests = [api.get("/categories")];
-                if (isEdit) requests.push(api.get(`/products/${id}`));
-                else requests.push(Promise.resolve(null));
-                const [categoryResponse, productResponse] = await Promise.all(requests);
+                const skuRequest = isEdit
+                    ? Promise.resolve(null)
+                    : api.get("/products/latest-code").catch((error) => {
+                        console.error("Initial SKU generation failed:", error);
+                        toast.error(error.response?.data?.message || "Could not generate a product SKU.");
+                        return null;
+                    });
+                const [categoryResponse, productResponse, skuResponse] = await Promise.all([
+                    api.get("/categories"),
+                    isEdit ? api.get(`/products/${id}`) : Promise.resolve(null),
+                    skuRequest,
+                ]);
                 if (!isMounted) return;
                 const loadedCategories = Array.isArray(categoryResponse.data) && categoryResponse.data.length
                     ? categoryResponse.data
@@ -243,7 +251,7 @@ const AddProducts = () => {
                         ...previous,
                         category: firstCategory.name,
                         subcategory: "",
-                        product_code: productResponse?.data?.latestCode || "",
+                        product_code: skuResponse?.data?.latestCode || "",
                     }));
                 }
             } catch (error) {
@@ -261,25 +269,6 @@ const AddProducts = () => {
         const { name, value, type, checked } = event.target;
         setForm((previous) => ({ ...previous, [name]: type === "checkbox" ? checked : value }));
         if (name === "product_code") setSkuError("");
-    };
-
-    const generateSku = async () => {
-        try {
-            const response = await api.get("/products/latest-code");
-            const suggested = response.data?.latestCode;
-            setForm((previous) => ({
-                ...previous,
-                product_code: suggested || `QF-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
-            }));
-            setSkuError("");
-        } catch (error) {
-            console.error("SKU generation failed:", error);
-            setForm((previous) => ({
-                ...previous,
-                product_code: `QF-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
-            }));
-            toast.error("Could not retrieve the next SKU; a unique suggestion was generated locally.");
-        }
     };
 
     const validateSku = async () => {
@@ -553,7 +542,6 @@ const AddProducts = () => {
                                 <span className={labelClass}>Product SKU / code</span>
                                 <div className="flex gap-2">
                                     <input className={`${inputClass} ${skuError ? "border-rose-400 focus:border-rose-400 focus:ring-rose-100" : ""}`} name="product_code" value={form.product_code} onChange={handleChange} onBlur={validateSku} placeholder="QF-2026-0001" />
-                                    <button type="button" onClick={generateSku} className="shrink-0 rounded-xl border border-orange-200 bg-orange-50 px-3 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">Auto-generate</button>
                                 </div>
                                 {skuError && <p className="mt-1 text-xs text-rose-600">{skuError}</p>}
                             </div>
@@ -754,10 +742,11 @@ const AddProducts = () => {
                         <p className="text-xs leading-5 text-slate-500">Complete the required fields, check pricing, then save this listing. You can update it at any time.</p>
                         <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
                             <button type="button" disabled={loading || uploading} onClick={() => navigate(-1)} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60"><X size={14} /> Cancel</button>
+                            <button type="button" disabled={loading || uploading} onClick={(event) => saveProduct(event, true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60">Save as draft</button>
+                            <button type="button" disabled={loading || uploading} onClick={resetForm} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-60"><RotateCcw size={14} /> Reset form</button>
                             <button type="submit" disabled={loading || uploading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60">
                                 {loading ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}{loading ? "Saving…" : isEdit ? "Update product" : "Save product"}
                             </button>
-                            
                         </div>
                 </aside>
             </form>
