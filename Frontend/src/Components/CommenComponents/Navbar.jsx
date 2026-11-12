@@ -9,7 +9,6 @@ import {
   Heart,
   ShoppingCart,
   Search,
-  Sofa
 } from "lucide-react";
 import PageContainer from "./PageContainer";
 import api from "../../api";
@@ -20,7 +19,7 @@ import WishlistDrawer from "./WishlistDrawer";
 
 const Navbar = () => {
 
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, profileName } = useContext(AuthContext);
   const { cart, wishlist } = useContext(StoreContext);
   const [mobilePages, setMobilePages] = useState(false);
   const navigate = useNavigate();
@@ -37,6 +36,8 @@ const Navbar = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [orderCount, setOrderCount] = useState(0);
+
+  const profileInitial = String(profileName || "U").trim().charAt(0).toUpperCase() || "U";
 
   const menuRef = useRef();
   const categoryRef = useRef();
@@ -141,20 +142,14 @@ const Navbar = () => {
         <div className="flex min-h-[72px] items-center justify-between gap-3">
           <Link
             to="/"
-            className="flex shrink-0 items-center gap-2.5"
-            aria-label="Q Furnitures home"
+            className="flex shrink-0 items-center"
+            aria-label="Q Living Furniture home"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
-              <Sofa size={26} strokeWidth={2} />
-            </span>
-            <span className="leading-tight">
-              <span className="block whitespace-nowrap text-lg font-extrabold tracking-tight text-slate-900">
-                Q <span className="text-orange-600">Furnitures</span>
-              </span>
-              <span className="block whitespace-nowrap text-[10px] font-medium text-slate-500">
-                Home &amp; Office Furniture
-              </span>
-            </span>
+            <img
+              src="/images/logo2.png"
+              alt="Q Living Furniture"
+              className="h-14 w-[110px] rounded-md bg-black object-contain"
+            />
           </Link>
 
           <div className="hidden flex-1 items-center justify-center gap-3 lg:flex xl:gap-5">
@@ -302,10 +297,10 @@ const Navbar = () => {
                 <button
                   type="button"
                   onClick={() => setUserMenu(!userMenu)}
-                  aria-label="Open account menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
+                  aria-label={`Open account menu for ${profileName}`}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700 transition hover:bg-orange-200"
                 >
-                  <User size={21} />
+                  {profileInitial}
                 </button>
                 {userMenu && (
                   <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-orange-100 bg-white py-1 shadow-xl">
@@ -333,6 +328,16 @@ const Navbar = () => {
               </Link>
             )}
             </div>
+
+            {user && (
+              <Link
+                to="/account"
+                aria-label="My account"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700 transition hover:bg-orange-200 sm:hidden"
+              >
+                {profileInitial}
+              </Link>
+            )}
 
             <button
               type="button"
@@ -445,7 +450,11 @@ const Navbar = () => {
                   <NavLink
                     to="/"
                     onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
+                      }`
+                    }
                   >
                     <FiHome size={16} />
                     Home
@@ -454,7 +463,11 @@ const Navbar = () => {
                   <NavLink
                     to="/shop"
                     onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
+                      }`
+                    }
                   >
                     <FiShoppingBag size={16} />
                     Shop
@@ -462,7 +475,7 @@ const Navbar = () => {
 
                   <button
                     onClick={() => setMobileCategory(true)}
-                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
+                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
                   >
                     <div className="flex items-center gap-3">
                       <FiGrid size={16} />
@@ -474,7 +487,7 @@ const Navbar = () => {
 
                   <button
                     onClick={() => setMobilePages(true)}
-                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
+                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
                   >
                     <div className="flex items-center gap-3">
                       <FiFileText size={16} />
@@ -487,9 +500,15 @@ const Navbar = () => {
                   <Link
                     to={user ? "/account" : "/login"}
                     onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
                   >
-                    <User size={16} />
+                    {user ? (
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700">
+                        {profileInitial}
+                      </span>
+                    ) : (
+                      <User size={16} />
+                    )}
                     {user ? "My Account" : "Sign In"}
                   </Link>
 
@@ -530,7 +549,11 @@ const Navbar = () => {
                       key={cat.id}
                       to={`/category/${cat.slug || cat.name}`}
                       onClick={closeMobileMenu}
-                      className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
+                      className={({ isActive }) =>
+                        `flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium transition ${
+                          isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
+                        }`
+                      }
                     >
 
                       <div className="flex items-center gap-3">
@@ -574,7 +597,11 @@ const Navbar = () => {
                   <NavLink
                     to="/about"
                     onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
+                      }`
+                    }
                   >
                     <FiFileText size={16} />
                     About Us
@@ -583,7 +610,11 @@ const Navbar = () => {
                     <NavLink
                     to="/termsandconditions"
                     onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
+                      }`
+                    }
                   >
                     <FiFileText size={16} />
                     Terms And Conditions
@@ -593,7 +624,11 @@ const Navbar = () => {
                   <NavLink
                     to="/contactus"
                     onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
+                      }`
+                    }
                   >
                     <FiPhone size={16} />
                     Contact Us
