@@ -4,6 +4,26 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import { toast, Toaster } from "react-hot-toast";
 
+const roundCurrency = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+
+function calculateOrderTotals(items, discountType, discountValue, gstRate) {
+    const subtotal = roundCurrency(items.reduce((sum, item) => sum + Number(item.total || 0), 0));
+    const discount = roundCurrency(Math.max(0, Number(discountValue) || 0));
+    const rate = roundCurrency(Math.max(0, Number(gstRate) || 0));
+    const discountAmount = discountType === "percentage"
+        ? Math.min(subtotal, roundCurrency(subtotal * discount / 100))
+        : Math.min(subtotal, roundCurrency(discount));
+    const gstAmount = roundCurrency(subtotal * rate / 100);
+
+    return {
+        subtotal,
+        discount_amount: discountAmount,
+        gst_amount: gstAmount,
+        total_amount: roundCurrency(subtotal + gstAmount - discountAmount),
+    };
+}
+
 const CreateOrder = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
@@ -35,6 +55,9 @@ const CreateOrder = () => {
         payment_method: "Cash",
         status: "Order Placed",
         items: [],
+        discount_type: "percentage",
+        discount_value: 0,
+        gst_rate: 3,
         total_amount: 0,
         created_at: new Date().toISOString().slice(0, 16) // Default to current time for the datetime-local input
     });
@@ -175,15 +198,43 @@ const CreateOrder = () => {
         updateTotal(updatedItems);
     };
 
-    const updateTotal = (items) => {
-        const total = items.reduce((sum, item) => sum + item.total, 0);
-        setFormData(prev => ({ ...prev, items, total_amount: total }));
+    const updatePricing = (changes) => {
+        setFormData((previous) => {
+            const next = { ...previous, ...changes };
+            return {
+                ...next,
+                ...calculateOrderTotals(next.items, next.discount_type, next.discount_value, next.gst_rate),
+            };
+        });
     };
+
+    const updateTotal = (items) => updatePricing({ items });
+    const orderTotals = calculateOrderTotals(
+        formData.items,
+        formData.discount_type,
+        formData.discount_value,
+        formData.gst_rate,
+    );
+    const discountValue = Number(formData.discount_value);
+    const gstRate = Number(formData.gst_rate);
+    const pricingError = !Number.isFinite(discountValue) || discountValue < 0
+        ? "Enter a valid discount."
+        : formData.discount_type === "percentage" && discountValue > 100
+            ? "Percentage discount cannot exceed 100%."
+            : formData.discount_type === "fixed" && discountValue > orderTotals.subtotal
+                ? "Fixed discount cannot exceed the subtotal."
+                : !Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100
+                    ? "GST rate must be between 0% and 100%."
+                    : "";
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const { customer_name, customer_phone, street_address, city, state, zip_code } = formData;
 
+        if (pricingError) {
+            toast.error(pricingError);
+            return;
+        }
         if (!customer_name || !customer_phone || !street_address || !city || !state || !zip_code) {
             toast.error("Please fill all mandatory fields (Name, Phone, Street, City, State, and Zip Code)");
             return;
@@ -191,7 +242,7 @@ const CreateOrder = () => {
 
         setLoading(true);
         try {
-            await api.post("/orders", { ...formData, order_type: "Shop" });
+            await api.post("/orders", { ...formData, ...orderTotals, order_type: "Shop" });
             toast.success("Order created successfully!");
             setTimeout(() => navigate("/admin/orders/billing"), 1500);
         } catch (error) {
@@ -664,19 +715,82 @@ const CreateOrder = () => {
                             </div>
                             <div className="flex justify-between text-sm opacity-60 font-bold">
                                 <span>Subtotal</span>
-                                <span>₹{formData.total_amount.toLocaleString()}</span>
+                                <span>{formatCurrency(orderTotals.subtotal)}</span>
                             </div>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-3 text-sm font-bold">
+                                    <label htmlFor="order-gst-rate" className="text-white/75">GST rate</label>
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            id="order-gst-rate"
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="0.01"
+                                            value={formData.gst_rate}
+                                            onChange={(event) => updatePricing({ gst_rate: event.target.value })}
+                                            className="w-20 rounded-lg border border-white/15 bg-white/10 px-2 py-1.5 text-right text-sm font-bold text-white outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100/20"
+                                            aria-label="GST rate percentage"
+                                        />
+                                        <span className="text-white/75">%</span>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between text-xs font-semibold text-white/60">
+                                    <span>GST on subtotal (before discount)</span>
+                                    <span>{formatCurrency(orderTotals.gst_amount)}</span>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-3 text-sm font-bold">
+                                    <label htmlFor="order-discount-value" className="text-white/75">Discount</label>
+                                    <div className="flex items-center gap-2">
+                                        <select
+                                            value={formData.discount_type}
+                                            onChange={(event) => updatePricing({ discount_type: event.target.value })}
+                                            className="rounded-lg border border-white/15 bg-white/10 px-2 py-1.5 text-xs font-bold text-white outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100/20"
+                                            aria-label="Discount type"
+                                        >
+                                            <option className="text-slate-800" value="percentage">Percent</option>
+                                            <option className="text-slate-800" value="fixed">Fixed ₹</option>
+                                        </select>
+                                        <div className="flex items-center rounded-lg border border-white/15 bg-white/10">
+                                            <input
+                                                id="order-discount-value"
+                                                type="number"
+                                                min="0"
+                                                max={formData.discount_type === "percentage" ? 100 : orderTotals.subtotal}
+                                                step="0.01"
+                                                value={formData.discount_value}
+                                                onChange={(event) => updatePricing({ discount_value: event.target.value })}
+                                                className="w-16 bg-transparent px-2 py-1.5 text-right text-sm font-bold text-white outline-none"
+                                                aria-label={formData.discount_type === "percentage" ? "Discount percentage" : "Discount amount"}
+                                            />
+                                            <span className="pr-2 text-xs font-bold text-white/70">
+                                                {formData.discount_type === "percentage" ? "%" : "₹"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between text-xs font-semibold text-white/60">
+                                    <span>Discount applied</span>
+                                    <span>-{formatCurrency(orderTotals.discount_amount)}</span>
+                                </div>
+                            </div>
+                            {pricingError && (
+                                <p role="alert" className="text-xs font-semibold text-amber-200">{pricingError}</p>
+                            )}
                         </div>
 
-                        <div className="mb-10">
+                        <div className="mb-8">
                             <p className="text-[10px] font-black uppercase tracking-widest text-orange-200 mb-2">Grand Total</p>
-                            <h2 className="text-4xl font-black italic">₹{formData.total_amount.toLocaleString()}</h2>
+                            <h2 className="text-4xl font-black italic">{formatCurrency(orderTotals.total_amount)}</h2>
                         </div>
 
                         {step === 1 ? (
                             <button
                                 onClick={() => {
                                     if (formData.items.length === 0) return toast.error("Please add products first");
+                                    if (pricingError) return toast.error(pricingError);
                                     setStep(2);
                                 }}
                                 className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-primary-dark hover:from-secondary-light hover:to-secondary-dark text-white py-4 rounded-xl text-md font-black transition-all active:scale-95 shadow-md shadow-orange-900/20 group"

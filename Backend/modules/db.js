@@ -64,7 +64,13 @@ async function migrateLegacyOrderDetails(pool) {
   if (!hasLegacyAddress && !hasLegacyItems) return;
 
   const selectedColumns = ["id"];
-  if (hasLegacyAddress) selectedColumns.push(...addressColumns.filter((column) => existingColumns.has(column)));
+  if (hasLegacyAddress) {
+    selectedColumns.push(...addressColumns.filter((column) => existingColumns.has(column)));
+    selectedColumns.push(
+      ...["user_id", "customer_name", "customer_email", "customer_phone"]
+        .filter((column) => existingColumns.has(column)),
+    );
+  }
   if (hasLegacyItems) selectedColumns.push("items");
   const [legacyOrders] = await pool.query(
     `SELECT ${selectedColumns.join(", ")} FROM orders`,
@@ -76,7 +82,7 @@ async function migrateLegacyOrderDetails(pool) {
     for (const order of legacyOrders) {
       if (hasLegacyAddress) {
         const [existingAddresses] = await connection.execute(
-          "SELECT order_id FROM order_addresses WHERE order_id = ? LIMIT 1",
+          "SELECT order_id FROM `address` WHERE order_id = ? LIMIT 1",
           [order.id],
         );
         if (!existingAddresses.length) {
@@ -88,11 +94,16 @@ async function migrateLegacyOrderDetails(pool) {
             throw new Error(`Could not migrate address for order ${order.id}: required address fields are missing.`);
           }
           await connection.execute(
-            `INSERT INTO order_addresses
-             (order_id, address, street_address, city, district, state, country, zip_code)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO \`address\`
+             (order_id, user_id, customer_name, customer_email, customer_phone, address,
+              street_address, city, district, state, country, zip_code)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               order.id,
+              order.user_id || null,
+              order.customer_name,
+              order.customer_email || null,
+              order.customer_phone,
               order.address || streetAddress,
               streetAddress,
               city,
@@ -143,8 +154,8 @@ async function migrateLegacyOrderDetails(pool) {
     const [missingAddresses] = await pool.execute(
       `SELECT orders.id
        FROM orders
-       LEFT JOIN order_addresses ON order_addresses.order_id = orders.id
-       WHERE order_addresses.order_id IS NULL
+       LEFT JOIN \`address\` ON \`address\`.order_id = orders.id
+       WHERE \`address\`.order_id IS NULL
        LIMIT 1`,
     );
     if (missingAddresses.length) {
@@ -158,6 +169,18 @@ async function migrateLegacyOrderDetails(pool) {
 }
 
 async function initializeDatabase(pool) {
+  const [addressTableRows] = await pool.execute(
+    `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('address', 'order_addresses')`,
+  );
+  const addressTableNames = new Set(addressTableRows.map((table) => table.TABLE_NAME));
+  if (addressTableNames.has("address") && addressTableNames.has("order_addresses")) {
+    throw new Error("Both address and order_addresses tables exist; resolve the duplicate tables before starting the backend.");
+  }
+  if (addressTableNames.has("order_addresses")) {
+    await pool.query("RENAME TABLE order_addresses TO `address`");
+  }
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -224,6 +247,12 @@ async function initializeDatabase(pool) {
       payment_method VARCHAR(32) NOT NULL,
       payment_status VARCHAR(32) NOT NULL DEFAULT 'Pending',
       status VARCHAR(32) NOT NULL DEFAULT 'Order Placed',
+      subtotal DECIMAL(12,2) NOT NULL DEFAULT 0,
+      discount_type VARCHAR(16) NOT NULL DEFAULT 'percentage',
+      discount_value DECIMAL(12,2) NOT NULL DEFAULT 0,
+      discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+      gst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+      gst_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
       total_amount DECIMAL(12,2) NOT NULL,
       tracking_number VARCHAR(191) NULL,
       courier_name VARCHAR(191) NULL,
@@ -238,8 +267,12 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS order_addresses (
+    CREATE TABLE IF NOT EXISTS \`address\` (
       order_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+      user_id VARCHAR(255) NULL,
+      customer_name VARCHAR(191) NOT NULL,
+      customer_email VARCHAR(191) NULL,
+      customer_phone VARCHAR(32) NOT NULL,
       address TEXT NULL,
       street_address VARCHAR(255) NOT NULL,
       city VARCHAR(191) NOT NULL,
@@ -249,10 +282,35 @@ async function initializeDatabase(pool) {
       zip_code VARCHAR(32) NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      CONSTRAINT order_addresses_order_fk
+      KEY address_user_idx (user_id),
+      CONSTRAINT address_order_fk
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [addressColumns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'address'`,
+  );
+  const addressColumnNames = new Set(addressColumns.map((column) => column.COLUMN_NAME));
+  const addressColumnMigrations = [
+    ["user_id", "ALTER TABLE `address` ADD COLUMN user_id VARCHAR(255) NULL AFTER order_id"],
+    ["customer_name", "ALTER TABLE `address` ADD COLUMN customer_name VARCHAR(191) NULL AFTER user_id"],
+    ["customer_email", "ALTER TABLE `address` ADD COLUMN customer_email VARCHAR(191) NULL AFTER customer_name"],
+    ["customer_phone", "ALTER TABLE `address` ADD COLUMN customer_phone VARCHAR(32) NULL AFTER customer_email"],
+  ];
+  for (const [column, statement] of addressColumnMigrations) {
+    if (!addressColumnNames.has(column)) {
+      await pool.query(statement);
+    }
+  }
+  const [addressIndexes] = await pool.execute(
+    `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'address'`,
+  );
+  if (!addressIndexes.some((index) => ["address_user_idx", "order_addresses_user_idx"].includes(index.INDEX_NAME))) {
+    await pool.query("ALTER TABLE `address` ADD KEY address_user_idx (user_id)");
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS order_items (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -273,6 +331,64 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await migrateLegacyOrderDetails(pool);
+  await pool.query(
+    `UPDATE \`address\` AS address
+     INNER JOIN orders AS orders ON orders.id = address.order_id
+     SET address.user_id = COALESCE(address.user_id, orders.user_id),
+         address.customer_name = COALESCE(NULLIF(TRIM(address.customer_name), ''), orders.customer_name),
+         address.customer_email = COALESCE(address.customer_email, orders.customer_email),
+         address.customer_phone = COALESCE(NULLIF(TRIM(address.customer_phone), ''), orders.customer_phone)
+     WHERE (address.user_id IS NULL AND orders.user_id IS NOT NULL)
+        OR address.customer_name IS NULL OR TRIM(address.customer_name) = ''
+        OR address.customer_phone IS NULL OR TRIM(address.customer_phone) = ''`,
+  );
+  const [missingAddressCustomers] = await pool.execute(
+    `SELECT order_id FROM \`address\`
+     WHERE customer_name IS NULL OR TRIM(customer_name) = ''
+        OR customer_phone IS NULL OR TRIM(customer_phone) = ''
+     LIMIT 1`,
+  );
+  if (missingAddressCustomers.length) {
+    throw new Error(`Could not migrate customer details for order ${missingAddressCustomers[0].order_id}.`);
+  }
+  const [nullableCustomerColumns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'address'
+       AND COLUMN_NAME IN ('customer_name', 'customer_phone') AND IS_NULLABLE = 'YES'`,
+  );
+  if (nullableCustomerColumns.length) {
+    await pool.query(`
+      ALTER TABLE \`address\`
+      MODIFY COLUMN customer_name VARCHAR(191) NOT NULL,
+      MODIFY COLUMN customer_phone VARCHAR(32) NOT NULL
+    `);
+  }
+  const [orderColumns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders'`,
+  );
+  const existingOrderColumns = new Set(orderColumns.map((column) => column.COLUMN_NAME));
+  const orderMigrations = [
+    ["subtotal", "ALTER TABLE orders ADD COLUMN subtotal DECIMAL(12,2) NOT NULL DEFAULT 0"],
+    ["discount_type", "ALTER TABLE orders ADD COLUMN discount_type VARCHAR(16) NOT NULL DEFAULT 'percentage'"],
+    ["discount_value", "ALTER TABLE orders ADD COLUMN discount_value DECIMAL(12,2) NOT NULL DEFAULT 0"],
+    ["discount_amount", "ALTER TABLE orders ADD COLUMN discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0"],
+    ["gst_rate", "ALTER TABLE orders ADD COLUMN gst_rate DECIMAL(5,2) NOT NULL DEFAULT 0"],
+    ["gst_amount", "ALTER TABLE orders ADD COLUMN gst_amount DECIMAL(12,2) NOT NULL DEFAULT 0"],
+  ];
+  for (const [column, statement] of orderMigrations) {
+    if (!existingOrderColumns.has(column)) {
+      await pool.query(statement);
+    }
+  }
+  await pool.query(
+    `UPDATE orders
+     SET subtotal = total_amount
+     WHERE subtotal = 0 AND discount_amount = 0 AND gst_amount = 0 AND total_amount <> 0`,
+  );
+
   const [productsMissingCode] = await pool.execute(
     `SELECT id, created_at
      FROM products

@@ -220,9 +220,6 @@ const Billing = () => {
                         <table className="w-full text-left text-sm">
                         <thead>
                             <tr className="bg-gradient-to-r from-[#3B1A0B] to-[#6B3212] text-amber-200">
-                                <th className="w-12 px-5 py-4">
-                                    <input type="checkbox" aria-label="Select all orders" className="h-4 w-4 accent-[#FCD34D]" />
-                                </th>
                                 <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider">Order ID</th>
                                 <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider">Customer</th>
                                 <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider">Amount</th>
@@ -235,20 +232,17 @@ const Billing = () => {
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="8" className="px-8 py-12 text-center text-sm font-medium text-gray-400">Loading billing orders...</td>
+                                    <td colSpan="7" className="px-8 py-12 text-center text-sm font-medium text-gray-400">Loading billing orders...</td>
                                 </tr>
                             ) : loadError ? (
                                 <tr>
-                                    <td colSpan="8" className="px-8 py-12 text-center">
+                                    <td colSpan="7" className="px-8 py-12 text-center">
                                         <p role="alert" className="text-sm font-semibold text-rose-600">{loadError}</p>
                                         <button type="button" onClick={fetchShopOrders} className="mt-3 rounded-lg bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-800 hover:bg-orange-100">Try again</button>
                                     </td>
                                 </tr>
                             ) : paginatedInvoices.map((inv) => (
                                 <tr key={inv.id} className="group border-b border-gray-100 transition-colors hover:bg-orange-50/40">
-                                    <td className="px-5 py-4">
-                                        <input type="checkbox" aria-label={`Select ${inv.id}`} className="h-4 w-4 accent-[#4b0b78]" />
-                                    </td>
                                     <td className="px-5 py-4 text-xs font-bold text-orange-800">{inv.id}</td>
                                     <td className="px-5 py-4 text-xs font-bold text-slate-700">{inv.customer}</td>
                                     <td className="px-5 py-4 text-xs font-bold text-slate-800">₹{inv.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -275,7 +269,7 @@ const Billing = () => {
                             ))}
                             {!loading && !loadError && filteredInvoices.length === 0 && (
                                 <tr>
-                                    <td colSpan="8" className="px-8 py-12 text-center text-sm text-gray-400">
+                                    <td colSpan="7" className="px-8 py-12 text-center text-sm text-gray-400">
                                         No Shop orders found.
                                     </td>
                                 </tr>
@@ -300,7 +294,6 @@ const Billing = () => {
                                         <h3 className="mt-1 text-lg font-black text-slate-800">{inv.id}</h3>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <input type="checkbox" aria-label={`Select ${inv.id}`} className="h-4 w-4 accent-[#4b0b78]" />
                                         <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${getStatusStyle(inv.status)}`}>
                                             {inv.status}
                                         </span>

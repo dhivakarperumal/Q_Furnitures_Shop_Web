@@ -21,6 +21,10 @@ import { toast, Toaster } from "react-hot-toast";
 
 const logo = "/images/logo.png";
 const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(5, "0")}`;
+const formatCurrency = (value) => Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+const getDiscountLabel = (order) => order.discount_type === "percentage"
+    ? `Discount (${Number(order.discount_value || 0)}%)`
+    : "Discount";
 
 const OrderDetail = () => {
     const { id } = useParams();
@@ -74,6 +78,10 @@ const OrderDetail = () => {
 
         const logoUrl = logo.startsWith('http') ? logo : window.location.origin + (logo.startsWith('/') ? logo : '/' + logo);
         const items = Array.isArray(order.items) ? order.items : [];
+        const subtotal = Number(order.subtotal ?? order.total_amount ?? 0);
+        const gstAmount = Number(order.gst_amount || 0);
+        const discountAmount = Number(order.discount_amount || 0);
+        const gstRate = Number(order.gst_rate || 0);
 
         const itemsHTML = items
             .map((i, index) => {
@@ -152,7 +160,15 @@ const OrderDetail = () => {
             <div style="width:250px; text-align:right; font-size:14px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                     <span style="color:#64748b;">Subtotal:</span>
-                    <span style="font-weight:bold;">₹${Number(order.subtotal || order.total_amount).toLocaleString()}</span>
+                    <span style="font-weight:bold;">₹${subtotal.toLocaleString("en-IN")}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span style="color:#64748b;">GST (${gstRate}% before discount):</span>
+                    <span style="font-weight:bold;">₹${gstAmount.toLocaleString("en-IN")}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span style="color:#64748b;">${getDiscountLabel(order)}:</span>
+                    <span style="font-weight:bold;">-₹${discountAmount.toLocaleString("en-IN")}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                     <span style="color:#64748b;">Shipping:</span>
@@ -457,7 +473,15 @@ const OrderDetail = () => {
 
                                 <div className="flex justify-between text-md font-bold  opacity-40">
                                     <span>Subtotal</span>
-                                    <span>₹{parseFloat(order.subtotal || order.total_amount).toLocaleString()}</span>
+                                    <span>₹{formatCurrency(order.subtotal ?? order.total_amount)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm font-bold text-slate-500">
+                                    <span>GST ({formatCurrency(order.gst_rate)}% before discount)</span>
+                                    <span>+₹{formatCurrency(order.gst_amount)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm font-bold text-slate-500">
+                                    <span>{getDiscountLabel(order)}</span>
+                                    <span>-₹{formatCurrency(order.discount_amount)}</span>
                                 </div>
 
                                 <div className="pt-2 border-t border-white/10 flex justify-between items-end">
@@ -466,7 +490,7 @@ const OrderDetail = () => {
                                     </span>
 
                                     <span className="text-xl font-bold italic">
-                                        ₹{parseFloat(order.total_amount).toLocaleString()}
+                                        ₹{formatCurrency(order.total_amount)}
                                     </span>
                                 </div>
 

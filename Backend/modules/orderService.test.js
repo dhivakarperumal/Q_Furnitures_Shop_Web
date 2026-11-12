@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { createOrderService, normalizeOrder } = require("./orderService");
+const { calculateOrderAmounts, createOrderService, normalizeOrder } = require("./orderService");
 
 function validOrder(overrides = {}) {
   return {
@@ -27,6 +27,9 @@ test("normalizes the showroom order and ignores client-supplied prices", () => {
 
   assert.equal(order.orderType, "Shop");
   assert.equal(order.userId, null);
+  assert.equal(order.discountType, "percentage");
+  assert.equal(order.discountValue, 0);
+  assert.equal(order.gstRate, 3);
   assert.deepEqual(order.items, [{
     productId: 7,
     quantity: 2,
@@ -41,6 +44,25 @@ test("rejects orders without valid customer details or items", () => {
   assert.throws(() => normalizeOrder(validOrder({
     items: [{ product_id: 7, quantity: 0 }],
   })), /quantity must be a whole number/);
+  assert.throws(() => normalizeOrder(validOrder({
+    discount_type: "percentage",
+    discount_value: 100.01,
+  })), /Discount value must be between 0 and 100/);
+  assert.throws(() => normalizeOrder(validOrder({ gst_rate: 100.01 })), /GST rate must be between 0 and 100/);
+});
+
+test("calculates GST before percentage or fixed discounts", () => {
+  assert.deepEqual(calculateOrderAmounts(220, "percentage", 10, 3), {
+    discountAmount: 22,
+    gstAmount: 6.6,
+    totalAmount: 204.6,
+  });
+  assert.deepEqual(calculateOrderAmounts(220, "fixed", 50, 3), {
+    discountAmount: 50,
+    gstAmount: 6.6,
+    totalAmount: 176.6,
+  });
+  assert.throws(() => calculateOrderAmounts(220, "fixed", 221, 3), { status: 400 });
 });
 
 test("creates an order, derives price, and decrements product and variant stock transactionally", async () => {
@@ -81,7 +103,7 @@ test("creates an order, derives price, and decrements product and variant stock 
         insertedOrder = parameters;
         return [{ insertId: 21 }];
       }
-      if (query.startsWith("INSERT INTO order_addresses")) {
+      if (query.startsWith("INSERT INTO `address`")) {
         insertedAddress = parameters;
         return [{ affectedRows: 1 }];
       }
@@ -97,19 +119,34 @@ test("creates an order, derives price, and decrements product and variant stock 
   };
   const service = createOrderService({ async getConnection() { return connection; } });
 
-  const order = await service.create(validOrder());
+  const order = await service.create(validOrder({
+    user_id: "customer-123",
+    discount_type: "percentage",
+    discount_value: 10,
+    gst_rate: 3,
+  }));
 
   assert.equal(order.id, 21);
-  assert.equal(order.total_amount, 220);
+  assert.equal(order.subtotal, 220);
+  assert.equal(order.discount_amount, 22);
+  assert.equal(order.gst_amount, 6.6);
+  assert.equal(order.total_amount, 204.6);
   assert.equal(order.items[0].product_name, "Dining Chair");
   assert.equal(order.items[0].image, "/uploads/chair.webp");
   assert.equal(updatedProduct.stock, 3);
   assert.equal(updatedProduct.data.variants[0].stock, 3);
   assert.match(insertedOrderSql, /\(user_id, customer_name, customer_email, customer_phone, order_type, payment_method/);
   assert.doesNotMatch(insertedOrderSql, /\b(address|street_address|items)\b/);
-  assert.equal(insertedOrder.length, 8);
+  assert.match(insertedOrderSql, /subtotal, discount_type, discount_value, discount_amount/);
+  assert.match(insertedOrderSql, /gst_rate, gst_amount, total_amount/);
+  assert.equal(insertedOrder.length, 14);
+  assert.deepEqual(insertedOrder.slice(7), [220, "percentage", 10, 22, 3, 6.6, 204.6]);
   assert.deepEqual(insertedAddress, [
     21,
+    "customer-123",
+    "Customer One",
+    "customer@example.com",
+    "+91 98765 43210",
     "10 Market Road",
     "10 Market Road",
     "Tirupattur",
@@ -140,13 +177,23 @@ test("loads normalized address and item rows in the existing order response shap
         return [[{
           id: 21,
           customer_name: "Customer One",
-          total_amount: "220.00",
+          subtotal: "220.00",
+          discount_type: "percentage",
+          discount_value: "10.00",
+          discount_amount: "22.00",
+          gst_rate: "3.00",
+          gst_amount: "6.60",
+          total_amount: "204.60",
           status: "Order Placed",
         }]];
       }
-      if (query.startsWith("SELECT * FROM order_addresses")) {
+      if (query.startsWith("SELECT * FROM `address`")) {
         return [[{
           order_id: 21,
+          user_id: "customer-123",
+          customer_name: "Customer One",
+          customer_email: "customer@example.com",
+          customer_phone: "+91 98765 43210",
           address: "10 Market Road",
           street_address: "10 Market Road",
           city: "Tirupattur",
@@ -176,8 +223,16 @@ test("loads normalized address and item rows in the existing order response shap
   const order = await createOrderService(pool).getById(21);
 
   assert.equal(order.street_address, "10 Market Road");
+  assert.equal(order.shipping_address.user_id, "customer-123");
+  assert.equal(order.shipping_address.customer_name, "Customer One");
+  assert.equal(order.shipping_address.customer_email, "customer@example.com");
+  assert.equal(order.shipping_address.customer_phone, "+91 98765 43210");
   assert.equal(order.city, "Tirupattur");
   assert.deepEqual(order.shipping_address, {
+    user_id: "customer-123",
+    customer_name: "Customer One",
+    customer_email: "customer@example.com",
+    customer_phone: "+91 98765 43210",
     address: "10 Market Road",
     street_address: "10 Market Road",
     city: "Tirupattur",
@@ -189,6 +244,11 @@ test("loads normalized address and item rows in the existing order response shap
   assert.equal(order.items[0].name, "Dining Chair");
   assert.equal(order.items[0].price, 110);
   assert.equal(order.items[0].total, 220);
+  assert.equal(order.subtotal, 220);
+  assert.equal(order.discount_amount, 22);
+  assert.equal(order.gst_rate, 3);
+  assert.equal(order.gst_amount, 6.6);
+  assert.equal(order.total_amount, 204.6);
 });
 
 test("rolls back when requested quantity exceeds available stock", async () => {

@@ -26,6 +26,33 @@ function readText(value, field, { required = false, max = 191, fallback = "" } =
   return text;
 }
 
+function roundCurrency(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function readAmount(value, field, { fallback = 0, max = 9999999999.99 } = {}) {
+  const amount = value == null || value === "" ? fallback : Number(value);
+  if (!Number.isFinite(amount) || amount < 0 || amount > max) {
+    throw requestError(400, `${field} must be between 0 and ${max}.`);
+  }
+  return roundCurrency(amount);
+}
+
+function calculateOrderAmounts(subtotal, discountType, discountValue, gstRate) {
+  const discountAmount = discountType === "percentage"
+    ? roundCurrency(subtotal * discountValue / 100)
+    : discountValue;
+  if (discountAmount > subtotal) {
+    throw requestError(400, "Fixed discount cannot exceed the order subtotal.");
+  }
+  const gstAmount = roundCurrency(subtotal * gstRate / 100);
+  return {
+    discountAmount,
+    gstAmount,
+    totalAmount: roundCurrency(subtotal + gstAmount - discountAmount),
+  };
+}
+
 function normalizeOrder(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw requestError(400, "Order data must be an object.");
@@ -40,6 +67,15 @@ function normalizeOrder(body) {
   if (!PAYMENT_METHODS.has(paymentMethod)) {
     throw requestError(400, "Payment method must be Cash, UPI, or Card.");
   }
+
+  const discountType = readText(body.discount_type, "Discount type", { fallback: "percentage" });
+  if (!["percentage", "fixed"].includes(discountType)) {
+    throw requestError(400, "Discount type must be percentage or fixed.");
+  }
+  const discountValue = readAmount(body.discount_value, "Discount value", {
+    max: discountType === "percentage" ? 100 : 9999999999.99,
+  });
+  const gstRate = readAmount(body.gst_rate, "GST rate", { fallback: 3, max: 100 });
 
   const status = readText(body.status, "Order status", { fallback: "Order Placed" });
   if (!ORDER_STATUSES.has(status)) {
@@ -95,6 +131,9 @@ function normalizeOrder(body) {
     zipCode: readText(body.zip_code, "ZIP code", { required: true, max: 32 }),
     orderType: "Shop",
     paymentMethod,
+    discountType,
+    discountValue,
+    gstRate,
     status,
     items,
   };
@@ -189,6 +228,10 @@ function mapOrderItem(row) {
 function mapOrder(row, address, items) {
   const shippingAddress = address
     ? {
+      user_id: address.user_id || null,
+      customer_name: address.customer_name,
+      customer_email: address.customer_email,
+      customer_phone: address.customer_phone,
       address: address.address || address.street_address,
       street_address: address.street_address,
       city: address.city,
@@ -204,7 +247,12 @@ function mapOrder(row, address, items) {
     shipping_address: address ? shippingAddress : null,
     order_id: `ORD${String(row.id).padStart(5, "0")}`,
     total_amount: Number(row.total_amount),
-    subtotal: Number(row.total_amount),
+    subtotal: Number(row.subtotal ?? row.total_amount),
+    discount_type: row.discount_type || "percentage",
+    discount_value: Number(row.discount_value || 0),
+    discount_amount: Number(row.discount_amount || 0),
+    gst_rate: Number(row.gst_rate || 0),
+    gst_amount: Number(row.gst_amount || 0),
     items,
   };
 }
@@ -217,7 +265,7 @@ function createOrderService(pool) {
     const placeholders = ids.map(() => "?").join(", ");
     const [addressResult, itemResult] = await Promise.all([
       pool.execute(
-        `SELECT * FROM order_addresses WHERE order_id IN (${placeholders})`,
+        `SELECT * FROM \`address\` WHERE order_id IN (${placeholders})`,
         ids,
       ),
       pool.execute(
@@ -259,7 +307,7 @@ function createOrderService(pool) {
         await connection.beginTransaction();
 
         const orderItems = [];
-        let totalAmount = 0;
+        let subtotal = 0;
 
         for (const item of order.items) {
           const [products] = await connection.execute(
@@ -295,7 +343,7 @@ function createOrderService(pool) {
           }
 
           const lineTotal = Math.round((price * item.quantity + Number.EPSILON) * 100) / 100;
-          totalAmount = Math.round((totalAmount + lineTotal + Number.EPSILON) * 100) / 100;
+          subtotal = roundCurrency(subtotal + lineTotal);
           const newProductStock = productStock - item.quantity;
 
           await connection.execute(
@@ -316,11 +364,19 @@ function createOrderService(pool) {
           });
         }
 
+        const { discountAmount, gstAmount, totalAmount } = calculateOrderAmounts(
+          subtotal,
+          order.discountType,
+          order.discountValue,
+          order.gstRate,
+        );
+
         const [result] = await connection.execute(
           `INSERT INTO orders
            (user_id, customer_name, customer_email, customer_phone, order_type, payment_method,
-            payment_status, status, total_amount)
-           VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, ?)`,
+            payment_status, status, subtotal, discount_type, discount_value, discount_amount,
+            gst_rate, gst_amount, total_amount)
+           VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             order.userId,
             order.customerName,
@@ -329,16 +385,27 @@ function createOrderService(pool) {
             order.orderType,
             order.paymentMethod,
             order.status,
+            subtotal,
+            order.discountType,
+            order.discountValue,
+            discountAmount,
+            order.gstRate,
+            gstAmount,
             totalAmount,
           ],
         );
 
         await connection.execute(
-          `INSERT INTO order_addresses
-           (order_id, address, street_address, city, district, state, country, zip_code)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO \`address\`
+           (order_id, user_id, customer_name, customer_email, customer_phone, address,
+            street_address, city, district, state, country, zip_code)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             result.insertId,
+            order.userId,
+            order.customerName,
+            order.customerEmail,
+            order.customerPhone,
             order.address || order.streetAddress,
             order.streetAddress,
             order.city,
@@ -376,6 +443,12 @@ function createOrderService(pool) {
           status: order.status,
           payment_status: "Pending",
           payment_method: order.paymentMethod,
+          subtotal,
+          discount_type: order.discountType,
+          discount_value: order.discountValue,
+          discount_amount: discountAmount,
+          gst_rate: order.gstRate,
+          gst_amount: gstAmount,
           total_amount: totalAmount,
           items: orderItems,
         };
@@ -408,4 +481,5 @@ function createOrderService(pool) {
 module.exports = {
   createOrderService,
   normalizeOrder,
+  calculateOrderAmounts,
 };
