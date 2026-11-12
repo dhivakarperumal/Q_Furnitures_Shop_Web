@@ -179,7 +179,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
         flex flex-col transition-all duration-300
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0
-        ${collapsed ? "lg:w-20 w-full" : "w-full lg:w-72"}
+        ${collapsed ? "lg:w-20 w-full" : "w-full lg:w-[19rem]"}
       `}
         style={{
           background:
@@ -190,7 +190,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
           src="/images/sidebottom.png"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-[-30px] left-0 z-0 h-[40%] w-full object-cover object-bottom"
+          className="pointer-events-none absolute bottom-[-30px] left-0 z-0 h-[43%] w-full object-cover object-bottom"
         />
 
         {/* ========== LOGO ========== */}

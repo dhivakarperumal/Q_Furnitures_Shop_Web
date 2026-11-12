@@ -40,7 +40,7 @@ const AdminLayout = () => {
                 className={`
           flex flex-col flex-1 min-w-0 min-h-screen
           transition-all duration-300 ease-in-out
-          ${isLargeScreen ? (sidebarCollapsed ? "lg:ml-20" : "lg:ml-72") : ""}
+          ${isLargeScreen ? (sidebarCollapsed ? "lg:ml-20" : "lg:ml-[19rem]") : ""}
         `}
             >
                 {/* Header */}
