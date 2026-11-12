@@ -190,7 +190,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
           src="/images/sidebottom.png"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-0 left-0 z-0 h-[30%] w-full object-cover object-bottom"
+          className="pointer-events-none absolute bottom-[-30px] left-0 z-0 h-[40%] w-full object-cover object-bottom"
         />
 
         {/* ========== LOGO ========== */}
