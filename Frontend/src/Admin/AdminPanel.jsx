@@ -22,7 +22,10 @@ const AdminLayout = () => {
     }, []);
 
     return (
-        <div className="admin-root flex min-h-screen bg-gray-50 text-slate-900">
+        <div
+            className="admin-root flex min-h-screen bg-cover bg-center bg-no-repeat text-slate-900"
+            style={{ backgroundImage: "url('/images/admincontent.png')" }}
+        >
 
             {/* Sidebar */}
             <Sidebar
@@ -44,14 +47,14 @@ const AdminLayout = () => {
                 <Header onMenuClick={() => setSidebarOpen(true)} />
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 sm:p-5 lg:p-6 overflow-y-auto">
+                <main className="flex-1 overflow-y-auto bg-transparent p-4 sm:p-5 lg:p-6">
                     <div className="glass-container">
                         <Outlet />
                     </div>
                 </main>
 
                 {/* Footer */}
-                <footer className="glass-footer mt-10 border-t border-slate-200 bg-white/80 px-4 py-4 text-center text-xs font-medium text-slate-500">
+                <footer className="glass-footer mt-10 border-t border-slate-200 bg-transparent px-4 py-4 text-center text-xs font-medium text-slate-600">
                     © {new Date().getFullYear()} Q-Techx Solutions. All rights reserved.
                 </footer>
 

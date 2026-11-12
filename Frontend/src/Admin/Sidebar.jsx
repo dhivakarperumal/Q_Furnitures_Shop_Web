@@ -194,25 +194,26 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
         />
 
         {/* ========== LOGO ========== */}
-        <div className="relative z-10 flex items-center gap-3 border-b border-white/10 px-4 py-3">
+        <div className="relative z-10 flex flex-col items-center border-b border-white/10 px-4 py-3">
           <img
             src="/images/logo2.png"
             alt="Q Living Furniture"
-            className={collapsed ? "h-8 w-12 object-contain" : "h-12 w-[94px] object-contain"}
+            className={collapsed ? "h-8 w-12 object-contain" : "h-auto w-full object-contain"}
           />
-          {!collapsed && (
-            <p className="pr-10 text-xs font-bold tracking-wide text-white">
-              Admin Panel
-            </p>
-          )}
-
-          <button
-            onClick={onClose}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl border border-transparent p-2 text-white/70 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white lg:hidden"
-            aria-label="Close admin menu"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="relative flex w-full items-center justify-center">
+            {!collapsed && (
+              <p className="text-xs font-bold tracking-wide text-white">
+                Admin Panel
+              </p>
+            )}
+            <button
+              onClick={onClose}
+              className="absolute right-0 rounded-xl border border-transparent p-2 text-white/70 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white lg:hidden"
+              aria-label="Close admin menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* ========== NAVIGATION ========== */}

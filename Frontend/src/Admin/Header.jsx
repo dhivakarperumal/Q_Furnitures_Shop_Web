@@ -311,7 +311,7 @@ const Header = ({ onMenuClick }) => {
 
   return (
     <header className="sticky top-0 z-30 
-      bg-white
+      bg-white/75 backdrop-blur-sm
       border-b border-slate-200/60
       shadow-[0_4px_30px_rgba(0,0,0,0.04)]">
 
