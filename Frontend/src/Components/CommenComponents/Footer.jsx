@@ -28,7 +28,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="mt-20 bg-secondary text-white">
+    <footer className="mt-20 bg-gradient-to-r from-primary via-secondary to-primary-dark text-white">
       <PageContainer>
         <div className="grid grid-cols-1 gap-10 py-12 md:grid-cols-2 lg:grid-cols-5">
           <div>

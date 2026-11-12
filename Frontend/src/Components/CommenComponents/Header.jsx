@@ -11,7 +11,7 @@ import PageContainer from "./PageContainer";
 
 const Header = () => {
   return (
-    <div className="hidden bg-secondary text-sm text-white md:block">
+    <div className="hidden bg-gradient-to-r from-primary via-secondary to-primary-dark text-sm text-white md:block">
 
       <PageContainer>
 
@@ -30,29 +30,23 @@ const Header = () => {
           </div>
 
           {/* Center - Marquee Offers */}
-          <div className="flex-1 text-center px-10 overflow-hidden">
-
+          <div className="flex-1 overflow-hidden px-10 text-center">
             <marquee className="w-full">
               <div className="flex items-center justify-center gap-12 font-medium">
-
                 <span className="flex items-center gap-2">
                   <Tag size={16} />
                   Make your home feel like yours with Q Furnitures
                 </span>
-
                 <span className="flex items-center gap-2">
                   <Truck size={16} />
                   Furniture for every room and every routine
                 </span>
-
                 <span className="flex items-center gap-2">
                   <ShoppingBag size={16} />
                   Explore home and office furniture
                 </span>
-
               </div>
             </marquee>
-
           </div>
 
           {/* Right - Social Icons */}
