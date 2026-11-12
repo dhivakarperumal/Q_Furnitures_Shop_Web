@@ -371,6 +371,9 @@ const AllProducts = () => {
                                                         <div>
                                                             <p className="text-sm font-bold text-slate-800 leading-tight max-w-[180px] truncate">{product.name}</p>
                                                             <p className="text-[11px] text-gray-400 font-medium mt-0.5">SKU: {product.product_code || `QF${String(product.id).padStart(4,'0')}`}</p>
+                                                            {Array.isArray(product.variants) && product.variants.length > 0 && (
+                                                                <p className="mt-1 text-[10px] font-semibold text-orange-700">{product.variants.length} variants</p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
@@ -499,6 +502,9 @@ const AllProducts = () => {
                                     <div className="p-4">
                                         <p className="text-[10px] text-primary-dark font-bold uppercase tracking-widest">{product.category}</p>
                                         <h4 className="text-sm font-bold text-slate-800 truncate mt-0.5">{product.name}</h4>
+                                        {Array.isArray(product.variants) && product.variants.length > 0 && (
+                                            <p className="mt-1 text-[10px] font-semibold text-orange-700">{product.variants.length} variants</p>
+                                        )}
                                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
                                             <div>
                                                 <p className="text-base font-black text-slate-800">₹{parseFloat(product.offer_price || product.mrp || 0).toLocaleString('en-IN')}</p>

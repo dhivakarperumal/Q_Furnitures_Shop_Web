@@ -60,6 +60,7 @@ async function start() {
     await initializeDatabase(pool);
     await categoryService.seedDefaults();
     await categoryService.assignExistingToUser(categoryOwnerUserId);
+    await productService.seedFurnitureProducts();
 
     app.listen(port, () => {
       console.log(`Backend listening on http://localhost:${port} (database connected)`);

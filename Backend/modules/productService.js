@@ -1,3 +1,5 @@
+const furnitureProducts = require("./furnitureProducts");
+
 const PRODUCT_COLUMNS = [
   "id",
   "product_code",
@@ -52,6 +54,57 @@ function toProduct(row) {
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+function getSeedVariants(product) {
+  const materialColors = {
+    "Solid Wood": ["Walnut Brown", "Natural Teak"],
+    "Engineered Wood": ["White", "Oak"],
+    Upholstered: ["Beige", "Grey"],
+    Plywood: ["White", "Natural Oak"],
+    Metal: ["Black", "Charcoal"],
+  };
+  const baseColor = product.colour || "Natural";
+  const alternateColor = (materialColors[product.material_type] || ["Natural", "Walnut"])
+    .find((color) => color.toLowerCase() !== baseColor.toLowerCase()) || "Natural";
+  const name = product.name.toLowerCase();
+  let sizes = ["Standard", "Large"];
+
+  if (name.includes("mattress") || /\bbed\b/.test(name)) {
+    sizes = ["Queen", "King"];
+  } else if (name.includes("dining")) {
+    sizes = ["4 Seater", "6 Seater"];
+  } else if (name.includes("sofa")) {
+    const capacity = Number(product.seating_capacity) || 5;
+    sizes = [`${Math.max(2, capacity - 2)} Seater`, `${capacity} Seater`];
+  } else if (name.includes("chair")) {
+    sizes = ["Standard", "Wide"];
+  }
+
+  const stock = Number(product.total_stock) || 0;
+  const firstVariantStock = Math.floor(stock / 2);
+  const colors = [baseColor, alternateColor];
+
+  return colors.map((color, index) => {
+    const mrp = Number(product.mrp);
+    const offer = Number(product.offer) || 0;
+    const sellingPrice = Math.max(
+      0,
+      product.offer_type === "Percentage" ? mrp * (1 - offer / 100) : mrp - offer,
+    );
+    return {
+      color,
+      size: sizes[index],
+      material: product.material_type,
+      mrp,
+      offer_type: product.offer_type,
+      offer,
+      selling_price: Number(sellingPrice.toFixed(2)),
+      stock: index === 0 ? firstVariantStock : stock - firstVariantStock,
+      image: "",
+      images: [],
+    };
+  });
 }
 
 function createProductService(pool) {
@@ -127,6 +180,84 @@ function createProductService(pool) {
   }
 
   return {
+    async seedFurnitureProducts() {
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+        try {
+          await connection.execute(
+            "INSERT INTO app_seed_history (seed_key) VALUES (?)",
+            ["sample-furniture-products-v1"],
+          );
+        } catch (error) {
+          if (error.code === "ER_DUP_ENTRY") {
+            await connection.rollback();
+            return 0;
+          }
+          throw error;
+        }
+
+        let inserted = 0;
+        for (const product of furnitureProducts) {
+          const [existing] = await connection.execute(
+            "SELECT id FROM products WHERE product_code = ? LIMIT 1",
+            [product.product_code],
+          );
+          if (existing.length) continue;
+
+          const mrp = Number(product.mrp);
+          const offer = Number(product.offer) || 0;
+          const offerPrice = Math.max(
+            0,
+            product.offer_type === "Percentage" ? mrp * (1 - offer / 100) : mrp - offer,
+          );
+          const data = {
+            ...product,
+            product_type: "Variable Product",
+            status: "Active",
+            rating: 5,
+            offer_price: Number(offerPrice.toFixed(2)),
+            selling_price: Number(offerPrice.toFixed(2)),
+            variants: getSeedVariants(product),
+            images: [],
+            image_roles: [],
+            main_image_index: 0,
+          };
+
+          await connection.execute(
+            `INSERT INTO products
+             (product_code, name, category, subcategory, mrp, offer, offer_type, offer_price,
+              selling_price, total_stock, rating, status, product_data)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              product.product_code,
+              product.name,
+              product.category,
+              product.subcategory,
+              mrp,
+              offer,
+              product.offer_type,
+              offerPrice,
+              offerPrice,
+              Number(product.total_stock) || 0,
+              5,
+              "Active",
+              JSON.stringify(data),
+            ],
+          );
+          inserted += 1;
+        }
+
+        await connection.commit();
+        return inserted;
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    },
+
     async list({ page, limit, search, status }) {
       const filters = [];
       const parameters = [];
