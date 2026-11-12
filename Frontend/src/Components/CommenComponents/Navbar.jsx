@@ -386,7 +386,7 @@ const Navbar = () => {
 
       )}
       {mobileMenu && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 top-[72px] z-50 lg:hidden">
 
           {/* Overlay */}
           <div
@@ -395,19 +395,11 @@ const Navbar = () => {
           />
 
           {/* Drawer */}
-          <div className="absolute left-0 top-0 h-full w-[88%] max-w-[360px] overflow-y-auto bg-white shadow-xl">
+          <div className="absolute inset-0 h-full w-full overflow-y-auto bg-white">
 
             {/* MENU SCREEN */}
             {!mobileCategory && !mobilePages && (
               <>
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
-                  <h2 className="text-lg font-bold tracking-wide">Q Furnitures</h2>
-                  <button type="button" aria-label="Close menu" onClick={closeMobileMenu}>
-                    <X size={24} />
-                  </button>
-                </div>
-
                 {/* Links */}
                 <div className="flex flex-col p-5 space-y-3">
                   <form onSubmit={handleSearch} className="mb-1 flex gap-2">
