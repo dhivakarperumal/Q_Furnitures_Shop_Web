@@ -665,16 +665,6 @@ const AddProducts = () => {
 
                 <aside className="space-y-4 xl:sticky xl:top-5">
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
-                        <h2 className="text-sm font-bold text-slate-900">Listing overview</h2>
-                        <p className="mt-1 truncate text-sm text-slate-500">{form.name || "New furniture product"}</p>
-                        <div className="space-y-3 text-xs">
-                            <div className="flex justify-between gap-3"><span className="text-slate-500">SKU</span><span className="truncate font-semibold text-slate-700">{form.product_code || "Not set"}</span></div>
-                            <div className="flex justify-between gap-3"><span className="text-slate-500">Category</span><span className="truncate font-semibold text-slate-700">{form.category || "Not selected"}</span></div>
-                            <div className="flex justify-between gap-3"><span className="text-slate-500">Inventory</span><span className="font-semibold text-slate-700">{form.total_stock || "0"} · {stockState}</span></div>
-                            <div className="flex justify-between gap-3"><span className="text-slate-500">Images</span><span className="font-semibold text-slate-700">{images.length} uploaded</span></div>
-                        </div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
                         <div className="mb-4 flex items-center gap-2"><ShieldCheck size={17} className="text-emerald-600" /><h2 className="text-sm font-bold text-slate-900">Ready to publish?</h2></div>
                         <p className="text-xs leading-5 text-slate-500">Complete the required fields, check pricing, then save this listing. You can update it at any time.</p>
                         <div className="mt-5 grid gap-2">
