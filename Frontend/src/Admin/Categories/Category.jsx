@@ -348,11 +348,9 @@ const Category = () => {
                         <table className="w-full text-left whitespace-nowrap">
                             <thead>
                                 <tr className="bg-gradient-to-r from-secondary-dark to-secondary-light border-b border-secondary-dark">
-                                    <th className="px-4 py-4 w-12 text-center "><input type="checkbox" className="rounded accent-white w-4 h-4 border-orange-300" /></th>
                                     <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">S.NO.</th>
                                     <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">CATEGORY</th>
-                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">DESCRIPTION</th>
-                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">PRODUCTS</th>
+                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider min-w-[280px]">SUBCATEGORIES</th>
                                     <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">STATUS</th>
                                     <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">ACTIONS</th>
                                 </tr>
@@ -361,11 +359,10 @@ const Category = () => {
                                 {currentCategories.map((cat, ind) => {
                                     const sNo = (currentPage - 1) * itemsPerPage + ind + 1;
                                     const status = cat.status || (ind % 4 === 3 ? 'Inactive' : 'Active');
-                                    const totalProds = cat.totalProducts || Math.floor(Math.random() * 20 + 2);
+                                    const subcategoryList = Array.isArray(cat.subcategory) ? cat.subcategory : [];
 
                                     return (
                                         <tr key={cat.catId} className="hover:bg-gray-50/50 transition-colors group">
-                                            <td className="px-6 py-4 text-center"><input type="checkbox" className="rounded text-primary focus:ring-primary w-4 h-4 border-gray-300" /></td>
                                             <td className="px-4 py-4 text-sm font-bold text-gray-500">{sNo}</td>
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center gap-4">
@@ -382,11 +379,21 @@ const Category = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4 text-sm font-medium text-gray-500 max-w-[200px] truncate">
-                                                {cat.description || "No description"}
-                                            </td>
-                                            <td className="px-4 py-4 text-sm font-bold text-slate-800 text-center">
-                                                {totalProds}
+                                            <td className="px-4 py-4 align-top">
+                                                {subcategoryList.length > 0 ? (
+                                                    <div className="flex max-w-[440px] flex-wrap gap-1.5">
+                                                        {subcategoryList.map((subcategory) => (
+                                                            <span
+                                                                key={subcategory}
+                                                                className="rounded-md border border-orange-100 bg-orange-50 px-2 py-1 text-[10px] font-semibold text-primary-dark"
+                                                            >
+                                                                {subcategory}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-sm font-medium text-gray-400">No subcategories</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-4 text-center">
                                                 {status === 'Active' ? (
@@ -400,7 +407,7 @@ const Category = () => {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center justify-center gap-2">
                                                     <button onClick={() => openEditModal(cat)} className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-50 text-primary-dark hover:bg-orange-100 transition-colors" title="Edit">
                                                         <FiEdit2 size={14} />
                                                     </button>
