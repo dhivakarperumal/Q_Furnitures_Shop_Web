@@ -6,7 +6,9 @@ const path = require("node:path");
 const { createPool, initializeDatabase } = require("./modules/db");
 const { createAuthService } = require("./modules/authService");
 const { createAuthController } = require("./controllers/authController");
+const { createCategoryService } = require("./modules/categoryService");
 const createAuthRouter = require("./routers/authRouter");
+const createCategoryRouter = require("./routers/categoryRouter");
 const createUserRouter = require("./routers/userRouter");
 const { createUploadRouter } = require("./routers/uploadRouter");
 
@@ -20,6 +22,7 @@ const pool = createPool();
 const app = express();
 const authService = createAuthService(pool);
 const authController = createAuthController(authService);
+const categoryService = createCategoryService(pool);
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
@@ -34,6 +37,7 @@ app.get("/api/health", async (request, response) => {
   }
 });
 app.use("/api/auth", createAuthRouter(authController));
+app.use("/api/categories", createCategoryRouter(categoryService));
 app.use("/api/users", createUserRouter(authService));
 app.use("/api/auth/users", createUserRouter(authService));
 app.use("/api", createUploadRouter(authService));

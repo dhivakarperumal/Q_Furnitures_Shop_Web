@@ -3,7 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const express = require("express");
 const multer = require("multer");
-const jwt = require("jsonwebtoken");
+const { requireAuthentication, requireAdmin } = require("../middleware/auth");
 
 const uploadsDirectory = path.resolve(__dirname, "..", "uploads");
 const imageTypes = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
@@ -91,28 +91,6 @@ function createUploadHandler({ field, maxCount, category, allowPdf = false, onUp
       }
     });
   };
-}
-
-function requireAuthentication(request, response, next) {
-  const authorization = request.get("authorization") || "";
-  const [scheme, token] = authorization.split(" ");
-  if (scheme !== "Bearer" || !token) {
-    return response.status(401).json({ message: "Sign in before uploading files." });
-  }
-
-  try {
-    request.auth = jwt.verify(token, process.env.JWT_SECRET);
-    return next();
-  } catch {
-    return response.status(401).json({ message: "Your session is invalid or expired. Sign in again." });
-  }
-}
-
-function requireAdmin(request, response, next) {
-  if (request.auth?.role !== "admin") {
-    return response.status(403).json({ message: "Administrator access is required to upload this file." });
-  }
-  return next();
 }
 
 function createUploadRouter(authService) {

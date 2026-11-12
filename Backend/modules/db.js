@@ -23,6 +23,20 @@ async function initializeDatabase(pool) {
       UNIQUE KEY users_phone_unique (phone)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      cat_id VARCHAR(64) NOT NULL UNIQUE,
+      name VARCHAR(191) NOT NULL,
+      description TEXT NULL,
+      subcategory JSON NOT NULL,
+      images JSON NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'Active',
+      user_id VARCHAR(255) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
 
   const [columns] = await pool.execute(
     `SELECT COLUMN_NAME
