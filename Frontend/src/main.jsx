@@ -25,6 +25,9 @@ const AllProducts = React.lazy(() => import("./Admin/Products/AllProducts.jsx"))
 const AddProducts = React.lazy(() => import("./Admin/Products/AddProducts.jsx"));
 const ProductDetail = React.lazy(() => import("./Admin/Products/ProductDetail.jsx"));
 const Users = React.lazy(() => import("./Admin/Customers/Users.jsx"));
+const Billing = React.lazy(() => import("./Admin/Billings/Billing.jsx"));
+const CreateOrder = React.lazy(() => import("./Admin/Billings/CreateOrder.jsx"));
+const OrderDetail = React.lazy(() => import("./Admin/Orders/OrderDetail.jsx"));
 
 const ErrorPage = React.lazy(() => import("./Admin/Pages/ErrorPage.jsx"));
 
@@ -59,6 +62,9 @@ const router = createBrowserRouter([
       { path: "products/:id", element: <ProductDetail /> },
       { path: "products/edit/:id", element: <AddProducts /> },
       { path: "users/all", element: <Users /> },
+      { path: "orders/billing", element: <Billing /> },
+      { path: "orders/shop-create", element: <CreateOrder /> },
+      { path: "orders/:id", element: <OrderDetail /> },
     ],
   },
 ]);

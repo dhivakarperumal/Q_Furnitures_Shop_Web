@@ -62,6 +62,38 @@ async function initializeDatabase(pool) {
       KEY products_name_idx (name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(255) NULL,
+      customer_name VARCHAR(191) NOT NULL,
+      customer_email VARCHAR(191) NULL,
+      customer_phone VARCHAR(32) NOT NULL,
+      address TEXT NULL,
+      street_address VARCHAR(255) NOT NULL,
+      city VARCHAR(191) NOT NULL,
+      district VARCHAR(191) NULL,
+      state VARCHAR(191) NOT NULL,
+      country VARCHAR(191) NOT NULL DEFAULT 'India',
+      zip_code VARCHAR(32) NOT NULL,
+      order_type VARCHAR(32) NOT NULL DEFAULT 'Shop',
+      payment_method VARCHAR(32) NOT NULL,
+      payment_status VARCHAR(32) NOT NULL DEFAULT 'Pending',
+      status VARCHAR(32) NOT NULL DEFAULT 'Order Placed',
+      total_amount DECIMAL(12,2) NOT NULL,
+      items JSON NOT NULL,
+      tracking_number VARCHAR(191) NULL,
+      courier_name VARCHAR(191) NULL,
+      shipped_at DATETIME NULL,
+      cancellation_reason TEXT NULL,
+      cancelled_at DATETIME NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY orders_status_created_idx (status, created_at),
+      KEY orders_type_created_idx (order_type, created_at),
+      KEY orders_customer_phone_idx (customer_phone)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
   const [productsMissingCode] = await pool.execute(
     `SELECT id, created_at
      FROM products

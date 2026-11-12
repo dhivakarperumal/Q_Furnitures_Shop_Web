@@ -16,10 +16,10 @@ import {
     FiCreditCard,
     FiXCircle
 } from "react-icons/fi";
-import logo from "/logo.png";
 import api from "../../api";
 import { toast, Toaster } from "react-hot-toast";
 
+const logo = "/images/logo.png";
 const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(5, "0")}`;
 
 const OrderDetail = () => {

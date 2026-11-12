@@ -43,13 +43,17 @@ const CreateOrder = () => {
         const fetchData = async () => {
             try {
                 const [prodRes, userRes, catRes] = await Promise.all([
-                    api.get("/products"),
+                    api.get("/products", { params: { page: 1, limit: 100 } }),
                     api.get("/auth/users"),
                     api.get("/categories")
                 ]);
-                setProducts(prodRes.data || []);
-                setUsers(userRes.data || []);
-                setCategories(catRes.data || []);
+                const productList = Array.isArray(prodRes.data) ? prodRes.data : prodRes.data?.products;
+                if (!Array.isArray(productList) || !Array.isArray(userRes.data) || !Array.isArray(catRes.data)) {
+                    throw new Error("The product, customer, or category response was invalid.");
+                }
+                setProducts(productList);
+                setUsers(userRes.data);
+                setCategories(catRes.data);
             } catch (error) {
                 console.error("Error fetching data:", error);
                 toast.error("Failed to load initial data");
@@ -94,7 +98,7 @@ const CreateOrder = () => {
     const getDefaultSize = (variant) => {
         const stockSizes = Object.entries(variant?.sizesStock || {})
             .find(([, stock]) => parseInt(stock, 10) > 0);
-        return stockSizes?.[0] || variant?.selectedSizes?.[0] || "Free Size";
+        return stockSizes?.[0] || variant?.size || variant?.selectedSizes?.[0] || "Free Size";
     };
 
     const handleProductClick = (product) => {
@@ -125,7 +129,14 @@ const CreateOrder = () => {
             item.variant_size === selectedSize
         );
 
-        const price = parseFloat(product.offer_price || product.price || 0);
+        const price = Number(
+            selectedVariant.selling_price ??
+            selectedVariant.offer_price ??
+            product.selling_price ??
+            product.offer_price ??
+            product.price ??
+            0
+        );
         let updatedItems = [...formData.items];
 
         if (existingItemIndex > -1) {
@@ -182,10 +193,10 @@ const CreateOrder = () => {
         try {
             await api.post("/orders", { ...formData, order_type: "Shop" });
             toast.success("Order created successfully!");
-            setTimeout(() => navigate("/admin/orders/all"), 1500);
+            setTimeout(() => navigate("/admin/orders/billing"), 1500);
         } catch (error) {
             console.error("Order Creation Error:", error);
-            toast.error("Failed to create order");
+            toast.error(error.response?.data?.message || "Failed to create order.");
         } finally {
             setLoading(false);
         }
@@ -195,7 +206,8 @@ const CreateOrder = () => {
         const matchesSearch = p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
             p.product_code?.toLowerCase().includes(productSearchTerm.toLowerCase());
         const matchesCategory = !selectedCategory || p.category === selectedCategory.name;
-        return matchesSearch && matchesCategory;
+        const isAvailable = String(p.status || "").toLowerCase() === "active" && Number(p.total_stock || p.stock || 0) > 0;
+        return matchesSearch && matchesCategory && isAvailable;
     });
 
     const filteredUsers = users.filter(u =>
@@ -348,7 +360,15 @@ const CreateOrder = () => {
                                                     >
                                                         {size} <span className="opacity-50 ml-1">({stock})</span>
                                                     </button>
-                                                )) : <button type="button" onClick={() => setSelectedSize("Free Size")} className="px-4 py-2 rounded-xl text-xs font-black bg-[#4b0b78] text-white">Free Size</button>}
+                                                )) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedSize(selectedVariant.size || selectedVariant.selectedSizes?.[0] || "Free Size")}
+                                                        className="px-4 py-2 rounded-xl text-xs font-black bg-[#4b0b78] text-white"
+                                                    >
+                                                        {selectedVariant.size || selectedVariant.selectedSizes?.[0] || "Free Size"}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     )}

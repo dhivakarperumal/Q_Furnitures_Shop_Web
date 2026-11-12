@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import {
@@ -22,36 +22,46 @@ import { FaRupeeSign } from "react-icons/fa";
 const Billing = () => {
     const navigate = useNavigate();
     const [invoices, setInvoices] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [viewMode, setViewMode] = useState("table");
     const [statusFilter, setStatusFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
-    useEffect(() => {
-        const fetchShopOrders = async () => {
-            try {
-                const response = await api.get("/orders");
-                const shopOrders = (response.data || [])
-                    .filter((order) => String(order.order_type || "").toLowerCase() === "shop")
-                    .map((order) => ({
-                        orderId: order.id,
-                        id: `#ORD-${order.id}`,
-                        createdAt: order.created_at,
-                        date: order.created_at ? new Date(order.created_at).toLocaleDateString("en-CA") : "-",
-                        customer: order.customer_name || "Guest Customer",
-                        amount: Number(order.total_amount || 0),
-                        status: order.payment_status || "Pending",
-                        method: order.payment_method || "Showroom"
-                    }));
-                setInvoices(shopOrders);
-            } catch (error) {
-                console.error("Fetch Shop Orders Error:", error);
+    const fetchShopOrders = useCallback(async () => {
+        setLoading(true);
+        setLoadError("");
+        try {
+            const response = await api.get("/orders");
+            if (!Array.isArray(response.data)) {
+                throw new Error("The orders response was invalid.");
             }
-        };
-
-        fetchShopOrders();
+            const shopOrders = response.data
+                .filter((order) => String(order.order_type || "").toLowerCase() === "shop")
+                .map((order) => ({
+                    orderId: order.id,
+                    id: `#ORD-${order.id}`,
+                    createdAt: order.created_at,
+                    date: order.created_at ? new Date(order.created_at).toLocaleDateString("en-CA") : "-",
+                    customer: order.customer_name || "Guest Customer",
+                    amount: Number(order.total_amount || 0),
+                    status: order.payment_status || "Pending",
+                    method: order.payment_method || "Showroom"
+                }));
+            setInvoices(shopOrders);
+        } catch (error) {
+            console.error("Fetch Shop Orders Error:", error);
+            setLoadError(error.response?.data?.message || "Could not load billing orders. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchShopOrders();
+    }, [fetchShopOrders]);
 
     const filteredInvoices = invoices.filter((invoice) => {
         const matchesSearch = `${invoice.id} ${invoice.customer}`.toLowerCase().includes(searchTerm.toLowerCase());
@@ -94,47 +104,50 @@ const Billing = () => {
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-       
-
+        <div className="space-y-6 pb-8 font-sans">
             {/* Billing Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="min-h-[132px] bg-white p-5 rounded-2xl border border-gray-200 shadow-[0_2px_8px_rgba(15,23,42,0.08)] flex items-center gap-5">
-                    <div className="h-[70px] w-[70px] shrink-0 rounded-[1.25rem] bg-[#FF9200] text-white flex items-center justify-center shadow-lg shadow-orange-100">
-                        <FiCreditCard size={30} strokeWidth={2.5} />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                    <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-orange-400 to-orange-700" />
+                    <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-800 text-white shadow-lg shadow-orange-200/70 transition-transform duration-200 group-hover:scale-105">
+                        <FiCreditCard size={22} />
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-400 mb-1">Total Amount</p>
-                        <h2 className="text-2xl font-black leading-none text-slate-800">₹{totalAmount.toLocaleString("en-IN")}</h2>
-                        <p className="text-xs text-slate-400 mt-2 font-medium">Shop orders only</p>
+                    <div className="relative z-10 min-w-0">
+                        <p className="mb-1 text-xs font-bold tracking-wide text-orange-800">Total Amount</p>
+                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : `₹${totalAmount.toLocaleString("en-IN")}`}</h2>
+                        <p className="mt-1 text-[10px] font-medium text-stone-500">Shop orders only</p>
                     </div>
+                    <FiCreditCard className="pointer-events-none absolute -right-1 bottom-1 text-orange-300/20" size={60} />
                 </div>
-                <div className="min-h-[132px] bg-white p-5 rounded-2xl border border-gray-200 shadow-[0_2px_8px_rgba(15,23,42,0.08)] flex items-center gap-5">
-                    <div className="h-[70px] w-[70px] shrink-0 rounded-[1.25rem] bg-gradient-to-br from-[#4b0b78] to-[#7c22ce] text-white flex items-center justify-center shadow-lg shadow-purple-200">
-                        <FiDollarSign size={30} strokeWidth={2.5} />
+                <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-emerald-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                    <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-emerald-400 to-emerald-600" />
+                    <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200/70 transition-transform duration-200 group-hover:scale-105">
+                        <FiDollarSign size={22} />
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-400 mb-1">Today Amount</p>
-                        <h2 className="text-2xl font-black leading-none text-slate-800">₹{totalAmountToday.toLocaleString("en-IN")}</h2>
-                        <p className="text-xs text-slate-400 mt-2 font-medium">Shop orders only</p>
+                    <div className="relative z-10 min-w-0">
+                        <p className="mb-1 text-xs font-bold tracking-wide text-emerald-800">Today Amount</p>
+                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : `₹${totalAmountToday.toLocaleString("en-IN")}`}</h2>
+                        <p className="mt-1 text-[10px] font-medium text-stone-500">Shop orders only</p>
                     </div>
+                    <FiDollarSign className="pointer-events-none absolute -right-1 bottom-1 text-emerald-300/20" size={60} />
                 </div>
-                <div className="min-h-[132px] bg-white p-5 rounded-2xl border border-gray-200 shadow-[0_2px_8px_rgba(15,23,42,0.08)] flex items-center gap-5">
-                    <div className="h-[70px] w-[70px] shrink-0 rounded-[1.25rem] bg-[#00C7A5] text-white flex items-center justify-center shadow-lg shadow-emerald-100">
-                        <FiShoppingBag size={30} strokeWidth={2.5} />
+                <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-amber-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                    <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-amber-400 to-amber-600" />
+                    <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg shadow-amber-200/70 transition-transform duration-200 group-hover:scale-105">
+                        <FiShoppingBag size={22} />
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-400 mb-1">Order Count Today</p>
-                        <h2 className="text-2xl font-black leading-none text-slate-800">{todayInvoices.length}</h2>
-                        <p className="text-xs text-slate-400 mt-2 font-medium">Shop orders only</p>
+                    <div className="relative z-10 min-w-0">
+                        <p className="mb-1 text-xs font-bold tracking-wide text-amber-800">Order Count Today</p>
+                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : todayInvoices.length}</h2>
+                        <p className="mt-1 text-[10px] font-medium text-stone-500">Shop orders only</p>
                     </div>
+                    <FiShoppingBag className="pointer-events-none absolute -right-1 bottom-1 text-amber-300/20" size={60} />
                 </div>
-              
             </div>
 
             {/* Invoices Table */}
-            <div className="bg-white rounded-[2rem] border border-gray-200 shadow-sm overflow-hidden">
-                <div className="p-7 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+                <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
                     <div className="relative w-full md:w-72">
                         <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
@@ -142,7 +155,7 @@ const Billing = () => {
                             placeholder="Order ID or customer..."
                             value={searchTerm}
                             onChange={(event) => setSearchTerm(event.target.value)}
-                            className="pl-12 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 transition-all text-sm w-full"
+                            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-11 pr-10 text-sm font-medium text-slate-700 outline-none transition-all placeholder:text-gray-400 focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100"
                         />
                         {searchTerm && (
                             <button
@@ -150,21 +163,21 @@ const Billing = () => {
                                 onClick={() => setSearchTerm("")}
                                 title="Clear search"
                                 aria-label="Clear search"
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 transition-colors hover:bg-orange-50 hover:text-orange-700"
                             >
                                 <FiX size={16} />
                             </button>
                         )}
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2">
-                        <div className="flex items-center gap-1 p-1 bg-gray-50 rounded-xl border border-gray-200">
-                        <div className="flex items-center gap-2 px-2 border-r border-gray-200">
+                        <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+                        <div className="flex items-center gap-2 border-r border-gray-200 px-2">
                             <FiFilter className="text-gray-400" size={16} />
                             <select
                                 value={statusFilter}
                                 onChange={(event) => setStatusFilter(event.target.value)}
                                 aria-label="Filter orders by payment status"
-                                className="bg-transparent text-xs font-bold text-gray-600 outline-none cursor-pointer"
+                                className="cursor-pointer bg-transparent text-xs font-bold text-gray-600 outline-none focus:text-orange-800"
                             >
                                 <option value="all">All</option>
                                 <option value="paid">Paid</option>
@@ -177,7 +190,7 @@ const Billing = () => {
                             title="Card view"
                             aria-label="Card view"
                             onClick={() => setViewMode("card")}
-                            className={`p-2.5 rounded-lg transition-all ${viewMode === "card" ? "bg-white text-blue-600 shadow-sm" : "text-gray-400 hover:text-gray-700"}`}
+                            className={`rounded-lg p-2.5 transition-all ${viewMode === "card" ? "bg-orange-100 text-orange-900 shadow-sm" : "text-gray-400 hover:text-orange-800"}`}
                         >
                             <FiGrid size={18} />
                             </button>
@@ -186,14 +199,14 @@ const Billing = () => {
                             title="Table view"
                             aria-label="Table view"
                             onClick={() => setViewMode("table")}
-                            className={`p-2.5 rounded-lg transition-all ${viewMode === "table" ? "bg-white text-blue-600 shadow-sm" : "text-gray-400 hover:text-gray-700"}`}
+                            className={`rounded-lg p-2.5 transition-all ${viewMode === "table" ? "bg-orange-100 text-orange-900 shadow-sm" : "text-gray-400 hover:text-orange-800"}`}
                         >
                             <FiList size={18} />
                             </button>
                         </div>
                         <button
                         onClick={() => navigate("/admin/orders/shop-create")}
-                        className="flex items-center gap-2 px-6 py-3 bg-[#4b0b78] hover:bg-[#260642] text-white rounded-md text-sm font-bold transition-all shadow-lg shadow-purple-200"
+                        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#9A4D16] to-[#6B3212] px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-[#7A3A10] hover:to-[#4B220C] active:scale-[0.98]"
                         >
                             <FiPlus /> Create New Order
                         </button>
@@ -201,47 +214,58 @@ const Billing = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 {viewMode === "table" ? (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
                         <thead>
-                            <tr className="bg-[#350866] text-[#FCD34D]">
-                                <th className="px-6 py-5 w-12 rounded-tl-[2rem]">
+                            <tr className="bg-gradient-to-r from-[#3B1A0B] to-[#6B3212] text-amber-200">
+                                <th className="w-12 px-5 py-4">
                                     <input type="checkbox" aria-label="Select all orders" className="h-4 w-4 accent-[#FCD34D]" />
                                 </th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-wider">Order ID</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-wider">Customer</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-wider">Amount</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-wider">Payment</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-wider">Order Date</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-wider text-right rounded-tr-[2rem]">Actions</th>
+                                <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider">Order ID</th>
+                                <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider">Customer</th>
+                                <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider">Amount</th>
+                                <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider">Payment</th>
+                                <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider">Status</th>
+                                <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider">Order Date</th>
+                                <th className="px-5 py-4 text-right text-[10px] font-bold uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {paginatedInvoices.map((inv) => (
-                                <tr key={inv.id} className="hover:bg-blue-50/20 transition-colors group">
-                                    <td className="px-6 py-6">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="8" className="px-8 py-12 text-center text-sm font-medium text-gray-400">Loading billing orders...</td>
+                                </tr>
+                            ) : loadError ? (
+                                <tr>
+                                    <td colSpan="8" className="px-8 py-12 text-center">
+                                        <p role="alert" className="text-sm font-semibold text-rose-600">{loadError}</p>
+                                        <button type="button" onClick={fetchShopOrders} className="mt-3 rounded-lg bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-800 hover:bg-orange-100">Try again</button>
+                                    </td>
+                                </tr>
+                            ) : paginatedInvoices.map((inv) => (
+                                <tr key={inv.id} className="group border-b border-gray-100 transition-colors hover:bg-orange-50/40">
+                                    <td className="px-5 py-4">
                                         <input type="checkbox" aria-label={`Select ${inv.id}`} className="h-4 w-4 accent-[#4b0b78]" />
                                     </td>
-                                    <td className="px-6 py-6 text-xs font-bold text-slate-800">{inv.id}</td>
-                                    <td className="px-6 py-6 text-xs font-bold text-slate-700">{inv.customer}</td>
-                                    <td className="px-6 py-6 text-xs font-bold text-slate-800">₹{inv.amount.toFixed(2)}</td>
-                                    <td className="px-6 py-6">
-                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
-                                            <FiCreditCard /> {inv.method}
+                                    <td className="px-5 py-4 text-xs font-bold text-orange-800">{inv.id}</td>
+                                    <td className="px-5 py-4 text-xs font-bold text-slate-700">{inv.customer}</td>
+                                    <td className="px-5 py-4 text-xs font-bold text-slate-800">₹{inv.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="px-5 py-4">
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
+                                            <FiCreditCard className="text-orange-700" /> {inv.method}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-6">
+                                    <td className="px-5 py-4">
                                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getStatusStyle(inv.status)}`}>
                                             {inv.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-6 text-[11px] text-gray-500">{inv.date}</td>
-                                    <td className="px-6 py-6">
+                                    <td className="px-5 py-4 text-[11px] text-gray-500">{inv.date}</td>
+                                    <td className="px-5 py-4">
                                         <div className="flex items-center justify-end gap-2">
-                                            <button onClick={() => navigate(`/admin/orders/${inv.orderId}`)} className="p-2 text-blue-500 hover:bg-blue-100 rounded-lg transition-all" title="View order" aria-label={`View order ${inv.id}`}>
+                                            <button onClick={() => navigate(`/admin/orders/${inv.orderId}`)} className="rounded-lg p-2 text-orange-800 transition-all hover:bg-orange-100" title="View order" aria-label={`View order ${inv.id}`}>
                                                 <FiEye size={16} />
                                             </button>
                                            
@@ -249,7 +273,7 @@ const Billing = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {filteredInvoices.length === 0 && (
+                            {!loading && !loadError && filteredInvoices.length === 0 && (
                                 <tr>
                                     <td colSpan="8" className="px-8 py-12 text-center text-sm text-gray-400">
                                         No Shop orders found.
@@ -260,13 +284,20 @@ const Billing = () => {
                         </table>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-6 bg-gray-50/40">
-                        {paginatedInvoices.map((inv) => (
-                            <article key={inv.id} className="bg-white border border-gray-200 rounded-2xl p-5 space-y-5 shadow-sm hover:-translate-y-0.5 hover:shadow-lg transition-all">
-                                <div className="flex items-start justify-between gap-3 pb-4 border-b border-gray-100">
+                    <div className="grid grid-cols-1 gap-6 bg-gray-50/40 p-5 sm:grid-cols-2 xl:grid-cols-3">
+                        {loading ? (
+                            <div className="col-span-full px-8 py-12 text-center text-sm text-gray-400">Loading billing orders...</div>
+                        ) : loadError ? (
+                            <div className="col-span-full px-8 py-12 text-center">
+                                <p role="alert" className="text-sm font-semibold text-rose-600">{loadError}</p>
+                                <button type="button" onClick={fetchShopOrders} className="mt-3 rounded-lg bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-800 hover:bg-orange-100">Try again</button>
+                            </div>
+                        ) : paginatedInvoices.map((inv) => (
+                            <article key={inv.id} className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md">
+                                <div className="mb-4 flex items-start justify-between gap-3">
                                     <div>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.16em]">Shop Order</p>
-                                        <h3 className="text-lg font-black text-slate-800 mt-1">{inv.id}</h3>
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Shop Order</p>
+                                        <h3 className="mt-1 text-lg font-black text-slate-800">{inv.id}</h3>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <input type="checkbox" aria-label={`Select ${inv.id}`} className="h-4 w-4 accent-[#4b0b78]" />
@@ -275,7 +306,7 @@ const Billing = () => {
                                         </span>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="grid flex-1 grid-cols-2 gap-4 text-sm">
                                     <div>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Customer</p>
                                         <p className="font-bold text-slate-700 mt-1 truncate">{inv.customer}</p>
@@ -293,23 +324,23 @@ const Billing = () => {
                                         <p className="text-lg font-black text-slate-800 mt-0.5">₹{inv.amount.toFixed(2)}</p>
                                     </div>
                                 </div>
-                                <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-                                    <button onClick={() => navigate(`/admin/orders/${inv.orderId}`)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="View order" aria-label={`View order ${inv.id}`}>
+                                <div className="mt-5 flex justify-end gap-2 border-t border-gray-100 pt-4">
+                                    <button onClick={() => navigate(`/admin/orders/${inv.orderId}`)} className="rounded-lg p-2 text-orange-800 transition-all hover:bg-orange-100" title="View order" aria-label={`View order ${inv.id}`}>
                                         <FiEye size={16} />
                                     </button>
-                                    <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-all" title="More actions" aria-label={`More actions for ${inv.id}`}>
+                                    <button className="rounded-lg p-2 text-gray-400 transition-all hover:bg-gray-100" title="More actions" aria-label={`More actions for ${inv.id}`}>
                                         <FiMoreVertical size={16} />
                                     </button>
                                 </div>
                             </article>
                         ))}
-                        {filteredInvoices.length === 0 && (
+                        {!loading && !loadError && filteredInvoices.length === 0 && (
                             <p className="col-span-full px-8 py-12 text-center text-sm text-gray-400">No Shop orders found.</p>
                         )}
                     </div>
                 )}
                 {totalPages > 1 && (
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-6 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4">
                         <p className="text-xs font-semibold text-gray-500">
                             Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredInvoices.length)} of {filteredInvoices.length}
                         </p>
@@ -319,7 +350,7 @@ const Billing = () => {
                                 onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
                                 disabled={currentPage === 1}
                                 aria-label="Previous page"
-                                className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 <FiChevronLeft size={16} />
                             </button>
@@ -328,7 +359,7 @@ const Billing = () => {
                                     type="button"
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
-                                    className={`min-w-9 h-9 px-2 rounded-lg border text-xs font-bold transition-colors ${currentPage === page ? "bg-[#4b0b78] border-[#4b0b78] text-white" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                                    className={`h-9 min-w-9 rounded-lg border px-2 text-xs font-bold transition-colors ${currentPage === page ? "border-orange-800 bg-orange-800 text-white" : "border-gray-200 text-gray-600 hover:bg-orange-50"}`}
                                 >
                                     {page}
                                 </button>
@@ -338,7 +369,7 @@ const Billing = () => {
                                 onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
                                 disabled={currentPage === totalPages}
                                 aria-label="Next page"
-                                className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 <FiChevronRight size={16} />
                             </button>
