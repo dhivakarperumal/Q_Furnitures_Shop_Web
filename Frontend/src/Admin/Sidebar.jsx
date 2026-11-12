@@ -67,9 +67,18 @@ const navItems = [
       { path: "/admin/invoices/add", label: "New Invoice", icon: PlusCircle },
     ],
   },
-  { path: "/admin/banners", label: "Promotion Banners", icon: Image },
-  { path: "/admin/videos", label: "Showcase Videos", icon: Video },
-  { path: "/admin/reviews", label: "Customer Reviews", icon: MessageSquare },
+
+  {
+    label: "Marketing",
+    icon: Handshake,
+    children: [
+      { path: "/admin/banners", label: "Promotion Banners", icon: Image },
+      { path: "/admin/videos", label: "Showcase Videos", icon: Video },
+      { path: "/admin/reviews", label: "Customer Reviews", icon: MessageSquare },
+    ],
+  },
+
+  
   // { path: "/admin/reports", label: "Reports", icon: BarChart3 },
   { path: "/", label: "Back Home", icon: Home },
 ];
@@ -177,22 +186,29 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
             "radial-gradient(ellipse at 75% 42%, rgba(232, 103, 14, 0.72), transparent 58%), linear-gradient(180deg, #25130C 0%, #3B1A0B 52%, #160805 100%)",
         }}
       >
+        <img
+          src="/images/sidebottom.png"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-0 left-0 z-0 h-[30%] w-full object-cover object-bottom"
+        />
+
         {/* ========== LOGO ========== */}
-        <div className="relative flex flex-col items-center border-b border-white/10 px-4 py-3">
+        <div className="relative z-10 flex items-center gap-3 border-b border-white/10 px-4 py-3">
           <img
             src="/images/logo2.png"
             alt="Q Living Furniture"
-            className={collapsed ? "h-8 w-12 object-contain" : "h-20 w-[142px] object-contain"}
+            className={collapsed ? "h-8 w-12 object-contain" : "h-12 w-[94px] object-contain"}
           />
           {!collapsed && (
-            <p className="-mt-1 text-sm font-bold tracking-wide text-white">
+            <p className="pr-10 text-xs font-bold tracking-wide text-white">
               Admin Panel
             </p>
           )}
 
           <button
             onClick={onClose}
-            className="absolute right-3 top-3 rounded-xl border border-transparent p-2 text-white/70 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white lg:hidden"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl border border-transparent p-2 text-white/70 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Close admin menu"
           >
             <X className="h-5 w-5" />
@@ -200,7 +216,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
         </div>
 
         {/* ========== NAVIGATION ========== */}
-        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto hide-scrollbar">
+        <nav className="relative z-10 flex-1 px-3 py-6 space-y-1 overflow-y-auto hide-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
 
@@ -314,22 +330,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
           })}
         </nav>
 
-        {/* ========== FOOTER / PROFILE ========== */}
-        {!collapsed && (
-          <div className="p-4 mx-3 mb-6 bg-black/20 rounded-2xl border border-white/10 relative">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
-                <p className="font-bold text-black text-lg">{(profileName || "Admin User").charAt(0).toUpperCase()}</p>
-              </div>
-              <div className="overflow-hidden flex-1">
-                <p className="text-sm font-semibold text-white truncate">{(profileName || "Admin User")}</p>
-                <p className="text-[10px] text-gray-300 font-medium truncate">Super Admin</p>
-              </div>
-              <ChevronDown className="w-4 h-4 text-white/70" />
-            </div>
-          </div>
-        )}
-
+       
         {/* ========== COLLAPSE BUTTON ========== */}
         <button
           onClick={onToggleCollapse}
