@@ -6,6 +6,157 @@ function createPool() {
   return mysql.createPool(getDatabaseConfig());
 }
 
+function parseLegacyOrderItems(value, orderId) {
+  let items = value;
+  if (typeof items === "string") {
+    try {
+      items = JSON.parse(items);
+    } catch (error) {
+      throw new Error(`Could not migrate items for order ${orderId}: ${error.message}`);
+    }
+  }
+  if (!Array.isArray(items)) {
+    throw new Error(`Could not migrate items for order ${orderId}: expected a JSON array.`);
+  }
+  return items;
+}
+
+function normalizeLegacyOrderItem(item, orderId, index) {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    throw new Error(`Could not migrate item ${index + 1} for order ${orderId}: invalid item data.`);
+  }
+
+  const productName = String(item.product_name || item.name || "").trim();
+  const price = Number(item.price);
+  const quantity = Number(item.quantity);
+  const total = Number(item.total ?? price * quantity);
+  if (!productName || !Number.isFinite(price) || price < 0 ||
+      !Number.isSafeInteger(quantity) || quantity < 1 ||
+      !Number.isFinite(total) || total < 0) {
+    throw new Error(`Could not migrate item ${index + 1} for order ${orderId}: invalid item fields.`);
+  }
+
+  const productId = Number(item.product_id);
+  return [
+    orderId,
+    Number.isSafeInteger(productId) && productId > 0 ? productId : null,
+    productName.slice(0, 191),
+    price,
+    quantity,
+    total,
+    String(item.variant_color || "").slice(0, 100),
+    String(item.variant_size || "").slice(0, 100),
+    typeof item.image === "string" ? item.image : null,
+  ];
+}
+
+async function migrateLegacyOrderDetails(pool) {
+  const [columns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders'`,
+  );
+  const existingColumns = new Set(columns.map((column) => column.COLUMN_NAME));
+  const addressColumns = ["address", "street_address", "city", "district", "state", "country", "zip_code"];
+  const requiredAddressColumns = ["street_address", "city", "state", "zip_code"];
+  const hasLegacyAddress = requiredAddressColumns.every((column) => existingColumns.has(column));
+  const hasLegacyItems = existingColumns.has("items");
+  if (!hasLegacyAddress && !hasLegacyItems) return;
+
+  const selectedColumns = ["id"];
+  if (hasLegacyAddress) selectedColumns.push(...addressColumns.filter((column) => existingColumns.has(column)));
+  if (hasLegacyItems) selectedColumns.push("items");
+  const [legacyOrders] = await pool.query(
+    `SELECT ${selectedColumns.join(", ")} FROM orders`,
+  );
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    for (const order of legacyOrders) {
+      if (hasLegacyAddress) {
+        const [existingAddresses] = await connection.execute(
+          "SELECT order_id FROM order_addresses WHERE order_id = ? LIMIT 1",
+          [order.id],
+        );
+        if (!existingAddresses.length) {
+          const streetAddress = String(order.street_address || order.address || "").trim();
+          const city = String(order.city || "").trim();
+          const state = String(order.state || "").trim();
+          const zipCode = String(order.zip_code || "").trim();
+          if (!streetAddress || !city || !state || !zipCode) {
+            throw new Error(`Could not migrate address for order ${order.id}: required address fields are missing.`);
+          }
+          await connection.execute(
+            `INSERT INTO order_addresses
+             (order_id, address, street_address, city, district, state, country, zip_code)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              order.id,
+              order.address || streetAddress,
+              streetAddress,
+              city,
+              order.district || null,
+              state,
+              order.country || "India",
+              zipCode,
+            ],
+          );
+        }
+      }
+
+      if (hasLegacyItems) {
+        const items = parseLegacyOrderItems(order.items, order.id);
+        const [existingItems] = await connection.execute(
+          "SELECT COUNT(*) AS item_count FROM order_items WHERE order_id = ?",
+          [order.id],
+        );
+        const itemCount = Number(existingItems[0].item_count);
+        if (itemCount && itemCount !== items.length) {
+          throw new Error(`Could not migrate items for order ${order.id}: stored item counts do not match.`);
+        }
+        if (!itemCount) {
+          for (const [index, item] of items.entries()) {
+            await connection.execute(
+              `INSERT INTO order_items
+               (order_id, product_id, product_name, price, quantity, total, variant_color, variant_size, image)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              normalizeLegacyOrderItem(item, order.id, index),
+            );
+          }
+        }
+      }
+    }
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+
+  const columnsToDrop = [];
+  if (hasLegacyAddress) {
+    for (const column of addressColumns) {
+      if (existingColumns.has(column)) columnsToDrop.push(column);
+    }
+    const [missingAddresses] = await pool.execute(
+      `SELECT orders.id
+       FROM orders
+       LEFT JOIN order_addresses ON order_addresses.order_id = orders.id
+       WHERE order_addresses.order_id IS NULL
+       LIMIT 1`,
+    );
+    if (missingAddresses.length) {
+      throw new Error(`Order address migration is incomplete for order ${missingAddresses[0].id}.`);
+    }
+  }
+  if (hasLegacyItems) columnsToDrop.push("items");
+  if (columnsToDrop.length) {
+    await pool.query(`ALTER TABLE orders ${columnsToDrop.map((column) => `DROP COLUMN ${column}`).join(", ")}`);
+  }
+}
+
 async function initializeDatabase(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -69,19 +220,11 @@ async function initializeDatabase(pool) {
       customer_name VARCHAR(191) NOT NULL,
       customer_email VARCHAR(191) NULL,
       customer_phone VARCHAR(32) NOT NULL,
-      address TEXT NULL,
-      street_address VARCHAR(255) NOT NULL,
-      city VARCHAR(191) NOT NULL,
-      district VARCHAR(191) NULL,
-      state VARCHAR(191) NOT NULL,
-      country VARCHAR(191) NOT NULL DEFAULT 'India',
-      zip_code VARCHAR(32) NOT NULL,
       order_type VARCHAR(32) NOT NULL DEFAULT 'Shop',
       payment_method VARCHAR(32) NOT NULL,
       payment_status VARCHAR(32) NOT NULL DEFAULT 'Pending',
       status VARCHAR(32) NOT NULL DEFAULT 'Order Placed',
       total_amount DECIMAL(12,2) NOT NULL,
-      items JSON NOT NULL,
       tracking_number VARCHAR(191) NULL,
       courier_name VARCHAR(191) NULL,
       shipped_at DATETIME NULL,
@@ -94,6 +237,42 @@ async function initializeDatabase(pool) {
       KEY orders_customer_phone_idx (customer_phone)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS order_addresses (
+      order_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+      address TEXT NULL,
+      street_address VARCHAR(255) NOT NULL,
+      city VARCHAR(191) NOT NULL,
+      district VARCHAR(191) NULL,
+      state VARCHAR(191) NOT NULL,
+      country VARCHAR(191) NOT NULL DEFAULT 'India',
+      zip_code VARCHAR(32) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT order_addresses_order_fk
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS order_items (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      order_id BIGINT UNSIGNED NOT NULL,
+      product_id BIGINT UNSIGNED NULL,
+      product_name VARCHAR(191) NOT NULL,
+      price DECIMAL(12,2) NOT NULL,
+      quantity INT UNSIGNED NOT NULL,
+      total DECIMAL(12,2) NOT NULL,
+      variant_color VARCHAR(100) NOT NULL DEFAULT '',
+      variant_size VARCHAR(100) NOT NULL DEFAULT '',
+      image TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      KEY order_items_order_idx (order_id, id),
+      KEY order_items_product_idx (product_id),
+      CONSTRAINT order_items_order_fk
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await migrateLegacyOrderDetails(pool);
   const [productsMissingCode] = await pool.execute(
     `SELECT id, created_at
      FROM products

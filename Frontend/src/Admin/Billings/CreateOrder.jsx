@@ -103,7 +103,7 @@ const CreateOrder = () => {
 
     const handleProductClick = (product) => {
         const firstVariant = getProductVariants(product)[0] || {
-            color: "#4b0b78",
+            color: "#9A4D16",
             colorName: "Standard",
             images: [],
             sizesStock: {}
@@ -243,12 +243,12 @@ const CreateOrder = () => {
             <div className="flex items-center gap-4 pb-2">
                 <button
                     onClick={() => navigate(-1)}
-                    className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-[#4b0b78] transition-all shadow-sm active:scale-95"
+                    className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:bg-orange-50 hover:text-primary-dark transition-all shadow-sm active:scale-95"
                 >
                     <FiArrowLeft size={20} />
                 </button>
                 <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#4b0b78]">Order Management</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-dark">Order Management</p>
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight">Create New Shop Order</h1>
                     <p className="text-sm text-gray-400 font-medium mt-1">Create a showroom order for an in-store customer.</p>
                 </div>
@@ -277,7 +277,7 @@ const CreateOrder = () => {
                                             }
                                             setSelectedProductForVariant(null);
                                         }}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg outline-none focus:border-[#4b0b78] transition-all font-medium text-slate-800 appearance-none cursor-pointer"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg outline-none focus:border-primary focus:ring-2 focus:ring-orange-100 transition-all font-medium text-slate-800 appearance-none cursor-pointer"
                                     >
                                         <option value="">All Categories</option>
                                         {categories.map(cat => (
@@ -299,7 +299,7 @@ const CreateOrder = () => {
                                                 setSelectedProductForVariant(null);
                                             }
                                         }}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg outline-none focus:border-[#4b0b78] transition-all font-medium text-slate-800 appearance-none cursor-pointer"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg outline-none focus:border-primary focus:ring-2 focus:ring-orange-100 transition-all font-medium text-slate-800 appearance-none cursor-pointer"
                                     >
                                         <option value="" disabled>-- Choose a Product --</option>
                                         {filteredProducts.map(product => (
@@ -313,9 +313,9 @@ const CreateOrder = () => {
 
                             {/* Variant Selection UI */}
                             {selectedProductForVariant && (
-                                    <div className="p-6 bg-purple-50/50 rounded-2xl border border-purple-100 space-y-6 animate-in zoom-in-95 duration-300">
+                                    <div className="p-6 bg-orange-50/60 rounded-2xl border border-orange-100 space-y-6 animate-in zoom-in-95 duration-300">
                                     <div className="flex justify-between items-center">
-                                        <h3 className="font-black text-[#4b0b78] uppercase tracking-widest text-xs italic">Select Color & Size for: {selectedProductForVariant.name}</h3>
+                                        <h3 className="font-black text-primary-dark uppercase tracking-widest text-xs italic">Select Color & Size for: {selectedProductForVariant.name}</h3>
                                         <button onClick={() => setSelectedProductForVariant(null)} className="p-1 hover:bg-white rounded-lg transition-colors"><FiX /></button>
                                     </div>
 
@@ -327,7 +327,7 @@ const CreateOrder = () => {
                                                 <button
                                                     key={i}
                                                     onClick={() => { setSelectedVariant(v); setSelectedSize(getDefaultSize(v)); }}
-                                                    className={`group relative p-1 rounded-full border-2 transition-all ${selectedVariant === v ? 'border-[#4b0b78] scale-110' : 'border-transparent'}`}
+                                                    className={`group relative p-1 rounded-full border-2 transition-all ${selectedVariant === v ? 'border-primary scale-110' : 'border-transparent'}`}
                                                     title={v.colorName || v.color}
                                                 >
                                                     <div
@@ -335,13 +335,13 @@ const CreateOrder = () => {
                                                         style={{ backgroundColor: v.color }}
                                                     ></div>
                                                     {v.colorName && (
-                                                        <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-blue-600">
+                                                        <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-primary-dark">
                                                             {v.colorName}
                                                         </span>
                                                     )}
                                                 </button>
                                             )) : (
-                                                <div className="flex items-center gap-2 text-sm font-medium text-gray-500"><span className="w-8 h-8 rounded-full bg-[#4b0b78] border border-gray-200"></span> Standard</div>
+                                                <div className="flex items-center gap-2 text-sm font-medium text-gray-500"><span className="w-8 h-8 rounded-full bg-[#9A4D16] border border-gray-200"></span> Standard</div>
                                             )}
                                         </div>
                                     </div>
@@ -356,7 +356,7 @@ const CreateOrder = () => {
                                                         key={size}
                                                         disabled={parseInt(stock) <= 0}
                                                         onClick={() => setSelectedSize(size)}
-                                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${selectedSize === size ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-100'} ${parseInt(stock) <= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:border-blue-200 shadow-sm'}`}
+                                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${selectedSize === size ? 'bg-primary text-white' : 'bg-white text-gray-600 border border-gray-100'} ${parseInt(stock) <= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:border-primary shadow-sm'}`}
                                                     >
                                                         {size} <span className="opacity-50 ml-1">({stock})</span>
                                                     </button>
@@ -364,7 +364,7 @@ const CreateOrder = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setSelectedSize(selectedVariant.size || selectedVariant.selectedSizes?.[0] || "Free Size")}
-                                                        className="px-4 py-2 rounded-xl text-xs font-black bg-[#4b0b78] text-white"
+                                                        className="px-4 py-2 rounded-xl text-xs font-black bg-primary text-white"
                                                     >
                                                         {selectedVariant.size || selectedVariant.selectedSizes?.[0] || "Free Size"}
                                                     </button>
@@ -376,7 +376,7 @@ const CreateOrder = () => {
                                     <button
                                         onClick={confirmAddItem}
                                         disabled={!selectedVariant || !selectedSize}
-                                        className="w-full py-4 bg-[#4b0b78] hover:bg-[#260642] disabled:bg-gray-200 text-white rounded-xl font-black text-sm uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-purple-500/20"
+                                        className="w-full py-4 bg-gradient-to-r from-primary to-primary-dark hover:from-secondary-light hover:to-secondary-dark disabled:bg-gray-200 disabled:from-gray-200 disabled:to-gray-200 text-white rounded-xl font-black text-sm uppercase tracking-widest transition-all active:scale-95 shadow-md shadow-orange-200"
                                     >
                                         Add Selection to Order
                                     </button>
@@ -395,13 +395,13 @@ const CreateOrder = () => {
                                 ) : (
                                     <div className="overflow-hidden border border-gray-100 rounded-2xl">
                                         <table className="w-full text-left">
-                                            <thead className="bg-gray-50">
+                                            <thead className="bg-gradient-to-r from-[#3B1A0B] to-[#6B3212] text-amber-200">
                                                 <tr>
-                                                    <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Product / Variant</th>
-                                                    <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Price</th>
-                                                    <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest w-24">Qty</th>
-                                                    <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest text-right">Total</th>
-                                                    <th className="px-6 py-4"></th>
+                                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">Product / Variant</th>
+                                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">Price</th>
+                                                    <th className="w-24 px-6 py-4 text-[10px] font-bold uppercase tracking-wider">Qty</th>
+                                                    <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider">Total</th>
+                                                    <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-50">
@@ -418,7 +418,7 @@ const CreateOrder = () => {
                                                                 </div>
                                                                 <div>
                                                                     <p className="text-sm font-bold text-slate-800 leading-tight">{item.name}</p>
-                                                                    <p className="text-[9px] font-black text-blue-500 uppercase tracking-wider mt-0.5">
+                                                                    <p className="text-[9px] font-black text-primary-dark uppercase tracking-wider mt-0.5">
                                                                         {item.variant_color} • {item.variant_size}
                                                                     </p>
                                                                 </div>
@@ -459,7 +459,7 @@ const CreateOrder = () => {
                             {/* User Selection */}
                             <div className="space-y-4 pb-6 border-b border-gray-50">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-[10px] font-black italic text-blue-600 uppercase tracking-widest ml-1">Order For *</label>
+                                    <label className="text-[10px] font-black italic text-primary-dark uppercase tracking-widest ml-1">Order For *</label>
                                     <div className="flex gap-2">
                                         <button
                                             type="button"
@@ -470,12 +470,12 @@ const CreateOrder = () => {
                                                 }));
                                                 setUserSearchTerm("");
                                             }}
-                                            className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${isGuest ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}
+                                            className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${isGuest ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-primary-dark'}`}
                                         >Guest Customer</button>
                                         <button
                                             type="button"
                                             onClick={() => setIsGuest(false)}
-                                            className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${!isGuest ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}
+                                            className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${!isGuest ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-primary-dark'}`}
                                         >Registered Customer</button>
                                     </div>
                                 </div>
@@ -490,7 +490,7 @@ const CreateOrder = () => {
                                             placeholder="Search registered users by name, email or phone..."
                                             value={userSearchTerm}
                                             onChange={(e) => setUserSearchTerm(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                         />
                                         {userSearchTerm && filteredUsers.length > 0 && (
                                             <div className="absolute z-10 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
@@ -517,26 +517,26 @@ const CreateOrder = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                                        <FiUser className="text-blue-500" /> Customer Name *
+                                        <FiUser className="text-primary" /> Customer Name *
                                     </label>
                                     <input
                                         type="text"
                                         placeholder="Full name"
                                         value={formData.customer_name}
                                         onChange={(e) => setFormData(p => ({ ...p, customer_name: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                                        <FiUser className="text-blue-500" /> Phone Number *
+                                        <FiUser className="text-primary" /> Phone Number *
                                     </label>
                                     <input
                                         type="text"
                                         placeholder="Contact number"
                                         value={formData.customer_phone}
                                         onChange={(e) => setFormData(p => ({ ...p, customer_phone: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                     />
                                 </div>
                             </div>
@@ -544,19 +544,19 @@ const CreateOrder = () => {
 
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                                    <FiUser className="text-blue-500" /> Email Address
+                                    <FiUser className="text-primary" /> Email Address
                                 </label>
                                 <input
                                     type="email"
                                     placeholder="Optional email"
                                     value={formData.customer_email}
                                     onChange={(e) => setFormData(p => ({ ...p, customer_email: e.target.value }))}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                 />
                             </div>
                             <div className="space-y-4">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                                    <FiMapPin className="text-blue-500" /> Shipping Details *
+                                    <FiMapPin className="text-primary" /> Shipping Details *
                                 </label>
 
                                 <div className="space-y-4">
@@ -565,7 +565,7 @@ const CreateOrder = () => {
                                         placeholder="Street Address / Area / Landmark"
                                         value={formData.street_address}
                                         onChange={(e) => setFormData(p => ({ ...p, street_address: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                     />
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -574,14 +574,14 @@ const CreateOrder = () => {
                                             placeholder="City"
                                             value={formData.city}
                                             onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                         />
                                         <input
                                             type="text"
                                             placeholder="District"
                                             value={formData.district}
                                             onChange={(e) => setFormData(p => ({ ...p, district: e.target.value }))}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                         />
                                     </div>
 
@@ -591,14 +591,14 @@ const CreateOrder = () => {
                                             placeholder="State"
                                             value={formData.state}
                                             onChange={(e) => setFormData(p => ({ ...p, state: e.target.value }))}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                         />
                                         <input
                                             type="text"
                                             placeholder="Zip Code"
                                             value={formData.zip_code}
                                             onChange={(e) => setFormData(p => ({ ...p, zip_code: e.target.value }))}
-                                            className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500/20 font-bold transition-all shadow-inner outline-none"
+                                            className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/30 focus:ring-2 focus:ring-orange-100 font-bold transition-all shadow-inner outline-none"
                                         />
                                     </div>
 
@@ -607,7 +607,7 @@ const CreateOrder = () => {
                                         placeholder="Country"
                                         value={formData.country}
                                         onChange={(e) => setFormData(p => ({ ...p, country: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                     />
                                 </div>
                             </div>
@@ -617,14 +617,14 @@ const CreateOrder = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Order Type</label>
-                                        <div className="w-full px-4 py-3 bg-purple-50 border border-[#4b0b78] rounded-lg font-bold text-[#4b0b78]">Shop Order</div>
+                                        <div className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg font-bold text-primary-dark">Shop Order</div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Payment Type</label>
                                         <select
                                             value={formData.payment_method}
                                             onChange={(e) => setFormData(p => ({ ...p, payment_method: e.target.value }))}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                         >
                                             <option value="Cash">Cash</option>
                                             <option value="UPI">UPI</option>
@@ -637,7 +637,7 @@ const CreateOrder = () => {
                                     <select
                                         value={formData.status}
                                         onChange={(e) => setFormData(p => ({ ...p, status: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-[#4b0b78] font-medium transition-all outline-none"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-orange-100 font-medium transition-all outline-none"
                                     >
                                         <option value="Order Placed">Order Placed</option>
                                         <option value="Packing">Packing</option>
@@ -654,7 +654,7 @@ const CreateOrder = () => {
 
                 {/* Sidebar Summary */}
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-[#260642] to-[#4b0b78] p-8 rounded-2xl text-white shadow-2xl shadow-purple-900/20 sticky top-6">
+                    <div className="bg-gradient-to-br from-secondary-dark to-secondary-light p-8 rounded-2xl text-white shadow-xl shadow-stone-900/15 sticky top-6">
                         <h3 className="text-xl font-bold mb-6">Order Summary</h3>
 
                         <div className="space-y-4 border-b border-white/10 pb-6 mb-6">
@@ -669,7 +669,7 @@ const CreateOrder = () => {
                         </div>
 
                         <div className="mb-10">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-purple-200 mb-2">Grand Total</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-orange-200 mb-2">Grand Total</p>
                             <h2 className="text-4xl font-black italic">₹{formData.total_amount.toLocaleString()}</h2>
                         </div>
 
@@ -679,7 +679,7 @@ const CreateOrder = () => {
                                     if (formData.items.length === 0) return toast.error("Please add products first");
                                     setStep(2);
                                 }}
-                                className="w-full flex items-center justify-center gap-3 bg-white text-[#4b0b78] hover:bg-purple-100 py-4 rounded-xl text-md font-black transition-all active:scale-95 group"
+                                className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-primary-dark hover:from-secondary-light hover:to-secondary-dark text-white py-4 rounded-xl text-md font-black transition-all active:scale-95 shadow-md shadow-orange-900/20 group"
                             >
                                 <span>Next Details</span>
                                 <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
@@ -689,7 +689,7 @@ const CreateOrder = () => {
                                 <button
                                     onClick={handleSubmit}
                                     disabled={loading}
-                                    className="w-full flex items-center justify-center gap-3 bg-white text-[#4b0b78] hover:bg-purple-100 py-4 rounded-xl text-lg font-black transition-all active:scale-95 shadow-xl shadow-purple-900/20"
+                                    className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-primary-dark hover:from-secondary-light hover:to-secondary-dark text-white py-4 rounded-xl text-lg font-black transition-all active:scale-95 shadow-md shadow-orange-900/20 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {loading ? <div className="w-6 h-6 border-2 border-t-white rounded-full animate-spin"></div> : (
                                         <>

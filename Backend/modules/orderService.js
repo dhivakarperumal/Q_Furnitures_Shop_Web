@@ -111,14 +111,6 @@ function parseProductData(value) {
   return parsed;
 }
 
-function parseStoredItems(value) {
-  if (Array.isArray(value)) return value;
-  if (typeof value !== "string") return [];
-  const parsed = JSON.parse(value);
-  if (!Array.isArray(parsed)) throw new Error("Stored order items must be a JSON array.");
-  return parsed;
-}
-
 function variantColorMatches(variant, color) {
   if (!color) return true;
   const labels = [variant.colorName, variant.color, variant.colour]
@@ -182,20 +174,81 @@ function getProductImage(productData, variant) {
   return images[mainImageIndex] || images[0] || productData.image || "";
 }
 
-function mapOrder(row) {
+function mapOrderItem(row) {
   return {
     ...row,
+    product_id: row.product_id == null ? null : Number(row.product_id),
+    product_name: row.product_name,
+    name: row.product_name,
+    price: Number(row.price),
+    quantity: Number(row.quantity),
+    total: Number(row.total),
+  };
+}
+
+function mapOrder(row, address, items) {
+  const shippingAddress = address
+    ? {
+      address: address.address || address.street_address,
+      street_address: address.street_address,
+      city: address.city,
+      district: address.district,
+      state: address.state,
+      country: address.country,
+      zip_code: address.zip_code,
+    }
+    : {};
+  return {
+    ...row,
+    ...shippingAddress,
+    shipping_address: address ? shippingAddress : null,
     order_id: `ORD${String(row.id).padStart(5, "0")}`,
     total_amount: Number(row.total_amount),
     subtotal: Number(row.total_amount),
-    items: parseStoredItems(row.items),
+    items,
   };
 }
 
 function createOrderService(pool) {
+  async function hydrateOrders(rows) {
+    if (!rows.length) return [];
+
+    const ids = rows.map((row) => row.id);
+    const placeholders = ids.map(() => "?").join(", ");
+    const [addressResult, itemResult] = await Promise.all([
+      pool.execute(
+        `SELECT * FROM order_addresses WHERE order_id IN (${placeholders})`,
+        ids,
+      ),
+      pool.execute(
+        `SELECT * FROM order_items
+         WHERE order_id IN (${placeholders})
+         ORDER BY order_id, id`,
+        ids,
+      ),
+    ]);
+    const [addresses] = addressResult;
+    const [items] = itemResult;
+    const addressesByOrderId = new Map(addresses.map((address) => [String(address.order_id), address]));
+    const itemsByOrderId = new Map();
+    for (const item of items) {
+      const key = String(item.order_id);
+      if (!itemsByOrderId.has(key)) itemsByOrderId.set(key, []);
+      itemsByOrderId.get(key).push(mapOrderItem(item));
+    }
+
+    return rows.map((row) => mapOrder(
+      row,
+      addressesByOrderId.get(String(row.id)),
+      itemsByOrderId.get(String(row.id)) || [],
+    ));
+  }
+
   async function getById(id) {
     const [rows] = await pool.execute("SELECT * FROM orders WHERE id = ? LIMIT 1", [id]);
-    return rows[0] ? mapOrder(rows[0]) : null;
+    if (!rows[0]) return null;
+    const [order] = await hydrateOrders(rows);
+    return order;
   }
 
   return {
@@ -265,15 +318,27 @@ function createOrderService(pool) {
 
         const [result] = await connection.execute(
           `INSERT INTO orders
-           (user_id, customer_name, customer_email, customer_phone, address, street_address,
-            city, district, state, country, zip_code, order_type, payment_method,
-            payment_status, status, total_amount, items)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?)`,
+           (user_id, customer_name, customer_email, customer_phone, order_type, payment_method,
+            payment_status, status, total_amount)
+           VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, ?)`,
           [
             order.userId,
             order.customerName,
             order.customerEmail,
             order.customerPhone,
+            order.orderType,
+            order.paymentMethod,
+            order.status,
+            totalAmount,
+          ],
+        );
+
+        await connection.execute(
+          `INSERT INTO order_addresses
+           (order_id, address, street_address, city, district, state, country, zip_code)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            result.insertId,
             order.address || order.streetAddress,
             order.streetAddress,
             order.city,
@@ -281,13 +346,27 @@ function createOrderService(pool) {
             order.state,
             order.country,
             order.zipCode,
-            order.orderType,
-            order.paymentMethod,
-            order.status,
-            totalAmount,
-            JSON.stringify(orderItems),
           ],
         );
+
+        for (const item of orderItems) {
+          await connection.execute(
+            `INSERT INTO order_items
+             (order_id, product_id, product_name, price, quantity, total, variant_color, variant_size, image)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              result.insertId,
+              item.product_id,
+              item.product_name,
+              item.price,
+              item.quantity,
+              item.total,
+              item.variant_color,
+              item.variant_size,
+              item.image || null,
+            ],
+          );
+        }
 
         await connection.commit();
         return {
@@ -319,7 +398,7 @@ function createOrderService(pool) {
          LIMIT 500`,
         normalizedStatus ? [normalizedStatus] : [],
       );
-      return rows.map(mapOrder);
+      return hydrateOrders(rows);
     },
 
     getById,
