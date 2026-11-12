@@ -246,39 +246,42 @@ const Category = () => {
            
 
             {/* Stats Cards Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-orange-100 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-                    <div className="pointer-events-none absolute -right-8 -bottom-12 h-32 w-32 rounded-full bg-orange-50 transition-transform duration-300 group-hover:scale-125" />
-                    <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-dark shadow-md shadow-orange-200">
-                        <FiBox className="text-xl text-white" />
+            <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                    <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-primary-light to-primary-dark" />
+                    <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-orange-200/70 transition-transform duration-200 group-hover:scale-105">
+                        <FiBox className="text-xl" />
                     </div>
                     <div className="relative z-10">
-                        <p className="mb-1 text-xs font-bold text-secondary-light">Total Categories</p>
+                        <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">Total Categories</p>
                         <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">{categories.length}</h3>
-                        <p className="text-[11px] font-medium text-stone-500">All category collections</p>
+                        <p className="text-[10px] font-medium text-stone-500">All category collections</p>
                     </div>
+                    <FiBox className="pointer-events-none absolute -right-1 bottom-1 text-orange-300/20" size={60} />
                 </div>
-                <div className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-emerald-100 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-                    <div className="pointer-events-none absolute -right-8 -bottom-12 h-32 w-32 rounded-full bg-emerald-50 transition-transform duration-300 group-hover:scale-125" />
-                    <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 shadow-md shadow-emerald-200">
-                        <FiCheckCircle className="text-xl text-white" />
+                <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-emerald-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                    <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-emerald-400 to-emerald-600" />
+                    <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200/70 transition-transform duration-200 group-hover:scale-105">
+                        <FiCheckCircle className="text-xl" />
                     </div>
                     <div className="relative z-10">
-                        <p className="mb-1 text-xs font-bold text-secondary-light">Active</p>
+                        <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">Active</p>
                         <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">{activeCount}</h3>
-                        <p className="text-[11px] font-medium text-stone-500">Active collections</p>
+                        <p className="text-[10px] font-medium text-stone-500">Active collections</p>
                     </div>
+                    <FiCheckCircle className="pointer-events-none absolute -right-1 bottom-1 text-emerald-300/20" size={60} />
                 </div>
-                <div className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-amber-100 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-                    <div className="pointer-events-none absolute -right-8 -bottom-12 h-32 w-32 rounded-full bg-amber-50 transition-transform duration-300 group-hover:scale-125" />
-                    <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500 shadow-md shadow-amber-200">
-                        <FiAlertCircle className="text-xl text-white" />
+                <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-amber-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+                    <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-amber-400 to-amber-600" />
+                    <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg shadow-amber-200/70 transition-transform duration-200 group-hover:scale-105">
+                        <FiAlertCircle className="text-xl" />
                     </div>
                     <div className="relative z-10">
-                        <p className="mb-1 text-xs font-bold text-secondary-light">Inactive</p>
+                        <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">Inactive</p>
                         <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">{inactiveCount}</h3>
-                        <p className="text-[11px] font-medium text-stone-500">Inactive collections</p>
+                        <p className="text-[10px] font-medium text-stone-500">Inactive collections</p>
                     </div>
+                    <FiAlertCircle className="pointer-events-none absolute -right-1 bottom-1 text-amber-300/20" size={60} />
                 </div>
             </div>
 
