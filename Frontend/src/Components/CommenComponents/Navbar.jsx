@@ -445,13 +445,7 @@ const Navbar = () => {
                   <NavLink
                     to="/"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
-      ${isActive
-                        ? "bg-orange-600 text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
-                      }`
-                    }
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
                   >
                     <FiHome size={16} />
                     Home
@@ -460,13 +454,7 @@ const Navbar = () => {
                   <NavLink
                     to="/shop"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
-      ${isActive
-                        ? "bg-orange-600 text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
-                      }`
-                    }
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
                   >
                     <FiShoppingBag size={16} />
                     Shop
@@ -474,7 +462,7 @@ const Navbar = () => {
 
                   <button
                     onClick={() => setMobileCategory(true)}
-                    className="flex items-center justify-between px-4 py-3 rounded-lg text-sm bg-gray-100 hover:bg-orange-100 hover:text-orange-700 transition"
+                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
                   >
                     <div className="flex items-center gap-3">
                       <FiGrid size={16} />
@@ -486,7 +474,7 @@ const Navbar = () => {
 
                   <button
                     onClick={() => setMobilePages(true)}
-                    className="flex items-center justify-between px-4 py-3 rounded-lg text-sm bg-gray-100 hover:bg-orange-100 hover:text-orange-700 transition"
+                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
                   >
                     <div className="flex items-center gap-3">
                       <FiFileText size={16} />
@@ -499,7 +487,7 @@ const Navbar = () => {
                   <Link
                     to={user ? "/account" : "/login"}
                     onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-700 transition hover:bg-orange-100 hover:text-orange-700"
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
                   >
                     <User size={16} />
                     {user ? "My Account" : "Sign In"}
@@ -542,13 +530,7 @@ const Navbar = () => {
                       key={cat.id}
                       to={`/category/${cat.slug || cat.name}`}
                       onClick={closeMobileMenu}
-                      className={({ isActive }) =>
-                        `flex items-center justify-between px-4 py-3 rounded-lg text-sm transition
-        ${isActive
-                          ? "bg-orange-600 text-white shadow"
-                          : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
-                        }`
-                      }
+                      className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
                     >
 
                       <div className="flex items-center gap-3">
@@ -592,13 +574,7 @@ const Navbar = () => {
                   <NavLink
                     to="/about"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
-      ${isActive
-                        ? "bg-orange-600 text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
-                      }`
-                    }
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
                   >
                     <FiFileText size={16} />
                     About Us
@@ -607,13 +583,7 @@ const Navbar = () => {
                     <NavLink
                     to="/termsandconditions"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
-      ${isActive
-                        ? "bg-orange-600 text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
-                      }`
-                    }
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
                   >
                     <FiFileText size={16} />
                     Terms And Conditions
@@ -623,13 +593,7 @@ const Navbar = () => {
                   <NavLink
                     to="/contactus"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
-      ${isActive
-                        ? "bg-orange-600 text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
-                      }`
-                    }
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-700 transition hover:text-orange-700"
                   >
                     <FiPhone size={16} />
                     Contact Us
