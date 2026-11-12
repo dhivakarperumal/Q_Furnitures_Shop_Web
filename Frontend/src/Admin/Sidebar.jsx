@@ -333,10 +333,10 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
           className="
             hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2
             w-6 h-6 rounded-full
-            bg-white border border-slate-200
-            shadow-[0_4px_10px_rgba(0,0,0,0.1)]
+            bg-gradient-to-br from-primary to-primary-dark border border-orange-200/70
+            shadow-[0_4px_12px_rgba(232,103,14,0.35)]
             items-center justify-center
-            text-slate-500 hover:text-blue-600 hover:scale-110 transition-all z-50
+            text-white hover:from-secondary-light hover:to-secondary-dark hover:scale-110 transition-all z-50
           "
         >
           <ChevronLeft
