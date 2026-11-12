@@ -31,7 +31,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[60] transition-opacity duration-300 ${isOpen ? "visible opacity-100" : "invisible opacity-0"}`}
+      className={`fixed inset-0 z-[60] overflow-hidden transition-opacity duration-300 ${isOpen ? "visible opacity-100" : "invisible opacity-0"}`}
       aria-hidden={!isOpen}
     >
       <button

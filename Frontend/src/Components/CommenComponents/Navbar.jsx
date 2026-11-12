@@ -49,6 +49,12 @@ const Navbar = () => {
     navigate("/login", { replace: true });
   };
 
+  const closeMobileMenu = () => {
+    setMobileMenu(false);
+    setMobileCategory(false);
+    setMobilePages(false);
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
 
@@ -125,11 +131,12 @@ const Navbar = () => {
     if (!query) return;
     navigate(`/shop?search=${encodeURIComponent(query)}`);
     setSearchOpen(false);
+    closeMobileMenu();
   };
 
   return (
 
-    <nav className="sticky top-0 z-50 border-b border-orange-100 bg-white/95 shadow-sm backdrop-blur">
+    <nav className="sticky top-0 z-50 border-b border-orange-100 bg-white/95 shadow-sm">
       <PageContainer>
         <div className="flex min-h-[72px] items-center justify-between gap-3">
           <Link
@@ -233,6 +240,7 @@ const Navbar = () => {
           </div>
 
           <div className="flex shrink-0 items-center gap-3 text-slate-800 sm:gap-4">
+            <div className="hidden items-center gap-3 sm:flex">
             <div className="relative">
               <button
                 type="button"
@@ -324,10 +332,11 @@ const Navbar = () => {
                 <User size={21} />
               </Link>
             )}
+            </div>
 
             <button
               type="button"
-              onClick={() => setMobileMenu(!mobileMenu)}
+              onClick={() => mobileMenu ? closeMobileMenu() : setMobileMenu(true)}
               aria-label={mobileMenu ? "Close menu" : "Open menu"}
               className="flex h-9 w-9 items-center justify-center rounded-full text-slate-800 transition hover:bg-orange-50 hover:text-orange-600 lg:hidden"
             >
@@ -382,31 +391,68 @@ const Navbar = () => {
           {/* Overlay */}
           <div
             className="absolute inset-0 bg-black/40"
-            onClick={() => setMobileMenu(false)}
+            onClick={closeMobileMenu}
           />
 
           {/* Drawer */}
-          <div className="absolute top-0 left-0 h-full w-[85%] max-w-[340px] bg-white shadow-xl overflow-hidden">
+          <div className="absolute left-0 top-0 h-full w-[88%] max-w-[360px] overflow-y-auto bg-white shadow-xl">
 
             {/* MENU SCREEN */}
             {!mobileCategory && !mobilePages && (
               <>
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
-                  <h2 className="text-lg font-semibold tracking-wide">Menu</h2>
-                  <X
-                    size={24}
-                    className="cursor-pointer"
-                    onClick={() => setMobileMenu(false)}
-                  />
+                  <h2 className="text-lg font-bold tracking-wide">Q Furnitures</h2>
+                  <button type="button" aria-label="Close menu" onClick={closeMobileMenu}>
+                    <X size={24} />
+                  </button>
                 </div>
 
                 {/* Links */}
                 <div className="flex flex-col p-5 space-y-3">
+                  <form onSubmit={handleSearch} className="mb-1 flex gap-2">
+                    <label htmlFor="mobile-furniture-search" className="sr-only">Search furniture</label>
+                    <input
+                      id="mobile-furniture-search"
+                      type="search"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder="Search furniture"
+                      className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-orange-400"
+                    />
+                    <button type="submit" aria-label="Search" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-600 text-white">
+                      <Search size={18} />
+                    </button>
+                  </form>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMobileMenu();
+                        setWishlistOpen(true);
+                      }}
+                      className="flex items-center justify-center gap-2 rounded-lg border border-orange-100 px-3 py-3 text-sm font-semibold text-slate-700"
+                    >
+                      <Heart size={17} />
+                      Wishlist{wishlist.length > 0 ? ` (${wishlist.length})` : ""}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMobileMenu();
+                        setCartOpen(true);
+                      }}
+                      className="flex items-center justify-center gap-2 rounded-lg border border-orange-100 px-3 py-3 text-sm font-semibold text-slate-700"
+                    >
+                      <ShoppingCart size={17} />
+                      Cart{cart.length > 0 ? ` (${cart.length})` : ""}
+                    </button>
+                  </div>
 
                   <NavLink
                     to="/"
-                    onClick={() => setMobileMenu(false)}
+                    onClick={closeMobileMenu}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
@@ -421,7 +467,7 @@ const Navbar = () => {
 
                   <NavLink
                     to="/shop"
-                    onClick={() => setMobileMenu(false)}
+                    onClick={closeMobileMenu}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
@@ -458,6 +504,15 @@ const Navbar = () => {
                     <FiChevronRight size={16} />
                   </button>
 
+                  <Link
+                    to={user ? "/account" : "/login"}
+                    onClick={closeMobileMenu}
+                    className="flex items-center gap-3 rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-700 transition hover:bg-orange-100 hover:text-orange-700"
+                  >
+                    <User size={16} />
+                    {user ? "My Account" : "Sign In"}
+                  </Link>
+
                 </div>
               </>
             )}
@@ -481,7 +536,7 @@ const Navbar = () => {
                   <X
                     size={24}
                     className="cursor-pointer"
-                    onClick={() => setMobileMenu(false)}
+                    onClick={closeMobileMenu}
                   />
 
                 </div>
@@ -494,7 +549,7 @@ const Navbar = () => {
                     <NavLink
                       key={cat.id}
                       to={`/category/${cat.slug || cat.name}`}
-                      onClick={() => setMobileMenu(false)}
+                      onClick={closeMobileMenu}
                       className={({ isActive }) =>
                         `flex items-center justify-between px-4 py-3 rounded-lg text-sm transition
         ${isActive
@@ -535,7 +590,7 @@ const Navbar = () => {
                   <X
                     size={24}
                     className="cursor-pointer"
-                    onClick={() => setMobileMenu(false)}
+                    onClick={closeMobileMenu}
                   />
 
                 </div>
@@ -544,7 +599,7 @@ const Navbar = () => {
 
                   <NavLink
                     to="/about"
-                    onClick={() => setMobileMenu(false)}
+                    onClick={closeMobileMenu}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
@@ -559,7 +614,7 @@ const Navbar = () => {
 
                     <NavLink
                     to="/termsandconditions"
-                    onClick={() => setMobileMenu(false)}
+                    onClick={closeMobileMenu}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
@@ -575,7 +630,7 @@ const Navbar = () => {
                     
                   <NavLink
                     to="/contactus"
-                    onClick={() => setMobileMenu(false)}
+                    onClick={closeMobileMenu}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
