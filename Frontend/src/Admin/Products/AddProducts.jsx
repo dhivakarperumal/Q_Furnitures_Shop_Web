@@ -1,840 +1,694 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-    FiArrowLeft,
-    FiSave,
-    FiTag,
-    FiBox,
-    FiLayers,
-    FiImage,
-    FiUploadCloud,
-    FiTrash2,
-    FiInfo,
-    FiMaximize,
-    FiScissors,
-    FiPlus,
-    FiDroplet,
-    FiPercent,
-    FiActivity,
-    FiStar,
-    FiHash
-} from "react-icons/fi";
-import { FaRupeeSign } from "react-icons/fa";
-import { useNavigate, useParams } from "react-router-dom";
+    ArrowDown, ArrowLeft, ArrowUp, Box, Check, ChevronDown, CircleDollarSign,
+    ClipboardList, ImagePlus, Layers3, LoaderCircle, PackageCheck, Plus,
+    RotateCcw, Save, ShieldCheck, Sparkles, Trash2, Truck, UploadCloud,
+    X
+} from "lucide-react";
+import { toast } from "react-hot-toast";
 import api from "../../api";
-import { toast, Toaster } from "react-hot-toast";
 import { resolveMediaUrl } from "../../utils/media";
 
-// Helper: Color to Name Utility
-const boutiqueColors = [
-    { name: "Pure Red", hex: "#FF0000" },
-    { name: "Crimson", hex: "#DC143C" },
-    { name: "Deep Maroon", hex: "#800000" },
-    { name: "Rose Pink", hex: "#FFC0CB" },
-    { name: "Hot Pink", hex: "#FF69B4" },
-    { name: "Magenta", hex: "#FF00FF" },
-    { name: "Royal Purple", hex: "#800080" },
-    { name: "Violet", hex: "#EE82EE" },
-    { name: "Indigo", hex: "#4B0082" },
-    { name: "Navy Blue", hex: "#000080" },
-    { name: "Royal Blue", hex: "#4169E1" },
-    { name: "Sky Blue", hex: "#87CEEB" },
-    { name: "Teal", hex: "#008080" },
-    { name: "Cyan", hex: "#00FFFF" },
-    { name: "Emerald Green", hex: "#50C878" },
-    { name: "Forest Green", hex: "#228B22" },
-    { name: "Olive Green", hex: "#808000" },
-    { name: "Lime Green", hex: "#32CD32" },
-    { name: "Golden Yellow", hex: "#FFD700" },
-    { name: "Mustard", hex: "#FFDB58" },
-    { name: "Bright Orange", hex: "#FFA500" },
-    { name: "Coral", hex: "#FF7F50" },
-    { name: "Peach", hex: "#FFDAB9" },
-    { name: "Beige", hex: "#F5F5DC" },
-    { name: "Cream", hex: "#FFFDD0" },
-    { name: "Pure White", hex: "#FFFFFF" },
-    { name: "Jet Black", hex: "#000000" },
-    { name: "Steel Grey", hex: "#808080" },
-    { name: "Silver Tone", hex: "#C0C0C0" },
-    { name: "Chocolate Brown", hex: "#8B4513" },
-    { name: "Copper", hex: "#B87333" },
-    { name: "Terracotta", hex: "#E2725B" },
-    { name: "Turquoise", hex: "#40E0D0" }
+const categoriesFallback = [
+    { name: "Living Room Furniture", subcategory: ["Sofa", "L Shape Sofa", "Recliner", "TV Unit", "Coffee Table"] },
+    { name: "Bedroom Furniture", subcategory: ["Bed", "Wardrobe", "Dressing Table", "Bedside Table", "Mattress"] },
+    { name: "Dining Room Furniture", subcategory: ["Dining Table", "Dining Chair", "Dining Set", "Buffet Cabinet"] },
+    { name: "Office Furniture", subcategory: ["Office Chair", "Office Desk", "Computer Table", "Filing Cabinet"] },
+    { name: "Kitchen Furniture", subcategory: ["Kitchen Cabinet", "Kitchen Island", "Kitchen Rack"] },
+    { name: "Kids Furniture", subcategory: ["Kids Bed", "Study Table", "Kids Chair", "Kids Wardrobe"] },
+    { name: "Outdoor Furniture", subcategory: ["Garden Chair", "Garden Table", "Outdoor Sofa", "Swing Chair"] },
+    { name: "Storage Furniture", subcategory: ["Bookshelf", "Shoe Cabinet", "Storage Cabinet", "Drawer Unit"] },
+    { name: "Study Room Furniture", subcategory: ["Study Table", "Study Chair", "Bookshelf"] },
+    { name: "Home Decor Furniture", subcategory: ["Accent Chair", "Ottoman", "Console Table"] },
 ];
 
-const getNearestColorName = (hex) => {
-    hex = hex.replace("#", "");
-    const r1 = parseInt(hex.substring(0, 2), 16);
-    const g1 = parseInt(hex.substring(2, 4), 16);
-    const b1 = parseInt(hex.substring(4, 6), 16);
-
-    let minDistance = Infinity;
-    let nearestName = "Custom Shade";
-
-    boutiqueColors.forEach(color => {
-        const h = color.hex.replace("#", "");
-        const r2 = parseInt(h.substring(0, 2), 16);
-        const g2 = parseInt(h.substring(2, 4), 16);
-        const b2 = parseInt(h.substring(4, 6), 16);
-
-        const distance = Math.sqrt(
-            Math.pow(r2 - r1, 2) +
-            Math.pow(g2 - g1, 2) +
-            Math.pow(b2 - b1, 2)
-        );
-
-        if (distance < minDistance) {
-            minDistance = distance;
-            nearestName = color.name;
-        }
-    });
-
-    return nearestName;
+const initialForm = {
+    name: "", product_code: "", category: "", subcategory: "", brand: "", model_number: "",
+    description: "", tags: "", product_type: "Standard", featured: false,
+    trending_product: false, offer_product: false, status: "Active",
+    mrp: "", offer_type: "Percentage", offer: "", offer_price: "0", selling_price_mode: "auto",
+    selling_price: "", material_type: "", wood_type: "", colour: "", finish_type: "",
+    height: "", width: "", depth: "", weight: "", seating_capacity: "", doors: "",
+    drawers: "", mattress_size: "", warranty_period: "", country_of_origin: "India",
+    total_stock: "0", warehouse: "", package_length: "", package_width: "", package_height: "",
+    delivery_available: true, delivery_charges: "", free_delivery: false,
+    estimated_delivery_days: "", assembly_required: false, installation_available: false,
+    return_policy: "", video_url: "", customization_enabled: false, customization_title: "",
+    customization_description: "", rating: "5",
 };
 
-const resolveImageUrl = (image) => {
-    return resolveMediaUrl(typeof image === "string" ? image.replace(/\\/g, "/") : image);
-};
+const initialVariant = () => ({
+    color: "", size: "", material: "", sku: "", mrp: "", offer_type: "Percentage",
+    offer: "", selling_price: "", stock: "0", image: "",
+});
+
+const initialCustomization = () => ({
+    name: "", type: "Dropdown Selection", options: "", additionalPrice: "0", required: false,
+});
+
+const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100";
+const selectClass = `${inputClass} cursor-pointer`;
+const labelClass = "mb-1.5 block text-xs font-semibold tracking-wide text-slate-600";
+const iconButtonClass = "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-40";
+
+function Field({ label, name, value, onChange, type = "text", placeholder, required = false, min, max, step, prefix, suffix, ...props }) {
+    return (
+        <label className="block min-w-0">
+            <span className={labelClass}>{label}{required && <span className="ml-1 text-rose-500">*</span>}</span>
+            <span className="relative block">
+                <input
+                    className={`${inputClass} ${prefix ? "pl-8" : ""} ${suffix ? "pr-14" : ""}`}
+                    name={name}
+                    value={value ?? ""}
+                    onChange={onChange}
+                    type={type}
+                    placeholder={placeholder}
+                    required={required}
+                    min={min}
+                    max={max}
+                    step={step}
+                    {...props}
+                />
+                {prefix && <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">{prefix}</span>}
+                {suffix && <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">{suffix}</span>}
+            </span>
+        </label>
+    );
+}
+
+function SelectField({ label, name, value, onChange, options, required = false, disabled = false }) {
+    return (
+        <label className="block min-w-0">
+            <span className={labelClass}>{label}{required && <span className="ml-1 text-rose-500">*</span>}</span>
+            <span className="relative block">
+                <select className={`${selectClass} appearance-none pr-9 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400`} name={name} value={value ?? ""} onChange={onChange} required={required} disabled={disabled}>
+                    {options.map((option) => {
+                        const item = typeof option === "string" ? { label: option, value: option } : option;
+                        return <option key={item.value} value={item.value}>{item.label}</option>;
+                    })}
+                </select>
+                <ChevronDown size={15} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            </span>
+        </label>
+    );
+}
+
+function Toggle({ label, description, checked, onChange }) {
+    return (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
+            <div>
+                <p className="text-sm font-semibold text-slate-800">{label}</p>
+                {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
+            </div>
+            <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className={`relative h-6 w-11 shrink-0 rounded-full transition ${checked ? "bg-orange-500" : "bg-slate-300"}`}>
+                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${checked ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+        </div>
+    );
+}
+
+function SectionCard({ id, title, description, icon: Icon, children, action }) {
+    return (
+        <section id={id} className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+                <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><Icon size={19} /></span>
+                    <div>
+                        <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+                        {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
+                    </div>
+                </div>
+                {action}
+            </div>
+            <div className="space-y-5 p-5 sm:p-6">{children}</div>
+        </section>
+    );
+}
 
 const AddProducts = () => {
     const { id } = useParams();
-    const isEdit = !!id;
+    const isEdit = Boolean(id);
     const navigate = useNavigate();
-    const [categories, setCategories] = useState([]);
-    const [subcategories, setSubcategories] = useState([]);
+    const fileInputRef = useRef(null);
+    const [categories, setCategories] = useState(categoriesFallback);
+    const [form, setForm] = useState(initialForm);
+    const [variants, setVariants] = useState([]);
+    const [images, setImages] = useState([]);
+    const [imageRoles, setImageRoles] = useState([]);
+    const [mainImageIndex, setMainImageIndex] = useState(0);
+    const [customizations, setCustomizations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(isEdit);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [skuError, setSkuError] = useState("");
 
-    // Main State
-    const [formData, setFormData] = useState({
-        name: "",
-        description: "",
-        category: "Saree",
-        subcategory: "",
-        mrp: "",
-        offer: "",
-        offer_price: "",
-        product_code: "",
-        total_stock: "0",
-        rating: "5",
-        status: "Active",
-        material: "",
-        wash_care: "Dry Clean Only",
-        // Traditional Wear Specs
-        saree_length: "5.5 Meters",
-        blouse_length: "0.8 Meters",
-        top_length: "",
-        bottom_length: "",
-        dupatta_length: "",
-        gown_length: "",
-        sleeve_type: "",
-        neck_type: "",
-        fit_type: "",
-        work_type: "Embroidered",
-        zari_color: "Gold Zari",
-        age: "",
-    });
-
-    const [variants, setVariants] = useState([
-        {
-            color: "#3b82f6",
-            colorName: "",
-            images: [],
-            selectedSizes: [],
-            sizesStock: {}
-        }
-    ]);
-
-    // Track if total stock was manually edited
-    const [isStockManuallyEdited, setIsStockManuallyEdited] = useState(false);
-
-    // 1. Auto-calculate Offer Price whenever MRP or Offer % changes
-    useEffect(() => {
-        const mrpValue = parseFloat(formData.mrp) || 0;
-        const offerValue = parseFloat(formData.offer) || 0;
-        if (mrpValue > 0) {
-            const calculatedPrice = mrpValue - (mrpValue * (offerValue / 100));
-            setFormData(prev => ({ ...prev, offer_price: Math.round(calculatedPrice).toString() }));
-        } else {
-            setFormData(prev => ({ ...prev, offer_price: "0" }));
-        }
-    }, [formData.mrp, formData.offer]);
-
-    // 2. Auto-calculate Total Stock whenever variants or sizesStock change
-    useEffect(() => {
-        if (!isStockManuallyEdited) {
-            let total = 0;
-            variants.forEach(variant => {
-                Object.values(variant.sizesStock || {}).forEach(qty => {
-                    total += parseInt(qty) || 0;
-                });
-            });
-            setFormData(prev => ({ ...prev, total_stock: total.toString() }));
-        }
-    }, [variants, isStockManuallyEdited]);
-
-    // Size Logic based on Category
-    const getSizesByCategory = () => {
-        switch (formData.category) {
-            case "Saree": return ["Free Size"];
-            case "Lehenga":
-            case "Salwar":
-            case "Gown": return ["XS", "S", "M", "L", "XL", "XXL"];
-            case "Material": return ["Free Size"];
-            default: return [];
-        }
-    };
-
-    const sizeOptions = getSizesByCategory();
+    const currentCategory = categories.find((item) => item.name === form.category);
+    const subcategories = currentCategory?.subcategory || currentCategory?.subcategories || [];
+    const calculatedOfferPrice = useMemo(() => {
+        const mrp = Number(form.mrp) || 0;
+        const offer = Number(form.offer) || 0;
+        if (form.offer_type === "Percentage") return Math.max(0, mrp * (1 - offer / 100));
+        return Math.max(0, mrp - offer);
+    }, [form.mrp, form.offer, form.offer_type]);
+    const finalPrice = form.selling_price_mode === "manual" && form.selling_price !== ""
+        ? Number(form.selling_price) || 0
+        : calculatedOfferPrice;
+    const stockState = Number(form.total_stock) <= 0 ? "Out of stock" : Number(form.total_stock) <= 5 ? "Low stock" : "In stock";
 
     useEffect(() => {
-        const fetchEssentialData = async () => {
+        let isMounted = true;
+        const loadProduct = async () => {
             try {
-                if (isEdit) {
-                    const [catRes, editRes] = await Promise.all([
-                        api.get("/categories"),
-                        api.get(`/products/${id}`)
-                    ]);
+                const requests = [api.get("/categories")];
+                if (isEdit) requests.push(api.get(`/products/${id}`));
+                else requests.push(Promise.resolve(null));
+                const [categoryResponse, productResponse] = await Promise.all(requests);
+                if (!isMounted) return;
+                const loadedCategories = Array.isArray(categoryResponse.data) && categoryResponse.data.length
+                    ? categoryResponse.data
+                    : categoriesFallback;
+                setCategories(loadedCategories);
 
-                    setCategories(Array.isArray(catRes.data) ? catRes.data : []);
-                    try {
-                        const p = editRes.data;
-                        setFormData({
-                            name: p.name || "",
-                            description: p.description || "",
-                            category: p.category || "Saree",
-                            subcategory: p.subcategory || "",
-                            mrp: p.mrp?.toString() || "",
-                            offer: p.offer?.toString() || "",
-                            offer_price: p.offer_price?.toString() || "",
-                            product_code: p.product_code || "",
-                            total_stock: p.total_stock?.toString() || "0",
-                            rating: p.rating?.toString() || "5",
-                            status: p.status || "Active",
-                            material: p.material || "",
-                            wash_care: p.wash_care || "Dry Clean Only",
-                            saree_length: p.saree_length || "",
-                            blouse_length: p.blouse_length || "",
-                            top_length: p.top_length || "",
-                            bottom_length: p.bottom_length || "",
-                            dupatta_length: p.dupatta_length || "",
-                            gown_length: p.gown_length || "",
-                            sleeve_type: p.sleeve_type || "",
-                            neck_type: p.neck_type || "",
-                            fit_type: p.fit_type || "",
-                            work_type: p.work_type || "",
-                            zari_color: p.zari_color || "",
-                            age: p.age || "",
-                        });
-                        if (p.variants) setVariants(Array.isArray(p.variants) ? p.variants : JSON.parse(p.variants));
-                    } catch (e) {
-                        toast.error("Failed to fetch product details.");
-                    } finally {
-                        setFetching(false);
-                    }
-                } else {
-                    const [catRes, codeRes] = await Promise.all([
-                        api.get("/categories"),
-                        api.get("/products/latest-code")
-                    ]);
-                    
-                    setCategories(Array.isArray(catRes.data) ? catRes.data : []);
-                    setFormData(prev => ({
-                        ...prev,
-                        category: Array.isArray(catRes.data) && catRes.data[0]?.name ? catRes.data[0].name : "Saree",
-                        product_code: codeRes.data.latestCode || "SP001"
+                if (isEdit && productResponse) {
+                    const product = productResponse.data;
+                    const specifications = product.specifications || {};
+                    const shipping = product.shipping || {};
+                    setForm((previous) => ({
+                        ...previous,
+                        ...product,
+                        product_code: product.product_code || "",
+                        brand: product.brand || "",
+                        model_number: product.model_number || "",
+                        material_type: product.material_type || specifications.materialType || product.material || "",
+                        wood_type: product.wood_type || specifications.woodType || "",
+                        colour: product.colour || specifications.colour || "",
+                        finish_type: product.finish_type || specifications.finishType || "",
+                        height: product.height || specifications.height || "",
+                        width: product.width || specifications.width || "",
+                        depth: product.depth || specifications.depth || "",
+                        weight: product.weight || specifications.weight || "",
+                        seating_capacity: product.seating_capacity || specifications.seatingCapacity || "",
+                        doors: product.doors || specifications.doors || "",
+                        drawers: product.drawers || specifications.drawers || "",
+                        mattress_size: product.mattress_size || specifications.mattressSize || "",
+                        warranty_period: product.warranty_period || specifications.warrantyPeriod || "",
+                        country_of_origin: product.country_of_origin || specifications.countryOfOrigin || "India",
+                        package_length: product.package_length || shipping.packageLength || "",
+                        package_width: product.package_width || shipping.packageWidth || "",
+                        package_height: product.package_height || shipping.packageHeight || "",
+                        delivery_available: product.delivery_available ?? shipping.deliveryAvailable ?? true,
+                        delivery_charges: product.delivery_charges || shipping.deliveryCharges || "",
+                        free_delivery: product.free_delivery ?? shipping.freeDelivery ?? false,
+                        estimated_delivery_days: product.estimated_delivery_days || shipping.estimatedDeliveryDays || "",
+                        assembly_required: product.assembly_required ?? shipping.assemblyRequired ?? false,
+                        installation_available: product.installation_available ?? shipping.installationAvailable ?? false,
+                        return_policy: product.return_policy || shipping.returnPolicy || "",
+                        total_stock: String(product.total_stock ?? 0),
+                        offer_type: product.offer_type || "Percentage",
+                        offer: String(product.offer ?? ""),
+                        rating: String(product.rating ?? "5"),
+                        selling_price_mode: product.selling_price_mode || "auto",
+                        selling_price: String(product.selling_price ?? ""),
+                        customization_enabled: Boolean(product.customization_enabled),
                     }));
-                    setFetching(false);
+                    const parsedVariants = Array.isArray(product.variants)
+                        ? product.variants
+                        : typeof product.variants === "string" ? JSON.parse(product.variants || "[]") : [];
+                    setVariants(parsedVariants.map((variant) => ({
+                        ...initialVariant(),
+                        ...variant,
+                        color: variant.color || variant.colorName || "",
+                        stock: String(variant.stock ?? Object.values(variant.sizesStock || {}).reduce((sum, qty) => sum + (Number(qty) || 0), 0)),
+                        image: variant.image || variant.images?.[0] || "",
+                    })));
+                    setImages(Array.isArray(product.images) ? product.images : []);
+                    setImageRoles(Array.isArray(product.image_roles) ? product.image_roles : (product.images || []).map(() => "Product view"));
+                    setMainImageIndex(Math.max(0, Number(product.main_image_index) || 0));
+                    setCustomizations(Array.isArray(product.customizations) ? product.customizations : []);
+                } else if (loadedCategories.length) {
+                    const firstCategory = loadedCategories[0];
+                    setForm((previous) => ({
+                        ...previous,
+                        category: firstCategory.name,
+                        subcategory: "",
+                        product_code: productResponse?.data?.latestCode || "",
+                    }));
                 }
             } catch (error) {
-                console.error("Error fetching data:", error);
-                setFetching(false);
+                console.error("Product form initialization failed:", error);
+                toast.error(error.response?.data?.message || "Could not load product form data.");
+            } finally {
+                if (isMounted) setFetching(false);
             }
         };
-        fetchEssentialData();
+        loadProduct();
+        return () => { isMounted = false; };
     }, [id, isEdit]);
 
-    // Update Subcategories when Category changes
-    useEffect(() => {
-        const selectedCat = categories.find(c => c.name === formData.category);
-        if (selectedCat && selectedCat.subcategory) {
-            setSubcategories(selectedCat.subcategory);
-            // Only auto-select first subcat if it's currently empty
-            if (!formData.subcategory) {
-                setFormData(prev => ({ ...prev, subcategory: selectedCat.subcategory[0] || "" }));
-            }
-        } else {
-            setSubcategories([]);
-            if (!isEdit) setFormData(prev => ({ ...prev, subcategory: "" }));
-        }
-    }, [formData.category, categories, isEdit]);
-
-    const handleFormChange = (e) => {
-        const { name, value } = e.target;
-        if (name === "total_stock") setIsStockManuallyEdited(true);
-        setFormData(prev => ({ ...prev, [name]: value }));
+    const handleChange = (event) => {
+        const { name, value, type, checked } = event.target;
+        setForm((previous) => ({ ...previous, [name]: type === "checkbox" ? checked : value }));
+        if (name === "product_code") setSkuError("");
     };
 
-    // Reset stock to auto-calculate
-    const resetStockCalculation = () => {
-        setIsStockManuallyEdited(false);
-    };
-
-    // Variant Operations
-    const addVariant = () => {
-        const sizes = getSizesByCategory();
-        const initialVariant = {
-            color: "#3b82f6",
-            colorName: "",
-            images: [],
-            selectedSizes: sizes.length === 1 ? [sizes[0]] : [],
-            sizesStock: sizes.length === 1 ? { [sizes[0]]: 0 } : {}
-        };
-        setVariants([...variants, initialVariant]);
-    };
-
-    const removeVariant = (index) => {
-        if (variants.length > 1) setVariants(variants.filter((_, i) => i !== index));
-    };
-
-    const handleVariantChange = (index, field, value) => {
-        const updated = [...variants];
-        const newVariant = { ...updated[index], [field]: value };
-
-        // Auto-set colorName if color is updated
-        if (field === "color") {
-            newVariant.colorName = getNearestColorName(value);
-        }
-
-        updated[index] = newVariant;
-        setVariants(updated);
-    };
-
-    const toggleSize = (vIndex, size) => {
-        const updated = [...variants];
-        const selected = updated[vIndex].selectedSizes || [];
-        if (selected.includes(size)) {
-            updated[vIndex].selectedSizes = selected.filter(s => s !== size);
-            delete updated[vIndex].sizesStock[size];
-        } else {
-            updated[vIndex].selectedSizes = [...selected, size];
-            if (!updated[vIndex].sizesStock) updated[vIndex].sizesStock = {};
-            updated[vIndex].sizesStock[size] = 0; // Default stock 0
-        }
-        setVariants(updated);
-    };
-
-    const handleStockChange = (vIndex, size, value) => {
-        const updated = [...variants];
-        if (!updated[vIndex].sizesStock) updated[vIndex].sizesStock = {};
-        updated[vIndex].sizesStock[size] = parseInt(value) || 0;
-        setVariants(updated);
-    };
-
-    const handleVariantImageUpload = async (vIndex, e) => {
+    const generateSku = async () => {
         try {
-            const files = Array.from(e.target.files || []);
-
-            if (!files.length) return;
-
-            if ((variants[vIndex].images?.length || 0) + files.length > 5) {
-                toast.error("Boutique limit: Max 5 images per shade.");
-                return;
-            }
-
-            const formData = new FormData();
-            files.forEach((file) => {
-                formData.append("images", file);
-            });
-
-            const response = await api.post("/products/upload", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data"
-                }
-            });
-
-            const uploadedImages = response.data?.images || [];
-            if (!uploadedImages.length) {
-                toast.error("No images were saved.");
-                return;
-            }
-
-            const updated = [...variants];
-            updated[vIndex].images = [...(updated[vIndex].images || []), ...uploadedImages];
-            setVariants(updated);
-            toast.success(`Success! ${uploadedImages.length} boutique images added.`);
-
-            e.target.value = "";
+            const response = await api.get("/products/latest-code");
+            const suggested = response.data?.latestCode;
+            setForm((previous) => ({
+                ...previous,
+                product_code: suggested || `QF-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+            }));
+            setSkuError("");
         } catch (error) {
-            console.error("Product image upload error:", error);
-            toast.error(error.response?.data?.message || "Upload failed.");
+            console.error("SKU generation failed:", error);
+            setForm((previous) => ({
+                ...previous,
+                product_code: `QF-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+            }));
+            toast.error("Could not retrieve the next SKU; a unique suggestion was generated locally.");
         }
     };
 
-    const removeVariantImage = (vIndex, imgIndex) => {
-        const updated = [...variants];
-        updated[vIndex].images = updated[vIndex].images.filter((_, i) => i !== imgIndex);
-        setVariants(updated);
+    const validateSku = async () => {
+        const sku = form.product_code.trim();
+        if (!sku) {
+            setSkuError("");
+            return true;
+        }
+        try {
+            const response = await api.get("/products", { params: { search: sku, page: 1, limit: 100 } });
+            const products = Array.isArray(response.data) ? response.data : response.data?.products || [];
+            const duplicate = products.find((product) =>
+                String(product.product_code || "").trim().toLowerCase() === sku.toLowerCase()
+                && String(product.id) !== String(id || ""),
+            );
+            setSkuError(duplicate ? "This SKU is already in use." : "");
+            if (duplicate) toast.error("That product SKU already exists. Please use another one.");
+            return !duplicate;
+        } catch (error) {
+            console.error("SKU validation failed:", error);
+            setSkuError("SKU could not be validated. Try again before saving.");
+            toast.error("Could not validate the SKU. Please try again.");
+            return false;
+        }
     };
 
-    const handleSubmit = async (e) => {
-        if (e) e.preventDefault();
+    const addVariant = () => setVariants((previous) => [...previous, initialVariant()]);
+    const updateVariant = (index, key, value) => setVariants((previous) => previous.map((item, i) => i === index ? { ...item, [key]: value } : item));
+    const removeVariant = (index) => setVariants((previous) => previous.filter((_, i) => i !== index));
 
-        if (!formData.name || !formData.category || !formData.mrp || !formData.age) {
-            toast.error("Please fill in the essentials.");
+    const addFiles = async (fileList) => {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+        const acceptedFiles = files.filter((file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type));
+        if (acceptedFiles.length !== files.length) toast.error("Only JPG, PNG, and WEBP images are supported.");
+        if (!acceptedFiles.length) return;
+        const remaining = Math.max(0, 10 - images.length);
+        const batch = acceptedFiles.slice(0, remaining);
+        if (batch.length < acceptedFiles.length) toast.error("A product can have up to 10 gallery images.");
+        if (!batch.length) return;
+
+        setUploading(true);
+        setUploadProgress(0);
+        try {
+            let completed = 0;
+            for (let offset = 0; offset < batch.length; offset += 5) {
+                const chunk = batch.slice(offset, offset + 5);
+                const payload = new FormData();
+                chunk.forEach((file) => payload.append("images", file));
+                const response = await api.post("/products/upload", payload, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                    onUploadProgress: (event) => {
+                        if (event.total) setUploadProgress(Math.round(((completed + event.loaded / event.total * chunk.length) / batch.length) * 100));
+                    },
+                });
+                const uploaded = response.data?.images || [];
+                if (!uploaded.length) throw new Error("The upload completed without returning image URLs.");
+                setImages((previous) => [...previous, ...uploaded]);
+                setImageRoles((previous) => [...previous, ...uploaded.map(() => "Product view")]);
+                completed += chunk.length;
+                setUploadProgress(Math.round((completed / batch.length) * 100));
+            }
+            toast.success(`${batch.length} image${batch.length === 1 ? "" : "s"} uploaded.`);
+        } catch (error) {
+            console.error("Product image upload failed:", error);
+            toast.error(error.response?.data?.message || error.message || "Image upload failed.");
+        } finally {
+            setUploading(false);
+            setUploadProgress(0);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
+    const removeImage = (index) => {
+        setImages((previous) => previous.filter((_, i) => i !== index));
+        setImageRoles((previous) => previous.filter((_, i) => i !== index));
+        setMainImageIndex((previous) => previous === index ? 0 : previous > index ? previous - 1 : previous);
+    };
+
+    const moveImage = (index, direction) => {
+        const nextIndex = index + direction;
+        if (nextIndex < 0 || nextIndex >= images.length) return;
+        const nextImages = [...images];
+        const nextRoles = [...imageRoles];
+        [nextImages[index], nextImages[nextIndex]] = [nextImages[nextIndex], nextImages[index]];
+        [nextRoles[index], nextRoles[nextIndex]] = [nextRoles[nextIndex], nextRoles[index]];
+        setImages(nextImages);
+        setImageRoles(nextRoles);
+        if (mainImageIndex === index) setMainImageIndex(nextIndex);
+        else if (mainImageIndex === nextIndex) setMainImageIndex(index);
+    };
+
+    const saveProduct = async (event, asDraft = false) => {
+        event?.preventDefault();
+        if (!form.name.trim() || !form.category || !form.mrp || Number(form.mrp) <= 0) {
+            toast.error("Add a product name, category, and valid MRP to continue.");
             return;
         }
+        if (Number(form.offer) < 0 || (form.offer_type === "Percentage" && Number(form.offer) > 100)) {
+            toast.error("Enter a valid offer value.");
+            return;
+        }
+        if (form.selling_price_mode === "manual" && Number(form.selling_price) > Number(form.mrp)) {
+            toast.error("Selling price cannot be higher than MRP.");
+            return;
+        }
+        if (Number(form.rating) < 1 || Number(form.rating) > 5) {
+            toast.error("Product rating must be between 1 and 5.");
+            return;
+        }
+        if (!(await validateSku())) return;
 
         setLoading(true);
+        const productData = {
+            ...form,
+            status: asDraft ? "Draft" : form.status,
+            mrp: String(form.mrp),
+            offer: String(form.offer || "0"),
+            offer_price: calculatedOfferPrice.toFixed(2),
+            selling_price: finalPrice.toFixed(2),
+            product_code: form.product_code.trim(),
+            total_stock: String(form.total_stock || "0"),
+            rating: Number(form.rating).toFixed(1),
+            material: form.material_type,
+            variants,
+            images,
+            image_roles: imageRoles,
+            main_image_index: mainImageIndex,
+            specifications: {
+                materialType: form.material_type, woodType: form.wood_type, colour: form.colour,
+                finishType: form.finish_type, height: form.height, width: form.width, depth: form.depth,
+                weight: form.weight, seatingCapacity: form.seating_capacity, doors: form.doors,
+                drawers: form.drawers, mattressSize: form.mattress_size,
+                warrantyPeriod: form.warranty_period, countryOfOrigin: form.country_of_origin,
+            },
+            shipping: {
+                packageLength: form.package_length, packageWidth: form.package_width,
+                packageHeight: form.package_height, deliveryAvailable: form.delivery_available,
+                deliveryCharges: form.delivery_charges, freeDelivery: form.free_delivery,
+                estimatedDeliveryDays: form.estimated_delivery_days, assemblyRequired: form.assembly_required,
+                installationAvailable: form.installation_available, returnPolicy: form.return_policy,
+            },
+            customizations,
+        };
         try {
-            const variantStockTotal = variants.reduce(
-                (total, variant) => total + Object.values(variant.sizesStock || {}).reduce(
-                    (stockTotal, quantity) => stockTotal + (parseInt(quantity, 10) || 0),
-                    0,
-                ),
-                0,
-            );
-            const hasVariantStock = variants.some(
-                (variant) => Object.keys(variant.sizesStock || {}).length > 0,
-            );
-            const finalTotalStock = isStockManuallyEdited
-                ? parseInt(formData.total_stock, 10) || 0
-                : hasVariantStock
-                    ? variantStockTotal
-                    : parseInt(formData.total_stock, 10) || 0;
-            const finalData = {
-                ...formData,
-                total_stock: finalTotalStock.toString(),
-                variants,
-            };
             if (isEdit) {
-                await api.put(`/products/${id}`, finalData);
-                toast.success("Artisan masterpiece updated!");
+                await api.put(`/products/${id}`, productData);
+                toast.success(asDraft ? "Product saved as draft." : "Product updated successfully.");
             } else {
-                await api.post("/products", finalData);
-                toast.success("Artisan piece listed successfully!");
+                await api.post("/products", productData);
+                toast.success(asDraft ? "Product saved as draft." : "Product created successfully.");
             }
-            setTimeout(() => navigate("/admin/products/all"), 1500);
+            setTimeout(() => navigate("/admin/products/all"), 900);
         } catch (error) {
-            console.error("Submit error:", error);
-            toast.error(error.response?.data?.message || "Operation failed.");
+            console.error("Product save failed:", error);
+            const message = error.response?.data?.message || "Could not save product. Please try again.";
+            toast.error(message);
+            if (/sku|product code|duplicate/i.test(message)) setSkuError("This SKU is already in use.");
             setLoading(false);
         }
     };
 
-    if (fetching) return (
-        <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-10 h-10 border-4 border-[#1F0A3C]/20 border-t-[#1F0A3C] rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-500 font-semibold">Loading...</p>
-        </div>
-    );
-    return (
-        <div className="space-y-6 pb-20">
+    const resetForm = () => {
+        if (!window.confirm("Reset all product details? This cannot be undone.")) return;
+        setForm({ ...initialForm, category: categories[0]?.name || "" });
+        setVariants([]);
+        setImages([]);
+        setImageRoles([]);
+        setMainImageIndex(0);
+        setCustomizations([]);
+        setSkuError("");
+    };
 
-            {/* Page Header */}
-            <div className="flex items-center gap-3 pb-2">
-                <button onClick={() => navigate(-1)} className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-[#1F0A3C] hover:border-[#1F0A3C]/30 transition-all shadow-sm">
-                    <FiArrowLeft size={18} />
-                </button>
+    const updateCustomization = (index, key, value) => setCustomizations((previous) => previous.map((item, i) => i === index ? { ...item, [key]: value } : item));
+
+    if (fetching) {
+        return <div className="flex min-h-[50vh] items-center justify-center gap-3 text-sm font-medium text-slate-500"><LoaderCircle size={20} className="animate-spin text-orange-500" /> Loading product details…</div>;
+    }
+
+    return (
+        <div className="mx-auto max-w-[1440px] space-y-6 pb-24">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
-                    <h1 className="text-xl font-bold text-[#1F0A3C]">{isEdit ? 'Edit Product' : 'Add New Product'}</h1>
-                    <p className="text-xs text-gray-400">Fill in product details below</p>
+                    <Link to="/admin/products/all" className="mb-4 inline-flex items-center gap-2 text-xs font-semibold text-slate-500 transition hover:text-orange-700"><ArrowLeft size={15} /> Back to products</Link>
+                    <div className="flex items-center gap-3">
+                        <span className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 sm:flex"><PackageCheck size={23} /></span>
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{isEdit ? "Edit product" : "Add new product"}</h1>
+                            <p className="mt-1 text-sm text-slate-500">Build a complete product listing for your furniture collection.</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 self-start rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 shadow-sm sm:self-auto">
+                    <span className={`h-2 w-2 rounded-full ${form.status === "Active" ? "bg-emerald-500" : form.status === "Draft" ? "bg-amber-400" : "bg-slate-400"}`} />
+                    {form.status}
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-5">
-                    {/* Primary Categorization & Identity */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-[#1F0A3C]/5">
-                            <div className="flex items-center gap-2">
-                                <span className="p-1.5 bg-[#1F0A3C] text-white rounded-lg"><FiLayers size={15} /></span>
-                                <h2 className="text-sm font-bold text-[#1F0A3C]">Product Foundation</h2>
+            <nav aria-label="Product form sections" className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+                {[
+                    ["#basic", "Basics"], ["#pricing", "Pricing"], ["#specifications", "Specifications"],
+                    ["#variants", "Variants"], ["#gallery", "Gallery"], ["#shipping", "Delivery"],
+                    ["#customization", "Customization"],
+                ].map(([href, label]) => <a key={href} href={href} className="whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-orange-50 hover:text-orange-700">{label}</a>)}
+            </nav>
+
+            <form onSubmit={saveProduct} className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="space-y-5">
+                    <SectionCard id="basic" title="Basic information" description="Give your product a clear identity." icon={Layers3}>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Field label="Product name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. Aria solid wood king bed" required />
+                            <div>
+                                <span className={labelClass}>Product SKU / code</span>
+                                <div className="flex gap-2">
+                                    <input className={`${inputClass} ${skuError ? "border-rose-400 focus:border-rose-400 focus:ring-rose-100" : ""}`} name="product_code" value={form.product_code} onChange={handleChange} onBlur={validateSku} placeholder="QF-2026-0001" />
+                                    <button type="button" onClick={generateSku} className="shrink-0 rounded-xl border border-orange-200 bg-orange-50 px-3 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">Auto-generate</button>
+                                </div>
+                                {skuError && <p className="mt-1 text-xs text-rose-600">{skuError}</p>}
                             </div>
-                            <div className="flex items-center gap-1.5 px-3 py-1 bg-[#1F0A3C]/10 rounded-lg border border-[#1F0A3C]/15">
-                                <FiHash className="text-[#1F0A3C] w-3 h-3" />
-                                <span className="text-xs font-bold text-[#1F0A3C]">{formData.product_code || 'Generating...'}</span>
-                            </div>
+                            <SelectField label="Category" name="category" value={form.category} onChange={(event) => setForm((previous) => ({ ...previous, category: event.target.value, subcategory: "" }))} options={[{ value: "", label: "Select a category" }, ...categories.map((category) => category.name)]} required />
+                            <SelectField label="Subcategory" name="subcategory" value={form.subcategory} onChange={handleChange} options={[{ value: "", label: "Select a subcategory" }, ...subcategories]} disabled={!subcategories.length} />
+                            <Field label="Brand name" name="brand" value={form.brand} onChange={handleChange} placeholder="Brand or collection" />
+                            <Field label="Model number" name="model_number" value={form.model_number} onChange={handleChange} placeholder="Optional model reference" />
+                            <SelectField label="Product type" name="product_type" value={form.product_type} onChange={handleChange} options={["Standard", "Variable Product"]} />
+                            <SelectField label="Product status" name="status" value={form.status} onChange={handleChange} options={["Active", "Inactive", "Draft"]} />
+                            <Field label="Product rating (1–5)" name="rating" value={form.rating} onChange={handleChange} type="number" min="1" max="5" step="0.1" required />
+                            <Field label="Product tags" name="tags" value={form.tags} onChange={handleChange} placeholder="solid wood, modern, living room — separate with commas" />
                         </div>
-
-                        <div className="p-5 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Category *</label>
-                                    <select name="category" value={formData.category} onChange={handleFormChange} className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all text-sm font-semibold text-gray-800 cursor-pointer appearance-none">
-                                        {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                                    </select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1"><FiStar className="text-amber-500 w-3 h-3" /> Rating</label>
-                                    <select name="rating" value={formData.rating} onChange={handleFormChange} className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all text-sm font-semibold text-gray-800 cursor-pointer appearance-none">
-                                        <option value="1">1 Star</option>
-                                        <option value="2">2 Stars</option>
-                                        <option value="3">3 Stars</option>
-                                        <option value="4">4 Stars</option>
-                                        <option value="5">5 Stars (Excellent)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Age Group *</label>
-                                <select
-                                    name="age"
-                                    value={formData.age}
-                                    onChange={handleFormChange}
-                                    required
-                                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all text-sm font-semibold text-gray-800 cursor-pointer appearance-none"
-                                >
-                                    <option value="">Select Age Group</option>
-                                    <option value="Infant (0–1)">Infant (0–1)</option>
-                                    <option value="Toddler (1–3)">Toddler (1–3)</option>
-                                    <option value="Kids (3–5)">Kids (3–5)</option>
-                                    <option value="Kids (5–7)">Kids (5–7)</option>
-                                    <option value="Kids (7–10)">Kids (7–10)</option>
-                                    <option value="Teen (10–15)">Teen (10–15)</option>
-                                    <option value="Teen (15–20)">Teen (15–20)</option>
-                                    <option value="Adult (20+)">Adult (20+)</option>
-                                </select>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Product Name *</label>
-                                    <input type="text" name="name" value={formData.name} onChange={handleFormChange} placeholder="e.g. Handwoven Banarasi Silk" className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all text-sm font-semibold text-gray-800" required />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</label>
-                                    <textarea name="description" value={formData.description} onChange={handleFormChange} rows="3" placeholder="Describe the product..." className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all text-sm text-gray-600 resize-none" />
-                                </div>
-                            </div>
+                        <label className="block">
+                            <span className={labelClass}>Full product escription</span>
+                            <textarea className={`${inputClass} min-h-28 resize-y`} name="description" value={form.description} onChange={handleChange} placeholder="Describe the materials, craftsmanship, comfort, and care details…" rows={4} />
+                        </label>
+                        <div className="grid gap-3 md:grid-cols-3">
+                            <Toggle label="Featured product" description="Highlight in featured collections." checked={form.featured} onChange={(checked) => setForm((previous) => ({ ...previous, featured: checked }))} />
+                            <Toggle label="Trending product" description="Highlight in trending products." checked={form.trending_product} onChange={(checked) => setForm((previous) => ({ ...previous, trending_product: checked }))} />
+                            <Toggle label="Offer product" description="Mark as a promotional offer." checked={form.offer_product} onChange={(checked) => setForm((previous) => ({ ...previous, offer_product: checked }))} />
                         </div>
-                    </div>
+                    </SectionCard>
 
-                    {/* Pricing & Stock */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-100 bg-[#1F0A3C]/5">
-                            <span className="p-1.5 bg-[#1F0A3C] text-white rounded-lg"><FaRupeeSign size={15} /></span>
-                            <h2 className="text-sm font-bold text-[#1F0A3C]">Pricing & Stock</h2>
+                    <SectionCard id="pricing" title="Pricing" description="Set your list price, offer, and customer selling price." icon={CircleDollarSign}>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            <Field label="MRP" name="mrp" value={form.mrp} onChange={handleChange} type="number" min="0" step="0.01" placeholder="20000" prefix="₹" required />
+                            <SelectField label="Offer type" name="offer_type" value={form.offer_type} onChange={handleChange} options={["Percentage", "Fixed Amount"]} />
+                            <Field label={form.offer_type === "Percentage" ? "Offer (%)" : "Offer amount (₹)"} name="offer" value={form.offer} onChange={handleChange} type="number" min="0" max={form.offer_type === "Percentage" ? "100" : undefined} step="0.01" placeholder="10" prefix={form.offer_type === "Fixed Amount" ? "₹" : undefined} suffix={form.offer_type === "Percentage" ? "%" : undefined} />
+                            <Field label="Offer price" name="offer_price" value={calculatedOfferPrice.toFixed(2)} readOnly type="number" prefix="₹" />
                         </div>
-                        <div className="p-5">
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">MRP *</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">₹</span>
-                                        <input type="number" name="mrp" value={formData.mrp} onChange={handleFormChange} className="w-full pl-7 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all text-sm font-bold text-gray-900" required />
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <SelectField label="Selling price" name="selling_price_mode" value={form.selling_price_mode} onChange={handleChange} options={[{ value: "auto", label: "Automatically use offer price" }, { value: "manual", label: "Enter manually" }]} />
+                            <Field label="Final selling price" name="selling_price" value={form.selling_price_mode === "auto" ? (calculatedOfferPrice ? calculatedOfferPrice.toFixed(2) : "") : form.selling_price} onChange={handleChange} type="number" min="0" step="0.01" readOnly={form.selling_price_mode === "auto"} prefix="₹" />
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3">
+                            <p className="text-sm text-slate-600">Customer price <span className="font-bold text-slate-900">₹{finalPrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>{Number(form.mrp) > finalPrice && <span className="ml-2 text-slate-400 line-through">₹{Number(form.mrp).toLocaleString("en-IN")}</span>}<span className="ml-2 text-xs text-emerald-700">Save ₹{Math.max(0, Number(form.mrp || 0) - finalPrice).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></p>
+                            <span className="text-xs font-medium text-emerald-700">{form.selling_price_mode === "auto" ? "Calculated automatically" : "Manual override"}</span>
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard id="specifications" title="Furniture specifications" description="Add dimensions, material, and construction details." icon={ClipboardList}>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <SelectField label="Material type" name="material_type" value={form.material_type} onChange={handleChange} options={[{ value: "", label: "Select material" }, "Solid Wood", "Engineered Wood", "Plywood", "Metal", "Plastic", "Glass", "Upholstered"]} />
+                            <SelectField label="Wood type" name="wood_type" value={form.wood_type} onChange={handleChange} options={[{ value: "", label: "Select wood" }, "Teak", "Sheesham", "Mango", "Oak", "Acacia", "Pine", "Other"]} />
+                            <Field label="Furniture colour" name="colour" value={form.colour} onChange={handleChange} placeholder="e.g. Natural teak" />
+                            <SelectField label="Finish type" name="finish_type" value={form.finish_type} onChange={handleChange} options={[{ value: "", label: "Select finish" }, "Matte", "Glossy", "Natural Polish", "Laminate"]} />
+                            <Field label="Height" name="height" value={form.height} onChange={handleChange} type="number" min="0" step="0.1" suffix="cm" />
+                            <Field label="Width" name="width" value={form.width} onChange={handleChange} type="number" min="0" step="0.1" suffix="cm" />
+                            <Field label="Depth" name="depth" value={form.depth} onChange={handleChange} type="number" min="0" step="0.1" suffix="cm" />
+                            <Field label="Product weight" name="weight" value={form.weight} onChange={handleChange} type="number" min="0" step="0.1" suffix="kg" />
+                            <Field label="Seating capacity" name="seating_capacity" value={form.seating_capacity} onChange={handleChange} type="number" min="0" />
+                            <Field label="Number of doors" name="doors" value={form.doors} onChange={handleChange} type="number" min="0" />
+                            <Field label="Number of drawers" name="drawers" value={form.drawers} onChange={handleChange} type="number" min="0" />
+                            <Field label="Mattress size" name="mattress_size" value={form.mattress_size} onChange={handleChange} placeholder="King / Queen / Single" />
+                            <Field label="Warranty period" name="warranty_period" value={form.warranty_period} onChange={handleChange} placeholder="e.g. 3 years" />
+                            <Field label="Country of origin" name="country_of_origin" value={form.country_of_origin} onChange={handleChange} />
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard id="variants" title="Product variants" description="Offer different colours, sizes, and materials." icon={Box} action={<button type="button" onClick={addVariant} className="inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-700"><Plus size={14} /> Add variant</button>}>
+                        {!variants.length && <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center"><p className="text-sm font-semibold text-slate-700">No variants added</p><p className="mt-1 text-xs text-slate-500">Create colour or size options customers can choose.</p></div>}
+                        <div className="space-y-4">
+                            {variants.map((variant, index) => (
+                                <div key={index} className="rounded-xl border border-slate-200 p-4">
+                                    <div className="mb-4 flex items-center justify-between">
+                                        <p className="text-sm font-bold text-slate-800">Variant {index + 1}</p>
+                                        <button type="button" aria-label={`Remove variant ${index + 1}`} onClick={() => removeVariant(index)} className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700"><Trash2 size={14} /> Remove</button>
+                                    </div>
+                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                        <Field label="Colour" value={variant.color} onChange={(event) => updateVariant(index, "color", event.target.value)} placeholder="Walnut brown" />
+                                        <Field label="Size" value={variant.size} onChange={(event) => updateVariant(index, "size", event.target.value)} placeholder="King / 3-seater" />
+                                        <Field label="Material" value={variant.material} onChange={(event) => updateVariant(index, "material", event.target.value)} placeholder="Teak wood" />
+                                        <Field label="Variant SKU" value={variant.sku} onChange={(event) => updateVariant(index, "sku", event.target.value)} placeholder="QF-ARIA-WAL-K" />
+                                        <Field label="MRP" value={variant.mrp} onChange={(event) => updateVariant(index, "mrp", event.target.value)} type="number" min="0" step="0.01" />
+                                        <SelectField label="Offer type" value={variant.offer_type} onChange={(event) => updateVariant(index, "offer_type", event.target.value)} options={["Percentage", "Fixed Amount"]} />
+                                        <Field label="Offer" value={variant.offer} onChange={(event) => updateVariant(index, "offer", event.target.value)} type="number" min="0" />
+                                        <Field label="Selling price" value={variant.selling_price} onChange={(event) => updateVariant(index, "selling_price", event.target.value)} type="number" min="0" step="0.01" />
+                                        <Field label="Stock quantity" value={variant.stock} onChange={(event) => updateVariant(index, "stock", event.target.value)} type="number" min="0" />
+                                        <Field label="Variant image URL" value={variant.image} onChange={(event) => updateVariant(index, "image", event.target.value)} placeholder="Optional uploaded image URL" />
                                     </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Offer %</label>
-                                    <div className="relative">
-                                        <FiPercent className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-500 w-3.5 h-3.5" />
-                                        <input type="number" name="offer" value={formData.offer} onChange={handleFormChange} className="w-full pl-7 pr-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg outline-none focus:bg-white focus:border-amber-400 transition-all text-sm font-bold text-amber-700" />
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Offer Price</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 font-bold text-sm">₹</span>
-                                        <input type="number" value={formData.offer_price} readOnly className="w-full pl-7 pr-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-700 cursor-not-allowed" />
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center justify-between">
-                                        Total Stock
-                                        {isStockManuallyEdited && (
-                                            <button onClick={resetStockCalculation} className="text-[9px] bg-[#1F0A3C]/10 text-[#1F0A3C] px-1.5 py-0.5 rounded hover:bg-[#1F0A3C] hover:text-white transition-colors uppercase tracking-widest">Auto</button>
-                                        )}
-                                    </label>
-                                    <div className="relative">
-                                        <FiActivity className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isStockManuallyEdited ? 'text-amber-500' : 'text-[#1F0A3C]'}`} />
-                                        <input type="number" name="total_stock" value={formData.total_stock} onChange={handleFormChange} className={`w-full pl-7 pr-3 py-2.5 border rounded-lg outline-none transition-all text-sm font-bold ${isStockManuallyEdited ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-[#1F0A3C]/5 border-[#1F0A3C]/20 text-[#1F0A3C]'}`} />
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
-                    </div>
+                    </SectionCard>
 
-                    {/* Vitals & Specs */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-100 bg-[#1F0A3C]/5">
-                            <span className="p-1.5 bg-[#1F0A3C] text-white rounded-lg"><FiMaximize size={15} /></span>
-                            <h2 className="text-sm font-bold text-[#1F0A3C]">Vitals & Artisanship</h2>
+                    <SectionCard id="inventory" title="Inventory management" description="Track stock and warehouse availability." icon={PackageCheck}>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Field label="Available stock quantity" name="total_stock" value={form.total_stock} onChange={handleChange} type="number" min="0" />
+                            <Field label="Warehouse / store location" name="warehouse" value={form.warehouse} onChange={handleChange} placeholder="e.g. Chennai central warehouse" />
                         </div>
-
-                        <div className="p-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Core Fabric</label>
-                                    <input type="text" name="material" value={formData.material} onChange={handleFormChange} placeholder="Mulberry Silk" className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Embroidery / Work</label>
-                                    <input type="text" name="work_type" value={formData.work_type} onChange={handleFormChange} placeholder="Zardozi" className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1"><FiDroplet className="text-blue-500 w-3 h-3" /> Wash Care</label>
-                                    <select name="wash_care" value={formData.wash_care} onChange={handleFormChange} className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all cursor-pointer appearance-none">
-                                        <option value="Dry Clean Only">Dry Clean Only</option>
-                                        <option value="Mild Hand Wash">Mild Hand Wash</option>
-                                        <option value="Cold Machine Wash">Cold Machine Wash</option>
-                                        <option value="Petrol Wash Specialized">Petrol Wash Specialized</option>
-                                        <option value="No Bleach, Line Dry">No Bleach, Line Dry</option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Subcategory</label>
-                                    <select name="subcategory" value={formData.subcategory} onChange={handleFormChange} className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all cursor-pointer appearance-none disabled:opacity-40" disabled={subcategories.length === 0}>
-                                        <option value="">Default</option>
-                                        {subcategories.map((sub, i) => <option key={i} value={sub}>{sub}</option>)}
-                                    </select>
-                                </div>
-                            </div>
+                        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                            <span className="text-sm font-medium text-slate-600">Current inventory status</span>
+                            <span className={`rounded-full px-3 py-1 text-xs font-bold ${stockState === "In stock" ? "bg-emerald-100 text-emerald-700" : stockState === "Low stock" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>{stockState}</span>
                         </div>
-                    </div>
+                    </SectionCard>
 
-                    {/* Size & Fit Section */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-100 bg-[#1F0A3C]/5">
-                            <span className="p-1.5 bg-[#1F0A3C] text-white rounded-lg"><FiScissors size={15} /></span>
-                            <h2 className="text-sm font-bold text-[#1F0A3C]">Size & Fit</h2>
-                        </div>
-                        <div className="p-5 space-y-4">
-                            {formData.category === "Saree" && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Saree Length</label>
-                                        <input
-                                            type="text"
-                                            name="saree_length"
-                                            value={formData.saree_length}
-                                            onChange={handleFormChange}
-                                            placeholder="e.g. 5.5 Meters"
-                                            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Blouse Length</label>
-                                        <input
-                                            type="text"
-                                            name="blouse_length"
-                                            value={formData.blouse_length}
-                                            onChange={handleFormChange}
-                                            placeholder="e.g. 0.8 Meters"
-                                            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {(formData.category === "Lehenga" ||
-                                formData.category === "Salwar" ||
-                                formData.category === "Material") && (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="space-y-1">
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Top / Lehenga Length</label>
-                                            <input
-                                                type="text"
-                                                name="top_length"
-                                                value={formData.top_length}
-                                                onChange={handleFormChange}
-                                                placeholder="Length"
-                                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Bottom Length</label>
-                                            <input
-                                                type="text"
-                                                name="bottom_length"
-                                                value={formData.bottom_length}
-                                                onChange={handleFormChange}
-                                                placeholder="Length"
-                                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Dupatta Length</label>
-                                            <input
-                                                type="text"
-                                                name="dupatta_length"
-                                                value={formData.dupatta_length}
-                                                onChange={handleFormChange}
-                                                placeholder="Length"
-                                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all"
-                                            />
+                    <SectionCard id="gallery" title="Product images & gallery" description="Upload up to 10 JPG, PNG, or WEBP images." icon={ImagePlus}>
+                        <input ref={fileInputRef} className="hidden" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple onChange={(event) => addFiles(event.target.files)} />
+                        <button type="button" onClick={() => fileInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(event.dataTransfer.files); }} disabled={uploading} className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-orange-200 bg-orange-50/40 px-4 py-8 text-center transition hover:border-orange-400 hover:bg-orange-50 disabled:opacity-60">
+                            {uploading ? <LoaderCircle size={24} className="animate-spin text-orange-600" /> : <UploadCloud size={25} className="text-orange-600" />}
+                            <span className="mt-2 text-sm font-semibold text-slate-800">{uploading ? `Uploading images… ${uploadProgress}%` : "Drop images here or browse files"}</span>
+                            <span className="mt-1 text-xs text-slate-500">JPG, PNG, WEBP · up to 10 images</span>
+                            {uploading && <span className="mt-3 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-orange-100"><span className="block h-full rounded-full bg-orange-500 transition-all" style={{ width: `${uploadProgress}%` }} /></span>}
+                        </button>
+                        {images.length > 0 && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {images.map((image, index) => (
+                                <div key={`${image}-${index}`} className={`overflow-hidden rounded-xl border ${mainImageIndex === index ? "border-orange-400 ring-2 ring-orange-100" : "border-slate-200"}`}>
+                                    <div className="group relative aspect-[4/3] bg-slate-100">
+                                        <img src={resolveMediaUrl(image)} alt={`Furniture product view ${index + 1}`} className="h-full w-full object-cover" />
+                                        <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold text-slate-700 shadow">{mainImageIndex === index ? "Main image" : `Image ${index + 1}`}</span>
+                                        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                                            <button type="button" aria-label="Move image up" onClick={() => moveImage(index, -1)} className={iconButtonClass} disabled={index === 0}><ArrowUp size={14} /></button>
+                                            <button type="button" aria-label="Move image down" onClick={() => moveImage(index, 1)} className={iconButtonClass} disabled={index === images.length - 1}><ArrowDown size={14} /></button>
+                                            <button type="button" aria-label="Remove image" onClick={() => removeImage(index)} className={`${iconButtonClass} hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600`}><X size={14} /></button>
                                         </div>
                                     </div>
-                                )}
-
-                            {formData.category === "Gown" && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Gown Length</label>
-                                        <input
-                                            type="text"
-                                            name="gown_length"
-                                            value={formData.gown_length}
-                                            onChange={handleFormChange}
-                                            placeholder="Length"
-                                            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Sleeve Type</label>
-                                        <input
-                                            type="text"
-                                            name="sleeve_type"
-                                            value={formData.sleeve_type}
-                                            onChange={handleFormChange}
-                                            placeholder="Full Sleeve / Half Sleeve"
-                                            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Neck Type</label>
-                                        <input
-                                            type="text"
-                                            name="neck_type"
-                                            value={formData.neck_type}
-                                            onChange={handleFormChange}
-                                            placeholder="V-Neck / Round Neck"
-                                            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Fit Type</label>
-                                        <input
-                                            type="text"
-                                            name="fit_type"
-                                            value={formData.fit_type}
-                                            onChange={handleFormChange}
-                                            placeholder="Regular Fit / Slim Fit"
-                                            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#1F0A3C]/40 focus:ring-2 focus:ring-[#1F0A3C]/10 transition-all"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Inventory Manager */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between sticky  z-20 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
-                        <div className="flex items-center  gap-2">
-                            <FiBox className="text-[#1F0A3C] w-4 h-4" />
-                            <h3 className="text-sm font-bold text-[#1F0A3C] uppercase tracking-wider">Shade & Inventory</h3>
-                        </div>
-                        <button type="button" onClick={addVariant} className="bg-[#1F0A3C] text-white p-1.5 rounded-lg active:scale-90 transition-all shadow hover:bg-[#2d0f57]"><FiPlus size={15} /></button>
-                    </div>
-
-                    {variants.map((v, vIndex) => (
-                        <div key={vIndex} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden group">
-                            <div className="flex items-center justify-between px-4 py-3 bg-[#1F0A3C]/5 border-b border-gray-100">
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <input
-                                        type="color"
-                                        value={v.color}
-                                        onChange={(e) => handleVariantChange(vIndex, "color", e.target.value)}
-                                        className="w-8 h-8 rounded-lg border-2 border-white shadow cursor-pointer flex-shrink-0"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                        <select
-                                            value={v.colorName}
-                                            onChange={(e) => {
-                                                const selected = boutiqueColors.find(bc => bc.name === e.target.value);
-                                                if (selected) {
-                                                    handleVariantChange(vIndex, "color", selected.hex);
-                                                    handleVariantChange(vIndex, "colorName", selected.name);
-                                                } else {
-                                                    handleVariantChange(vIndex, "colorName", e.target.value);
-                                                }
-                                            }}
-                                            className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-800 outline-none focus:border-[#1F0A3C]/40 transition-all cursor-pointer appearance-none"
-                                        >
-                                            <option value="">Select Shade</option>
-                                            {boutiqueColors.map(bc => <option key={bc.hex} value={bc.name}>{bc.name}</option>)}
-                                            {v.colorName && !boutiqueColors.find(bc => bc.name === v.colorName) && <option value={v.colorName}>{v.colorName}</option>}
+                                    <div className="flex items-center gap-2 p-2.5">
+                                        <select aria-label={`Image ${index + 1} view`} className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700" value={imageRoles[index] || "Product view"} onChange={(event) => setImageRoles((previous) => previous.map((role, i) => i === index ? event.target.value : role))}>
+                                            {["Product view", "Front view", "Side view", "Back view", "Lifestyle image"].map((role) => <option key={role}>{role}</option>)}
                                         </select>
-                                        <p className="text-[9px] text-gray-400 mt-0.5 ml-0.5">Hex: <span className="font-bold text-[#1F0A3C]">{v.color}</span></p>
+                                        <button type="button" onClick={() => setMainImageIndex(index)} className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold ${mainImageIndex === index ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{mainImageIndex === index ? <span className="inline-flex items-center gap-1"><Check size={12} /> Main</span> : "Set main"}</button>
                                     </div>
                                 </div>
-                                <button type="button" onClick={() => removeVariant(vIndex)} className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1 flex-shrink-0"><FiTrash2 size={14} /></button>
-                            </div>
+                            ))}
+                        </div>}
+                        <Field label="Product video URL (optional)" name="video_url" value={form.video_url} onChange={handleChange} placeholder="https://…" />
+                    </SectionCard>
 
-                            <div className="px-4 pb-4 pt-3 space-y-3">
-                                {/* Stock by Size */}
-                                <div className="space-y-2">
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock by Size</label>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {sizeOptions.map(sz => (
-                                            <button key={sz} type="button" onClick={() => toggleSize(vIndex, sz)} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${v.selectedSizes.includes(sz) ? 'bg-[#1F0A3C] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{sz}</button>
-                                        ))}
-                                    </div>
-                                    {v.selectedSizes.length > 0 && (
-                                        <div className="grid grid-cols-2 gap-2 pt-1">
-                                            {v.selectedSizes.map(sz => (
-                                                <div key={sz} className="bg-[#1F0A3C]/5 border border-[#1F0A3C]/15 p-2 rounded-lg flex items-center justify-between">
-                                                    <div>
-                                                        <p className="text-[9px] font-bold text-[#1F0A3C]/60 uppercase mb-0.5">{sz}</p>
-                                                        <input type="number" value={v.sizesStock[sz]} onChange={(e) => handleStockChange(vIndex, sz, e.target.value)} className="w-full bg-transparent border-none outline-none p-0 text-sm font-bold text-[#1F0A3C] focus:ring-0" />
-                                                    </div>
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-[#1F0A3C]/30"></div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Images */}
-                                <div className="grid grid-cols-3 gap-2">
-                                    {v.images.slice(0, 5).map((img, iIndex) => (
-                                        <div key={iIndex} className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-50 border border-gray-200 group/img">
-                                            <img src={resolveImageUrl(img)} alt="Product preview" className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500" onError={(e) => { e.currentTarget.style.opacity = "0.35"; }} />
-                                            <button type="button" onClick={() => removeVariantImage(vIndex, iIndex)} className="absolute inset-0 bg-red-600/70 text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"><FiTrash2 size={13} /></button>
-                                        </div>
-                                    ))}
-                                    {v.images.length < 5 && (
-                                        <label className="flex flex-col items-center justify-center aspect-[3/4] rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 cursor-pointer hover:bg-[#1F0A3C]/5 hover:border-[#1F0A3C]/40 group/label transition-all">
-                                            <FiUploadCloud size={18} className="text-gray-300 group-hover/label:text-[#1F0A3C] transition-colors" />
-                                            <input type="file" multiple className="hidden" accept="image/*" onChange={(e) => handleVariantImageUpload(vIndex, e)} />
-                                        </label>
-                                    )}
-                                </div>
-                            </div>
+                    <SectionCard id="shipping" title="Delivery & shipping" description="Set delivery preferences and package details." icon={Truck}>
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            <Field label="Package length" name="package_length" value={form.package_length} onChange={handleChange} type="number" min="0" suffix="cm" />
+                            <Field label="Package width" name="package_width" value={form.package_width} onChange={handleChange} type="number" min="0" suffix="cm" />
+                            <Field label="Package height" name="package_height" value={form.package_height} onChange={handleChange} type="number" min="0" suffix="cm" />
                         </div>
-                    ))}
+                        <div className="grid gap-3 md:grid-cols-2">
+                            <Toggle label="Delivery available" checked={form.delivery_available} onChange={(checked) => setForm((previous) => ({ ...previous, delivery_available: checked }))} />
+                            <Toggle label="Free delivery" checked={form.free_delivery} onChange={(checked) => setForm((previous) => ({ ...previous, free_delivery: checked }))} />
+                            <Toggle label="Assembly required" checked={form.assembly_required} onChange={(checked) => setForm((previous) => ({ ...previous, assembly_required: checked }))} />
+                            <Toggle label="Installation available" checked={form.installation_available} onChange={(checked) => setForm((previous) => ({ ...previous, installation_available: checked }))} />
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Field label="Delivery charges" name="delivery_charges" value={form.delivery_charges} onChange={handleChange} type="number" min="0" suffix="₹" disabled={form.free_delivery} />
+                            <Field label="Estimated delivery days" name="estimated_delivery_days" value={form.estimated_delivery_days} onChange={handleChange} type="number" min="0" suffix="days" />
+                        </div>
+                        <label className="block">
+                            <span className={labelClass}>Return policy</span>
+                            <textarea className={`${inputClass} min-h-20 resize-y`} name="return_policy" value={form.return_policy} onChange={handleChange} placeholder="Add the return window and product condition requirements…" rows={3} />
+                        </label>
+                    </SectionCard>
+
+                    <SectionCard id="customization" title="Customization options" description="Let customers configure this product before adding it to cart." icon={Sparkles}>
+                        <Toggle label="Enable product customization" description="Customization is available on the product details page when enabled." checked={form.customization_enabled} onChange={(checked) => setForm((previous) => ({ ...previous, customization_enabled: checked }))} />
+                        {form.customization_enabled && <>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Field label="Customization title" name="customization_title" value={form.customization_title} onChange={handleChange} placeholder="Make it yours" />
+                                <Field label="Customization description" name="customization_description" value={form.customization_description} onChange={handleChange} placeholder="Choose your preferred finish and size" />
+                            </div>
+                            <div className="flex justify-end"><button type="button" onClick={() => setCustomizations((previous) => [...previous, initialCustomization()])} className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 hover:bg-orange-100"><Plus size={14} /> Add customization option</button></div>
+                            {!customizations.length && <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">Add an option such as fabric, wood type, colour, size, or engraving.</p>}
+                            {customizations.map((option, index) => <div key={index} className="space-y-3 rounded-xl border border-slate-200 p-4">
+                                <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-800">Option {index + 1}</p><button type="button" onClick={() => setCustomizations((previous) => previous.filter((_, i) => i !== index))} className="text-xs font-semibold text-rose-600 hover:text-rose-700"><Trash2 size={14} className="inline" /> Remove</button></div>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <Field label="Customization option name" value={option.name} onChange={(event) => updateCustomization(index, "name", event.target.value)} placeholder="Select sofa fabric" />
+                                    <SelectField label="Customization type" value={option.type} onChange={(event) => updateCustomization(index, "type", event.target.value)} options={["Text Input", "Dropdown Selection", "Radio Button", "Checkbox", "Colour Selection", "Size Selection", "Image Selection"]} />
+                                    <Field label="Available options (comma-separated)" value={option.options} onChange={(event) => updateCustomization(index, "options", event.target.value)} placeholder="Natural oak, Walnut, White" />
+                                    <Field label="Additional customization price" value={option.additionalPrice} onChange={(event) => updateCustomization(index, "additionalPrice", event.target.value)} type="number" min="0" step="0.01" suffix="₹" />
+                                </div>
+                                <Toggle label="Required selection" description="Customers must select this option before adding to cart." checked={Boolean(option.required)} onChange={(checked) => updateCustomization(index, "required", checked)} />
+                            </div>)}
+                            <div className="rounded-xl bg-orange-50 px-4 py-3 text-xs leading-5 text-orange-800">Paid option prices are stored with the product configuration for the storefront/cart to apply to the selected choices.</div>
+                        </>}
+                    </SectionCard>
+
                 </div>
 
-                {/* Bottom Global Action Button */}
-                <div className="lg:col-span-3 pt-5 pb-10 border-t border-gray-200 mt-2">
-                    <div className="flex items-center justify-end gap-3">
-                        <button type="button" onClick={() => navigate(-1)} className="px-5 py-2.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex items-center gap-2 bg-[#1F0A3C] hover:bg-[#2d0f57] disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 px-6 rounded-xl text-sm font-semibold shadow-lg transition-all active:scale-95"
-                        >
-                            {loading ? (
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    <span>Saving...</span>
-                                </div>
-                            ) : (
-                                <>
-                                    <FiSave size={15} />
-                                    <span>{isEdit ? 'Update Product' : 'Add Product'}</span>
-                                </>
-                            )}
-                        </button>
+                <aside className="space-y-4 xl:sticky xl:top-5">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
+                        <h2 className="text-sm font-bold text-slate-900">Listing overview</h2>
+                        <p className="mt-1 truncate text-sm text-slate-500">{form.name || "New furniture product"}</p>
+                        <div className="my-4 flex items-center justify-between border-y border-slate-100 py-3">
+                            <span className="text-xs text-slate-500">Selling price</span><strong className="text-base text-slate-900">₹{finalPrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
+                        </div>
+                        <div className="space-y-3 text-xs">
+                            <div className="flex justify-between gap-3"><span className="text-slate-500">SKU</span><span className="truncate font-semibold text-slate-700">{form.product_code || "Not set"}</span></div>
+                            <div className="flex justify-between gap-3"><span className="text-slate-500">Category</span><span className="truncate font-semibold text-slate-700">{form.category || "Not selected"}</span></div>
+                            <div className="flex justify-between gap-3"><span className="text-slate-500">Inventory</span><span className="font-semibold text-slate-700">{form.total_stock || "0"} · {stockState}</span></div>
+                            <div className="flex justify-between gap-3"><span className="text-slate-500">Images</span><span className="font-semibold text-slate-700">{images.length} uploaded</span></div>
+                        </div>
                     </div>
-                </div>
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
+                        <div className="mb-4 flex items-center gap-2"><ShieldCheck size={17} className="text-emerald-600" /><h2 className="text-sm font-bold text-slate-900">Ready to publish?</h2></div>
+                        <p className="text-xs leading-5 text-slate-500">Complete the required fields, check pricing, then save this listing. You can update it at any time.</p>
+                        <div className="mt-5 grid gap-2">
+                            <button type="submit" disabled={loading || uploading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60">
+                                {loading ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}{loading ? "Saving…" : isEdit ? "Update product" : "Save product"}
+                            </button>
+                            <button type="button" disabled={loading || uploading} onClick={(event) => saveProduct(event, true)} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60">Save as draft</button>
+                            <button type="button" disabled={loading || uploading} onClick={resetForm} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-60"><RotateCcw size={14} /> Reset form</button>
+                            <button type="button" disabled={loading || uploading} onClick={() => navigate(-1)} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60"><X size={14} /> Cancel</button>
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs leading-5 text-emerald-800"><Check size={15} className="mt-0.5 shrink-0" /> Variant and customization settings are saved with the product.</div>
+                </aside>
             </form>
         </div>
     );

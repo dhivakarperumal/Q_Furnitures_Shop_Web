@@ -22,6 +22,7 @@ const AdminPanel = React.lazy(() => import("./Admin/AdminPanel.jsx"));
 const Dashboard = React.lazy(() => import("./Admin/Dashboard.jsx"));
 const Category = React.lazy(() => import("./Admin/Categories/Category.jsx"));
 const AllProducts = React.lazy(() => import("./Admin/Products/AllProducts.jsx"));
+const AddProducts = React.lazy(() => import("./Admin/Products/AddProducts.jsx"));
 
 const ErrorPage = React.lazy(() => import("./Admin/Pages/ErrorPage.jsx"));
 
@@ -52,6 +53,8 @@ const router = createBrowserRouter([
       { index: true, element: <Dashboard /> },
       { path: "products/category", element: <Category /> },
       { path: "products/all", element: <AllProducts /> },
+      { path: "products/add", element: <AddProducts /> },
+      { path: "products/edit/:id", element: <AddProducts /> },
     ],
   },
 ]);
