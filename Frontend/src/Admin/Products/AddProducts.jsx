@@ -27,7 +27,7 @@ const initialForm = {
     name: "", product_code: "", category: "", subcategory: "", brand: "", model_number: "",
     description: "", tags: "", product_type: "Standard", featured: false,
     trending_product: false, offer_product: false, status: "Active",
-    mrp: "", offer_type: "Percentage", offer: "", offer_price: "0",
+    mrp: "", offer_type: "Percentage", offer: "", offer_price: "0", offer_price_mode: "auto",
     material_type: "", wood_type: "", colour: "", finish_type: "",
     height: "", width: "", depth: "", weight: "", seating_capacity: "", doors: "",
     drawers: "", mattress_size: "", warranty_period: "", country_of_origin: "India",
@@ -152,6 +152,9 @@ const AddProducts = () => {
         if (form.offer_type === "Percentage") return Math.max(0, mrp * (1 - offer / 100));
         return Math.max(0, mrp - offer);
     }, [form.mrp, form.offer, form.offer_type]);
+    const finalOfferPrice = form.offer_price_mode === "manual"
+        ? Number(form.offer_price) || 0
+        : calculatedOfferPrice;
     const stockState = Number(form.total_stock) <= 0 ? "Out of stock" : Number(form.total_stock) <= 5 ? "Low stock" : "In stock";
 
     useEffect(() => {
@@ -205,6 +208,8 @@ const AddProducts = () => {
                         total_stock: String(product.total_stock ?? 0),
                         offer_type: product.offer_type || "Percentage",
                         offer: String(product.offer ?? ""),
+                        offer_price: String(product.offer_price ?? "0"),
+                        offer_price_mode: product.offer_price_mode || "auto",
                         rating: String(product.rating ?? "5"),
                         customization_enabled: Boolean(product.customization_enabled),
                     }));
@@ -367,6 +372,10 @@ const AddProducts = () => {
             toast.error("Enter a valid offer value.");
             return;
         }
+        if (form.offer_price_mode === "manual" && (form.offer_price === "" || finalOfferPrice > Number(form.mrp))) {
+            toast.error("Enter a manual offer price between zero and the MRP.");
+            return;
+        }
         if (Number(form.rating) < 1 || Number(form.rating) > 5) {
             toast.error("Product rating must be between 1 and 5.");
             return;
@@ -379,8 +388,9 @@ const AddProducts = () => {
             status: asDraft ? "Draft" : form.status,
             mrp: String(form.mrp),
             offer: String(form.offer || "0"),
-            offer_price: calculatedOfferPrice.toFixed(2),
-            selling_price: calculatedOfferPrice.toFixed(2),
+            offer_price: finalOfferPrice.toFixed(2),
+            offer_price_mode: form.offer_price_mode,
+            selling_price: finalOfferPrice.toFixed(2),
             selling_price_mode: "auto",
             product_code: form.product_code.trim(),
             total_stock: String(form.total_stock || "0"),
@@ -502,11 +512,19 @@ const AddProducts = () => {
                     </SectionCard>
 
                     <SectionCard id="pricing" title="Pricing" description="Set your list price and offer details." icon={CircleDollarSign}>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                             <Field label="MRP" name="mrp" value={form.mrp} onChange={handleChange} type="number" min="0" step="0.01" placeholder="20000" prefix="₹" required />
                             <SelectField label="Offer type" name="offer_type" value={form.offer_type} onChange={handleChange} options={["Percentage", "Fixed Amount"]} />
                             <Field label={form.offer_type === "Percentage" ? "Offer (%)" : "Offer amount (₹)"} name="offer" value={form.offer} onChange={handleChange} type="number" min="0" max={form.offer_type === "Percentage" ? "100" : undefined} step="0.01" placeholder="10" prefix={form.offer_type === "Fixed Amount" ? "₹" : undefined} suffix={form.offer_type === "Percentage" ? "%" : undefined} />
-                            <Field label="Offer price" name="offer_price" value={calculatedOfferPrice.toFixed(2)} readOnly type="number" prefix="₹" />
+                            <SelectField label="Offer price calculation" name="offer_price_mode" value={form.offer_price_mode} onChange={(event) => {
+                                const mode = event.target.value;
+                                setForm((previous) => ({
+                                    ...previous,
+                                    offer_price_mode: mode,
+                                    offer_price: mode === "manual" ? calculatedOfferPrice.toFixed(2) : previous.offer_price,
+                                }));
+                            }} options={[{ value: "auto", label: "Automatic" }, { value: "manual", label: "Manual" }]} />
+                            <Field label="Offer price" name="offer_price" value={form.offer_price_mode === "manual" ? form.offer_price : calculatedOfferPrice.toFixed(2)} onChange={handleChange} readOnly={form.offer_price_mode === "auto"} type="number" min="0" max={form.mrp || undefined} step="0.01" prefix="₹" />
                         </div>
                     </SectionCard>
 
