@@ -6,41 +6,45 @@
 
 /* Theme variables */
 
+
 @theme {
-  /* Brand Colors — StyleHub */
-  --color-primary: #D99A32;
-  --color-primary-light: #F9D976;
-  --color-primary-dark: #A85B20;
+  /* Brand Colors — Q Living Furniture */
+  --color-primary: #F07816;
+  --color-primary-light: #FFB36B;
+  --color-primary-dark: #D9650B;
 
-  /* Secondary — Luxury Gold */
-  --color-secondary: #D99A32;
-  --color-secondary-light: #F9D976;
-  --color-secondary-dark: #A85B20;
+  /* Secondary — Premium Walnut Brown */
+  --color-secondary: #351D0E;
+  --color-secondary-light: #4A2E19;
+  --color-secondary-dark: #261208;
 
-    /* Brand Colors — StyleHub */
-  /* --color-primary: #0B1B30;
-  --color-primary-light: #1E3552;
-  --color-primary-dark: #06101D; */
-
-
-  /* Accent */
-  --color-accent: #F9D976;
+  /* Accent — Golden Brown */
+  --color-accent: #CD8D54;
 
   /* Success / Green */
-  --color-success: #16a34a;
+  --color-success: #278044;
 
   /* Warning / Yellow */
-  --color-warning: #facc15;
+  --color-warning: #E9A23B;
 
   /* Danger / Error */
-  --color-danger: #dc2626;
+  --color-danger: #DC2626;
 
   /* Neutral Colors */
-  --color-background: #F8FAFC;
+  --color-background: #F7EFE5;
   --color-surface: #FFFFFF;
-  --color-border: #E2E8F0;
-  --color-muted: #64748B;
+  --color-border: #E5D8CA;
+  --color-muted: #8B735E;
+
+  /* Additional Furniture Theme Colors */
+  --color-cream: #F3E6D8;
+  --color-walnut: #351D0E;
+  --color-gold: #CD8D54;
+  --color-heading: #261208;
+  --color-text: #261208;
+  --color-text-secondary: #8B735E;
 }
+
 
 @layer utilities {
   .animate-in {

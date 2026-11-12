@@ -89,7 +89,7 @@ function Login() {
         >
           <img
             src="/images/loginbanner.png"
-            alt="Style Hub shoes and accessories"
+            alt="Q Furnitures"
             className="h-full w-full object-cover object-center opacity-90"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-black/20 to-transparent pointer-events-none" />

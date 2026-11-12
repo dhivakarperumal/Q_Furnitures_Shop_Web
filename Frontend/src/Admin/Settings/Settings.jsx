@@ -17,7 +17,7 @@ const Settings = () => {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-slate-800">System Preferences</h1>
-                <p className="text-sm text-gray-500 font-medium mt-1">Configure your eMart administration experience</p>
+                <p className="text-sm text-gray-500 font-medium mt-1">Configure your Q Furnitures administration experience</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -49,7 +49,7 @@ const Settings = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-widest pl-1">Store Name</label>
-                                        <input type="text" defaultValue="eMart Saree Collections" className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:bg-white focus:border-blue-500 transition-all font-semibold text-slate-700 shadow-inner" />
+                                        <input type="text" defaultValue="Q Furnitures" className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:bg-white focus:border-blue-500 transition-all font-semibold text-slate-700 shadow-inner" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-widest pl-1">Store Email</label>

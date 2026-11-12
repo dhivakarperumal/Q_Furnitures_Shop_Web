@@ -11,7 +11,7 @@ import PageContainer from "./PageContainer";
 
 const Header = () => {
   return (
-    <div className="bg-gradient-to-r from-primary via-secondary to-primary-dark   hidden md:block text-white text-sm">
+    <div className="hidden bg-secondary text-sm text-white md:block">
 
       <PageContainer>
 
@@ -37,17 +37,17 @@ const Header = () => {
 
                 <span className="flex items-center gap-2">
                   <Tag size={16} />
-                  Step Into Style - New Season Footwear Offers
+                  Make your home feel like yours with Q Furnitures
                 </span>
 
                 <span className="flex items-center gap-2">
                   <Truck size={16} />
-                  Free Shipping on Orders Above ₹999
+                  Furniture for every room and every routine
                 </span>
 
                 <span className="flex items-center gap-2">
                   <ShoppingBag size={16} />
-                  Explore Shoes, Bags, Belts and Leather Goods
+                  Explore home and office furniture
                 </span>
 
               </div>

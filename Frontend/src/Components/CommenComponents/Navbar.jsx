@@ -8,7 +8,8 @@ import {
   User,
   Heart,
   ShoppingCart,
-  Package
+  Search,
+  Sofa
 } from "lucide-react";
 import PageContainer from "./PageContainer";
 import api from "../../api";
@@ -27,9 +28,11 @@ const Navbar = () => {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
+  const [roomsMenu, setRoomsMenu] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
   const [categoryMenu, setCategoryMenu] = useState(false);
-  const [pagesMenu, setPagesMenu] = useState(false);
   const [mobileCategory, setMobileCategory] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
@@ -37,7 +40,7 @@ const Navbar = () => {
 
   const menuRef = useRef();
   const categoryRef = useRef();
-  const pagesRef = useRef();
+  const roomsRef = useRef();
 
   const confirmLogout = () => {
     logout();
@@ -59,8 +62,8 @@ const Navbar = () => {
         setCategoryMenu(false);
       }
 
-      if (pagesRef.current && !pagesRef.current.contains(e.target)) {
-        setPagesMenu(false);
+      if (roomsRef.current && !roomsRef.current.contains(e.target)) {
+        setRoomsMenu(false);
       }
 
     };
@@ -109,280 +112,229 @@ const Navbar = () => {
     return () => clearInterval(interval);
   }, [user]);
 
-const navClass = ({ isActive }) =>
-  `px-4 py-1.5 rounded-lg text-sm font-medium transition
-  ${
-    isActive
-      ? "bg-gradient-to-r from-primary-light to-secondary text-white shadow"
-      : "text-gray-600 hover:bg-primary-light/10 hover:text-primary"
-  }`;
+  const navClass = ({ isActive }) =>
+    `whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold transition-colors ${
+      isActive
+        ? "relative text-orange-600 after:absolute after:bottom-0 after:left-1.5 after:right-1.5 after:h-0.5 after:rounded after:bg-orange-600"
+        : "text-slate-700 hover:text-orange-600"
+    }`;
+
+  const handleSearch = (event) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+    navigate(`/shop?search=${encodeURIComponent(query)}`);
+    setSearchOpen(false);
+  };
 
   return (
 
-    <nav className="sticky top-0 z-50 bg-white shadow-md py-1 md:py-0">
-
+    <nav className="sticky top-0 z-50 border-b border-orange-100 bg-white/95 shadow-sm backdrop-blur">
       <PageContainer>
-
-        <div className="flex items-center justify-between">
-
-          {/* Logo */}
+        <div className="flex min-h-[72px] items-center justify-between gap-3">
           <Link
             to="/"
-            className="flex shrink-0 items-center"
-            aria-label="Style Hub home"
+            className="flex shrink-0 items-center gap-2.5"
+            aria-label="Q Furnitures home"
           >
-            <img
-              src="/images/logo.png"
-              alt="Style Hub - Shoes, Bags, Belts and Leather Goods"
-              className="h-12 w-auto max-w-[180px] object-contain md:h-16 md:max-w-[240px]"
-            />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+              <Sofa size={26} strokeWidth={2} />
+            </span>
+            <span className="leading-tight">
+              <span className="block whitespace-nowrap text-lg font-extrabold tracking-tight text-slate-900">
+                Q <span className="text-orange-600">Furnitures</span>
+              </span>
+              <span className="block whitespace-nowrap text-[10px] font-medium text-slate-500">
+                Home &amp; Office Furniture
+              </span>
+            </span>
           </Link>
 
-          {/* Desktop Links */}
+          <div className="hidden flex-1 items-center justify-center gap-3 lg:flex xl:gap-5">
+            <NavLink to="/" end className={navClass}>Home</NavLink>
+            <NavLink to="/shop" className={({ isActive }) => `${navClass({ isActive })} inline-flex items-center gap-1`}>
+              Shop 
+            </NavLink>
 
-          <div className="hidden md:flex flex-1 justify-center">
-
-            <div className="flex items-center gap-2 text-base">
-
-              <NavLink to="/" className={navClass}>
-                Home
-              </NavLink>
-
-              <NavLink to="/shop" className={navClass}>
-                Shop
-              </NavLink>
-
-              {/* Categories */}
-
-              <div className="relative" ref={categoryRef}>
-
-                <button
-                  onClick={() => {
-                    setCategoryMenu(!categoryMenu);
-                    setPagesMenu(false);
-                  }}
-                  className="flex cursor-pointer items-center gap-1 text-gray-600 hover:text-primary transition"
-                >
-                  Categories
-                  <FiChevronDown
-                    className={`transition-transform ${categoryMenu ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                {categoryMenu && (
-
-                  <div className="absolute  top-10 left-0 w-48 bg-white border border-primary rounded-xl shadow-xl overflow-hidden animate-dropdown">
-
-                    {categories.map((cat) => (
-
-                      <NavLink
-                        key={cat.id}
-                        to={`/category/${cat.slug || cat.name}`}
-                        onClick={() => setCategoryMenu(false)}
-                        className={({ isActive }) =>
-                          `block px-4 py-3 text-sm transition
-    ${isActive
-                            ? "bg-gradient-to-r from-primary-light via-secondary to-secondary-light text-white"
-                            : "text-gray-700 hover:bg-gradient-to-r from-primary-light via-secondary to-secondary-light hover:text-white"
-                          }`
-                        }
-                      >
-                        {cat.name}
-                      </NavLink>
-
-                    ))}
-
-                  </div>
-
-                )}
-
-              </div>
-
-              {/* Pages */}
-
-              <div className="relative" ref={pagesRef}>
-
-                <button
-                  onClick={() => {
-                    setPagesMenu(!pagesMenu);
-                    setCategoryMenu(false);
-                  }}
-                  className="flex items-center cursor-pointer gap-1 text-gray-600 hover:text-primary transition"
-                >
-                  Pages
-                  <FiChevronDown
-                    className={`transition-transform ${pagesMenu ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                {pagesMenu && (
-
-                  <div className="absolute top-10 left-0 w-44 bg-white border border-primary rounded-xl shadow-xl overflow-hidden animate-dropdown">
-
+            <div className="relative" ref={categoryRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryMenu(!categoryMenu);
+                  setRoomsMenu(false);
+                }}
+                className="inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold text-slate-700 transition-colors hover:text-orange-600"
+                aria-expanded={categoryMenu}
+              >
+                Collections
+                <FiChevronDown className={`transition-transform ${categoryMenu ? "rotate-180" : ""}`} />
+              </button>
+              {categoryMenu && (
+                <div className="absolute left-0 top-full z-50 mt-2 max-h-80 w-56 overflow-y-auto rounded-xl border border-orange-100 bg-white py-2 shadow-xl">
+                  {categories.map((cat) => (
                     <NavLink
-                      to="/about"
-                      onClick={() => setPagesMenu(false)}
+                      key={cat.id}
+                      to={`/category/${cat.slug || cat.name}`}
+                      onClick={() => setCategoryMenu(false)}
                       className={({ isActive }) =>
-                        `block px-4 py-3 text-sm transition
-    ${isActive
-                          ? "bg-gradient-to-r from-primary-light via-secondary to-secondary-light text-white"
-                          : "text-gray-700 hover:bg-gradient-to-r from-primary-light via-secondary to-secondary-light hover:text-white"
+                        `block px-4 py-2.5 text-sm transition-colors ${
+                          isActive ? "bg-orange-50 font-semibold text-orange-700" : "text-slate-700 hover:bg-orange-50 hover:text-orange-700"
                         }`
                       }
                     >
-                      About
+                      {cat.name}
                     </NavLink>
-                    <NavLink
-                      to="/termsandconditions"
-                      onClick={() => setPagesMenu(false)}
-                      className={({ isActive }) =>
-                        `block px-4 py-3 text-sm transition
-    ${isActive
-                          ? "bg-gradient-to-r from-primary-light via-secondary to-secondary-light text-white"
-                          : "text-gray-700 hover:bg-gradient-to-r from-primary-light via-secondary to-secondary-light hover:text-white"
-                        }`
-                      }
-                    >
-                      Terms And Conditions
-                    </NavLink>
-
-                    <NavLink
-                      to="/contactus"
-                      onClick={() => setPagesMenu(false)}
-                      className={({ isActive }) =>
-                        `block px-4 py-3 text-sm transition
-    ${isActive
-                          ? "bg-gradient-to-r from-primary-light via-secondary to-secondary-light text-white"
-                          : "text-gray-700 hover:bg-gradient-to-r from-primary-light via-secondary to-secondary-light hover:text-white"
-                        }`
-                      }
-                    >
-                      Contact Us
-                    </NavLink>
-
-                  </div>
-
-                )}
-
-              </div>
-
+                  ))}
+                  {categories.length === 0 && (
+                    <span className="block px-4 py-2.5 text-sm text-slate-500">Browse all furniture</span>
+                  )}
+                </div>
+              )}
             </div>
 
+            <div className="relative" ref={roomsRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setRoomsMenu(!roomsMenu);
+                  setCategoryMenu(false);
+                }}
+                className="inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold text-slate-700 transition-colors hover:text-orange-600"
+                aria-expanded={roomsMenu}
+              >
+                Rooms
+                <FiChevronDown className={`transition-transform ${roomsMenu ? "rotate-180" : ""}`} />
+              </button>
+              {roomsMenu && (
+                <div className="absolute left-0 top-full z-50 mt-2 w-48 rounded-xl border border-orange-100 bg-white py-2 shadow-xl">
+                  {["Living Room", "Bedroom", "Dining Room", "Home Office"].map((room) => (
+                    <Link
+                      key={room}
+                      to={`/shop?room=${encodeURIComponent(room.toLowerCase().replace(/ /g, "-"))}`}
+                      onClick={() => setRoomsMenu(false)}
+                      className="block px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-orange-50 hover:text-orange-700"
+                    >
+                      {room}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <NavLink to="/combo" className={({ isActive }) => `${navClass({ isActive })} relative`}>
+              Offers
+              <span className="absolute -right-3 -top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] font-extrabold uppercase leading-none text-white">
+                Hot
+              </span>
+            </NavLink>
+            <NavLink to="/about" className={navClass}>Interior Ideas</NavLink>
+            <NavLink to="/about" className={navClass}>About Us</NavLink>
+            <NavLink to="/contactus" className={navClass}>Contact Us</NavLink>
           </div>
 
-          {/* Right Icons */}
-
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-3 text-slate-800 sm:gap-4">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSearchOpen(!searchOpen)}
+                aria-label="Search furniture"
+                aria-expanded={searchOpen}
+                className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
+              >
+                <Search size={21} />
+              </button>
+              {searchOpen && (
+                <form onSubmit={handleSearch} className="absolute right-0 top-full z-50 mt-3 flex w-[min(85vw,320px)] gap-2 rounded-xl border border-orange-100 bg-white p-3 shadow-xl">
+                  <input
+                    autoFocus
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search furniture"
+                    aria-label="Search furniture"
+                    className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-400"
+                  />
+                  <button type="submit" className="rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white hover:bg-orange-700">
+                    Search
+                  </button>
+                </form>
+              )}
+            </div>
 
             <button
               type="button"
               onClick={() => setWishlistOpen(true)}
-              aria-label="Open favorites"
-              className="relative text-primary hover:text-primary-light hover:scale-110 transition duration-200"
+              aria-label="Open wishlist"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
             >
-              <Heart size={22} />
+              <Heart size={21} />
               {wishlist.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-                  {wishlist.length > 9 ? '9+' : wishlist.length}
+                <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
+                  {wishlist.length > 9 ? "9+" : wishlist.length}
                 </span>
               )}
             </button>
-
-            <Link
-              to="/ordersmain"
-              className="relative text-primary hover:text-primary-light hover:scale-110 transition"
-            >
-              <Package size={22} />
-              {orderCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-                  {orderCount > 9 ? '9+' : orderCount}
-                </span>
-              )}
-            </Link>
 
             <button
               type="button"
               onClick={() => setCartOpen(true)}
               aria-label="Open cart"
-              className="relative text-primary hover:text-primary-light hover:scale-110 transition"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
             >
-              <ShoppingCart size={22} />
+              <ShoppingCart size={21} />
               {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-                  {cart.length > 9 ? '9+' : cart.length}
+                <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
+                  {cart.length > 9 ? "9+" : cart.length}
                 </span>
               )}
             </button>
 
-            {/* User Dropdown */}
-
             {user ? (
-
               <div className="relative" ref={menuRef}>
-
                 <button
+                  type="button"
                   onClick={() => setUserMenu(!userMenu)}
-                  className="w-9 h-9 cursor-pointer rounded-full bg-gradient-to-r from-primary to-primary-light text-white flex items-center justify-center font-semibold shadow-md hover:scale-110 transition"
+                  aria-label="Open account menu"
+                  className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
                 >
-                  {user.username?.charAt(0).toUpperCase()}
+                  <User size={21} />
                 </button>
-
                 {userMenu && (
-
-                  <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden animate-dropdown">
-
-                    <Link
-                      to="/account"
-                      className="block px-4 py-3 text-sm hover:bg-gray-100"
-                      onClick={() => setUserMenu(false)}
-                    >
-                      My Account
+                  <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-orange-100 bg-white py-1 shadow-xl">
+                    <Link to="/account" className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-orange-50" onClick={() => setUserMenu(false)}>My Account</Link>
+                    <Link to="/ordersmain" className="flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-orange-50" onClick={() => setUserMenu(false)}>
+                      My Orders
+                      {orderCount > 0 && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">{orderCount}</span>}
                     </Link>
-
                     {user.role === "admin" && (
-                      <Link
-                        to="admin"
-                        className="block px-4 py-3 text-sm hover:bg-gray-100"
-                        onClick={() => setUserMenu(false)}
-                      >
-                        Admin Panel
-                      </Link>
+                      <Link to="/admin" className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-orange-50" onClick={() => setUserMenu(false)}>Admin Panel</Link>
                     )}
-
                     <button
+                      type="button"
                       onClick={() => setLogoutConfirm(true)}
-                      className="w-full cursor-pointer text-left px-4 py-3 text-sm hover:bg-gray-100 text-red-500"
+                      className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
                     >
                       Logout
                     </button>
-
                   </div>
-
                 )}
-
               </div>
-
             ) : (
-
-              <Link to="/login">
-                <User className="text-primary hover:text-primary-light transition" />
+              <Link to="/login" aria-label="Sign in" className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600">
+                <User size={21} />
               </Link>
-
             )}
 
-            {/* Mobile Menu Button */}
-
             <button
+              type="button"
               onClick={() => setMobileMenu(!mobileMenu)}
-              className="md:hidden text-primary"
+              aria-label={mobileMenu ? "Close menu" : "Open menu"}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-slate-800 transition hover:bg-orange-50 hover:text-orange-600 lg:hidden"
             >
-              {mobileMenu ? <X size={26} /> : <Menu size={26} />}
+              {mobileMenu ? <X size={24} /> : <Menu size={24} />}
             </button>
-
           </div>
-
         </div>
-
       </PageContainer>
 
       {/* Logout Modal */}
@@ -425,7 +377,7 @@ const navClass = ({ isActive }) =>
 
       )}
       {mobileMenu && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden">
 
           {/* Overlay */}
           <div
@@ -440,7 +392,7 @@ const navClass = ({ isActive }) =>
             {!mobileCategory && !mobilePages && (
               <>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 bg-primary text-white">
+                <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
                   <h2 className="text-lg font-semibold tracking-wide">Menu</h2>
                   <X
                     size={24}
@@ -458,8 +410,8 @@ const navClass = ({ isActive }) =>
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
-                        ? "bg-primary text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-primary-light hover:text-white"
+                        ? "bg-orange-600 text-white shadow"
+                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
                       }`
                     }
                   >
@@ -473,8 +425,8 @@ const navClass = ({ isActive }) =>
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
-                        ? "bg-primary text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-primary-light hover:text-white"
+                        ? "bg-orange-600 text-white shadow"
+                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
                       }`
                     }
                   >
@@ -484,7 +436,7 @@ const navClass = ({ isActive }) =>
 
                   <button
                     onClick={() => setMobileCategory(true)}
-                    className="flex items-center justify-between px-4 py-3 rounded-lg text-sm bg-gray-100 hover:bg-primary-light hover:text-white transition"
+                    className="flex items-center justify-between px-4 py-3 rounded-lg text-sm bg-gray-100 hover:bg-orange-100 hover:text-orange-700 transition"
                   >
                     <div className="flex items-center gap-3">
                       <FiGrid size={16} />
@@ -496,7 +448,7 @@ const navClass = ({ isActive }) =>
 
                   <button
                     onClick={() => setMobilePages(true)}
-                    className="flex items-center justify-between px-4 py-3 rounded-lg text-sm bg-gray-100 hover:bg-primary-light hover:text-white transition"
+                    className="flex items-center justify-between px-4 py-3 rounded-lg text-sm bg-gray-100 hover:bg-orange-100 hover:text-orange-700 transition"
                   >
                     <div className="flex items-center gap-3">
                       <FiFileText size={16} />
@@ -514,7 +466,7 @@ const navClass = ({ isActive }) =>
             {mobileCategory && (
               <>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 bg-primary text-white">
+                <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
 
                   {/* Back button */}
                   <button
@@ -546,8 +498,8 @@ const navClass = ({ isActive }) =>
                       className={({ isActive }) =>
                         `flex items-center justify-between px-4 py-3 rounded-lg text-sm transition
         ${isActive
-                          ? "bg-primary text-white shadow"
-                          : "bg-gray-100 text-gray-700 hover:bg-primary-light hover:text-white"
+                          ? "bg-orange-600 text-white shadow"
+                          : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
                         }`
                       }
                     >
@@ -569,7 +521,7 @@ const navClass = ({ isActive }) =>
             {/* PAGES SCREEN */}
             {mobilePages && (
               <>
-                <div className="flex items-center justify-between px-6 py-4 bg-primary text-white">
+                <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
 
                   <button
                     onClick={() => setMobilePages(false)}
@@ -596,13 +548,13 @@ const navClass = ({ isActive }) =>
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
-                        ? "bg-primary text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-primary-light hover:text-white"
+                        ? "bg-orange-600 text-white shadow"
+                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
                       }`
                     }
                   >
                     <FiFileText size={16} />
-                    About
+                    About Us
                   </NavLink>
 
                     <NavLink
@@ -611,8 +563,8 @@ const navClass = ({ isActive }) =>
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
-                        ? "bg-primary text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-primary-light hover:text-white"
+                        ? "bg-orange-600 text-white shadow"
+                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
                       }`
                     }
                   >
@@ -627,8 +579,8 @@ const navClass = ({ isActive }) =>
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition
       ${isActive
-                        ? "bg-primary text-white shadow"
-                        : "bg-gray-100 text-gray-700 hover:bg-primary-light hover:text-white"
+                        ? "bg-orange-600 text-white shadow"
+                        : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
                       }`
                     }
                   >

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import Navbar from "./Components/CommenComponents/Navbar";
 import Header from "./Components/CommenComponents/Header";
+import Navbar from "./Components/CommenComponents/Navbar";
 import Footer from "./Components/CommenComponents/Footer";
 
 import "react-toastify/dist/ReactToastify.css";
