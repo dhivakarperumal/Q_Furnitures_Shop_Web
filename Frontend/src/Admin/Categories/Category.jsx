@@ -247,34 +247,37 @@ const Category = () => {
 
             {/* Stats Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex items-center gap-5">
-                    <div className="w-16 h-16 rounded-[20px] bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-orange-200">
-                        <FiBox className="text-white text-2xl" />
+                <div className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-orange-100 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+                    <div className="pointer-events-none absolute -right-8 -bottom-12 h-32 w-32 rounded-full bg-orange-50 transition-transform duration-300 group-hover:scale-125" />
+                    <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-dark shadow-md shadow-orange-200">
+                        <FiBox className="text-xl text-white" />
                     </div>
-                    <div>
-                        <p className="text-xs font-bold text-gray-400 mb-1">Total Categories</p>
-                        <h3 className="text-3xl font-black text-slate-800 leading-none mb-1">{categories.length}</h3>
-                        <p className="text-[11px] text-gray-400 font-medium">All category collections</p>
-                    </div>
-                </div>
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex items-center gap-5">
-                    <div className="w-16 h-16 rounded-[20px] bg-[#10B981] flex items-center justify-center shrink-0 shadow-lg shadow-emerald-200">
-                        <FiCheckCircle className="text-white text-2xl" />
-                    </div>
-                    <div>
-                        <p className="text-xs font-bold text-gray-400 mb-1">Active</p>
-                        <h3 className="text-3xl font-black text-slate-800 leading-none mb-1">{activeCount}</h3>
-                        <p className="text-[11px] text-gray-400 font-medium">Active collections</p>
+                    <div className="relative z-10">
+                        <p className="mb-1 text-xs font-bold text-secondary-light">Total Categories</p>
+                        <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">{categories.length}</h3>
+                        <p className="text-[11px] font-medium text-stone-500">All category collections</p>
                     </div>
                 </div>
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex items-center gap-5">
-                    <div className="w-16 h-16 rounded-[20px] bg-[#F59E0B] flex items-center justify-center shrink-0 shadow-lg shadow-orange-200">
-                        <FiAlertCircle className="text-white text-2xl" />
+                <div className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-emerald-100 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+                    <div className="pointer-events-none absolute -right-8 -bottom-12 h-32 w-32 rounded-full bg-emerald-50 transition-transform duration-300 group-hover:scale-125" />
+                    <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 shadow-md shadow-emerald-200">
+                        <FiCheckCircle className="text-xl text-white" />
                     </div>
-                    <div>
-                        <p className="text-xs font-bold text-gray-400 mb-1">Inactive</p>
-                        <h3 className="text-3xl font-black text-slate-800 leading-none mb-1">{inactiveCount}</h3>
-                        <p className="text-[11px] text-gray-400 font-medium">Inactive collections</p>
+                    <div className="relative z-10">
+                        <p className="mb-1 text-xs font-bold text-secondary-light">Active</p>
+                        <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">{activeCount}</h3>
+                        <p className="text-[11px] font-medium text-stone-500">Active collections</p>
+                    </div>
+                </div>
+                <div className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-amber-100 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+                    <div className="pointer-events-none absolute -right-8 -bottom-12 h-32 w-32 rounded-full bg-amber-50 transition-transform duration-300 group-hover:scale-125" />
+                    <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500 shadow-md shadow-amber-200">
+                        <FiAlertCircle className="text-xl text-white" />
+                    </div>
+                    <div className="relative z-10">
+                        <p className="mb-1 text-xs font-bold text-secondary-light">Inactive</p>
+                        <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">{inactiveCount}</h3>
+                        <p className="text-[11px] font-medium text-stone-500">Inactive collections</p>
                     </div>
                 </div>
             </div>
