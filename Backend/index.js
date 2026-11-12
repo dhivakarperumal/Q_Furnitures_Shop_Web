@@ -53,6 +53,7 @@ app.use((error, request, response, next) => {
 async function start() {
   try {
     await initializeDatabase(pool);
+    await categoryService.seedDefaults();
 
     app.listen(port, () => {
       console.log(`Backend listening on http://localhost:${port} (database connected)`);

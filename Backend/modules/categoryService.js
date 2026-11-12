@@ -1,4 +1,7 @@
+const furnitureCategories = require("./furnitureCategories");
+
 const CATEGORY_COLUMNS = "id, cat_id AS catId, name, description, subcategory, images, status, created_at, updated_at";
+const DEFAULT_CATEGORIES_SEED_KEY = "default-furniture-categories-v1";
 
 function parseArray(value, fieldName) {
   if (value == null) {
@@ -46,6 +49,53 @@ function createCategoryService(pool) {
         ],
       );
       return result.insertId;
+    },
+
+    async seedDefaults() {
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+        try {
+          await connection.execute(
+            "INSERT INTO app_seed_history (seed_key) VALUES (?)",
+            [DEFAULT_CATEGORIES_SEED_KEY],
+          );
+        } catch (error) {
+          if (error.code === "ER_DUP_ENTRY") {
+            await connection.rollback();
+            return;
+          }
+          throw error;
+        }
+
+        for (const category of furnitureCategories) {
+          const catId = `CAT${String(category.id).padStart(3, "0")}`;
+          try {
+            await connection.execute(
+              `INSERT INTO categories (cat_id, name, description, subcategory, images)
+               VALUES (?, ?, ?, ?, ?)`,
+              [
+                catId,
+                category.name,
+                "",
+                JSON.stringify(category.subcategories),
+                JSON.stringify([]),
+              ],
+            );
+          } catch (error) {
+            if (error.code !== "ER_DUP_ENTRY") {
+              throw error;
+            }
+          }
+        }
+
+        await connection.commit();
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
     },
 
     async update(catId, category) {

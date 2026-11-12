@@ -37,6 +37,12 @@ async function initializeDatabase(pool) {
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_seed_history (
+      seed_key VARCHAR(100) NOT NULL PRIMARY KEY,
+      seeded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
 
   const [columns] = await pool.execute(
     `SELECT COLUMN_NAME
