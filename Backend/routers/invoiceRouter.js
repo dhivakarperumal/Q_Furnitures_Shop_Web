@@ -66,12 +66,26 @@ function normalizeInvoice(input = {}) {
     if (discountType === "percentage" && discountValue > 100) {
       throw badRequest(`Product ${index + 1} discount cannot exceed 100%.`);
     }
+    const unitPrice = item.unit_price === undefined
+      ? undefined
+      : amount(item.unit_price, `Product ${index + 1} unit price`);
+    if (unitPrice !== undefined && unitPrice <= 0) {
+      throw badRequest(`Product ${index + 1} unit price must be greater than zero.`);
+    }
+    const gstRate = item.gst_rate === undefined
+      ? undefined
+      : amount(item.gst_rate, `Product ${index + 1} GST rate`);
+    if (gstRate !== undefined && gstRate > 100) {
+      throw badRequest(`Product ${index + 1} GST rate cannot exceed 100%.`);
+    }
     return {
       product_id: positiveId(item.product_id, `Product ${index + 1} ID`),
       quantity,
       unit: text(item.unit || "pcs", `Product ${index + 1} unit`, 32, true),
       discount_type: discountType,
       discount_value: discountValue,
+      ...(unitPrice === undefined ? {} : { unit_price: unitPrice }),
+      ...(gstRate === undefined ? {} : { gst_rate: gstRate }),
     };
   });
   const dealerId = input.dealer_id ? positiveId(input.dealer_id, "Dealer ID") : null;
@@ -82,6 +96,12 @@ function normalizeInvoice(input = {}) {
   if (!["Cash", "UPI", "Card", "Bank Transfer", "Cheque", "Other"].includes(paymentMethod)) {
     throw badRequest("Choose a valid payment method.");
   }
+  if (input.is_draft !== undefined && typeof input.is_draft !== "boolean") {
+    throw badRequest("Draft status must be true or false.");
+  }
+  const isDraft = input.is_draft === true;
+  const amountReceived = amount(input.amount_received, "Amount received");
+  if (isDraft && amountReceived > 0) throw badRequest("Draft invoices cannot record payments.");
   return {
     dealer_id: dealerId,
     invoice_date: invoiceDate,
@@ -98,7 +118,8 @@ function normalizeInvoice(input = {}) {
     additional_discount: amount(input.additional_discount, "Additional discount"),
     delivery_charges: amount(input.delivery_charges, "Delivery charges"),
     installation_charges: amount(input.installation_charges, "Installation charges"),
-    amount_received: amount(input.amount_received, "Amount received"),
+    amount_received: amountReceived,
+    is_draft: isDraft,
     payment_method: paymentMethod,
     transaction_id: text(input.transaction_id, "Transaction ID", 100) || null,
     reference_number: text(input.reference_number, "Payment reference", 100) || null,
@@ -144,13 +165,26 @@ function normalizeCreditNote(input = {}) {
     if (!Number.isSafeInteger(quantity) || quantity < 1) {
       throw badRequest(`Credit item ${index + 1} quantity must be a positive whole number.`);
     }
-    return { invoice_item_id: invoiceItemId, quantity };
+    const stockDisposition = item.stock_disposition || "pending";
+    if (!["pending", "sellable", "damaged", "none"].includes(stockDisposition)) {
+      throw badRequest(`Credit item ${index + 1} has an invalid stock disposition.`);
+    }
+    return { invoice_item_id: invoiceItemId, quantity, stock_disposition: stockDisposition };
   });
   return {
     credit_date: date(input.credit_date, "Credit date", true),
     reason: text(input.reason, "Credit note reason", 191, true),
     notes: text(input.notes, "Notes"),
     items,
+  };
+}
+
+function normalizeCancellation(input = {}) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw badRequest("Cancellation details are invalid.");
+  }
+  return {
+    reason: text(input.reason || "Cancelled by administrator", "Cancellation reason", 191, true),
   };
 }
 
@@ -174,7 +208,7 @@ function createInvoiceRouter(invoiceService) {
       const limit = Math.min(100, Math.max(1, Number.parseInt(request.query.limit, 10) || 25));
       const search = typeof request.query.search === "string" ? request.query.search.trim().slice(0, 191) : "";
       const status = typeof request.query.status === "string" ? request.query.status : "All";
-      if (!["All", "Paid", "Partially Paid", "Unpaid", "Overdue", "Cancelled", "Credited"].includes(status)) {
+      if (!["All", "Paid", "Partially Paid", "Unpaid", "Overdue", "Cancelled", "Credited", "Draft"].includes(status)) {
         throw badRequest("Choose a valid invoice status.");
       }
       return response.json(await invoiceService.list({ page, limit, search, status }));
@@ -186,7 +220,7 @@ function createInvoiceRouter(invoiceService) {
 
   router.post("/", async (request, response, next) => {
     try {
-      const invoice = await invoiceService.create(normalizeInvoice(request.body));
+      const invoice = await invoiceService.create(normalizeInvoice(request.body), request.auth.user_id);
       return response.status(201).json({ invoice });
     } catch (error) {
       if (error.status === 400 || error.status === 404) {
@@ -218,6 +252,19 @@ function createInvoiceRouter(invoiceService) {
     }
   });
 
+  router.post("/:id/finalize", async (request, response, next) => {
+    try {
+      const invoice = await invoiceService.finalizeDraft(
+        positiveId(request.params.id, "Invoice ID"),
+        request.auth.user_id,
+      );
+      return response.json({ invoice });
+    } catch (error) {
+      if (error.status) return response.status(error.status).json({ message: error.message });
+      return next(error);
+    }
+  });
+
   router.get("/:id/credit-notes", async (request, response, next) => {
     try {
       const invoice = await invoiceService.getById(positiveId(request.params.id, "Invoice ID"));
@@ -232,7 +279,7 @@ function createInvoiceRouter(invoiceService) {
   router.post("/:id/credit-notes", async (request, response, next) => {
     try {
       const id = positiveId(request.params.id, "Invoice ID");
-      const invoice = await invoiceService.createCreditNote(id, normalizeCreditNote(request.body));
+      const invoice = await invoiceService.createCreditNote(id, normalizeCreditNote(request.body), request.auth.user_id);
       return response.status(201).json({ invoice });
     } catch (error) {
       if (error.status) return response.status(error.status).json({ message: error.message });
@@ -242,7 +289,12 @@ function createInvoiceRouter(invoiceService) {
 
   router.post("/:id/cancel", async (request, response, next) => {
     try {
-      const invoice = await invoiceService.cancel(positiveId(request.params.id, "Invoice ID"));
+      const { reason } = normalizeCancellation(request.body || {});
+      const invoice = await invoiceService.cancel(
+        positiveId(request.params.id, "Invoice ID"),
+        reason,
+        request.auth.user_id,
+      );
       return response.json({ invoice });
     } catch (error) {
       if (error.status) return response.status(error.status).json({ message: error.message });
@@ -257,3 +309,4 @@ module.exports = createInvoiceRouter;
 module.exports.normalizeInvoice = normalizeInvoice;
 module.exports.normalizePayment = normalizePayment;
 module.exports.normalizeCreditNote = normalizeCreditNote;
+module.exports.normalizeCancellation = normalizeCancellation;

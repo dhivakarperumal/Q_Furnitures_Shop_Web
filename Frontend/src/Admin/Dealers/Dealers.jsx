@@ -28,7 +28,7 @@ export default function Dealers() {
     const [paymentSaving, setPaymentSaving] = useState(false);
     const [creditSaving, setCreditSaving] = useState(false);
     const [paymentForm, setPaymentForm] = useState(() => ({ paid_at: new Date().toISOString().slice(0, 10), amount: "", payment_method: "Cash", transaction_id: "", reference_number: "", notes: "" }));
-    const [creditForm, setCreditForm] = useState(() => ({ credit_date: new Date().toISOString().slice(0, 10), reason: "", notes: "", quantities: {} }));
+    const [creditForm, setCreditForm] = useState(() => ({ credit_date: new Date().toISOString().slice(0, 10), reason: "", notes: "", quantities: {}, dispositions: {} }));
     const currentPage = Number(pagination.page) || 1;
     const totalPages = Math.max(Number(pagination.totalPages) || 1, 1);
     const totalDealers = Number(pagination.total) || 0;
@@ -150,7 +150,7 @@ export default function Dealers() {
         try {
             const response = await api.get(`/invoices/${invoice.id}`);
             setCreditInvoice(response.data.invoice);
-            setCreditForm({ credit_date: new Date().toISOString().slice(0, 10), reason: "", notes: "", quantities: {} });
+            setCreditForm({ credit_date: new Date().toISOString().slice(0, 10), reason: "", notes: "", quantities: {}, dispositions: {} });
         } catch (error) {
             console.error("Invoice items could not be loaded for return:", error);
             toast.error(error.response?.data?.message || "Invoice items could not be loaded.");
@@ -162,7 +162,11 @@ export default function Dealers() {
         if (!creditInvoice) return;
         const items = Object.entries(creditForm.quantities)
             .filter(([, quantity]) => Number(quantity) > 0)
-            .map(([invoice_item_id, quantity]) => ({ invoice_item_id: Number(invoice_item_id), quantity: Number(quantity) }));
+            .map(([invoice_item_id, quantity]) => ({
+                invoice_item_id: Number(invoice_item_id),
+                quantity: Number(quantity),
+                stock_disposition: creditForm.dispositions[invoice_item_id] || "pending",
+            }));
         if (!items.length) {
             toast.error("Choose at least one product quantity to return.");
             return;
@@ -184,6 +188,34 @@ export default function Dealers() {
             toast.error(error.response?.data?.message || "Credit note could not be issued.");
         } finally {
             setCreditSaving(false);
+        }
+    };
+
+    const finalizeInvoice = async (invoice) => {
+        if (!window.confirm(`Finalize ${invoice.invoice_number}? This validates and deducts its products from available stock.`)) return;
+        try {
+            await api.post(`/invoices/${invoice.id}/finalize`);
+            toast.success("Invoice finalized and stock updated.");
+            await openProfile(profile);
+            await reloadDealers();
+        } catch (error) {
+            console.error("Invoice finalization failed:", error);
+            toast.error(error.response?.data?.message || "Invoice could not be finalized.");
+        }
+    };
+
+    const cancelInvoice = async (invoice) => {
+        const reason = window.prompt(`Cancellation reason for ${invoice.invoice_number}:`);
+        if (reason === null) return;
+        if (!reason.trim()) return toast.error("Enter a cancellation reason.");
+        try {
+            await api.post(`/invoices/${invoice.id}/cancel`, { reason: reason.trim() });
+            toast.success("Invoice cancelled and inventory updated.");
+            await openProfile(profile);
+            await reloadDealers();
+        } catch (error) {
+            console.error("Invoice cancellation failed:", error);
+            toast.error(error.response?.data?.message || "Invoice could not be cancelled.");
         }
     };
 
@@ -329,7 +361,7 @@ export default function Dealers() {
             </section>
 
             {modalOpen && <AddDealerModal key={editingDealer?.id || "new"} isOpen={modalOpen} dealer={editingDealer} onClose={() => setModalOpen(false)} onSuccess={reloadDealers} />}
-            {profile && <DealerProfile profile={profile} loading={profileLoading} onClose={() => setProfile(null)} onCreateInvoice={() => navigate(`/admin/invoices/add?dealerId=${profile.id}`)} onRecordPayment={(invoice) => { setPaymentInvoice(invoice); setPaymentForm((current) => ({ ...current, amount: String(invoice.balance_due) })); }} onCreateCreditNote={openCreditNote} onPrintInvoice={printInvoice} />}
+            {profile && <DealerProfile profile={profile} loading={profileLoading} onClose={() => setProfile(null)} onCreateInvoice={() => navigate(`/admin/invoices/add?dealerId=${profile.id}`)} onRecordPayment={(invoice) => { setPaymentInvoice(invoice); setPaymentForm((current) => ({ ...current, amount: String(invoice.balance_due) })); }} onCreateCreditNote={openCreditNote} onPrintInvoice={printInvoice} onFinalizeInvoice={finalizeInvoice} onCancelInvoice={cancelInvoice} />}
             {paymentInvoice && <PaymentModal invoice={paymentInvoice} form={paymentForm} setForm={setPaymentForm} saving={paymentSaving} onClose={() => setPaymentInvoice(null)} onSubmit={savePayment} />}
             {creditInvoice && <CreditNoteModal invoice={creditInvoice} form={creditForm} setForm={setCreditForm} saving={creditSaving} onClose={() => setCreditInvoice(null)} onSubmit={saveCreditNote} />}
         </div>
@@ -372,7 +404,7 @@ function StatCard({ label, value, icon, tone }) {
     </article>;
 }
 
-function DealerProfile({ profile, loading, onClose, onCreateInvoice, onRecordPayment, onCreateCreditNote, onPrintInvoice }) {
+function DealerProfile({ profile, loading, onClose, onCreateInvoice, onRecordPayment, onCreateCreditNote, onPrintInvoice, onFinalizeInvoice, onCancelInvoice }) {
     return <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
         <section className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-[24px] bg-white shadow-2xl">
             <header className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white p-6">
@@ -387,7 +419,7 @@ function DealerProfile({ profile, loading, onClose, onCreateInvoice, onRecordPay
                 </div>
                 <section><h3 className="mb-3 text-sm font-black text-secondary-dark">Invoices</h3><div className="overflow-hidden rounded-2xl border border-gray-200">
                     <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]"><tr><th className="p-3">Invoice</th><th className="p-3">Date</th><th className="p-3">Total</th><th className="p-3">Paid</th><th className="p-3">Credited</th><th className="p-3">Balance</th><th className="p-3">Status</th><th className="p-3">Actions</th></tr></thead>
-                        <tbody className="divide-y divide-gray-50">{profile.invoices?.map((invoice) => <tr key={invoice.id} className="transition-colors hover:bg-gray-50/60"><td className="p-3 font-semibold">{invoice.invoice_number}</td><td className="p-3">{String(invoice.invoice_date).slice(0, 10)}</td><td className="p-3">{currency(invoice.grand_total)}</td><td className="p-3">{currency(invoice.amount_paid)}</td><td className="p-3">{currency(invoice.credited_amount)}</td><td className="p-3">{currency(invoice.balance_due)}</td><td className="p-3">{invoice.status}</td><td className="p-3"><div className="flex gap-2"><button type="button" onClick={() => onPrintInvoice(invoice)} className="rounded-lg border border-orange-200 px-2 py-1 text-xs font-semibold text-primary-dark transition-colors hover:bg-orange-50">Print</button>{Number(invoice.balance_due) > 0 && invoice.status !== "Cancelled" && <><button type="button" onClick={() => onRecordPayment(invoice)} className="rounded-lg bg-gradient-to-r from-primary to-primary-dark px-2 py-1 text-xs font-semibold text-white">Payment</button><button type="button" onClick={() => onCreateCreditNote(invoice)} className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100">Return</button></>}</div></td></tr>)}
+                        <tbody className="divide-y divide-gray-50">{profile.invoices?.map((invoice) => <tr key={invoice.id} className="transition-colors hover:bg-gray-50/60"><td className="p-3 font-semibold">{invoice.invoice_number}</td><td className="p-3">{String(invoice.invoice_date).slice(0, 10)}</td><td className="p-3">{currency(invoice.grand_total)}</td><td className="p-3">{currency(invoice.amount_paid)}</td><td className="p-3">{currency(invoice.credited_amount)}</td><td className="p-3">{currency(invoice.balance_due)}</td><td className="p-3">{invoice.status}</td><td className="p-3"><div className="flex gap-2"><button type="button" onClick={() => onPrintInvoice(invoice)} className="rounded-lg border border-orange-200 px-2 py-1 text-xs font-semibold text-primary-dark transition-colors hover:bg-orange-50">Print</button>{invoice.status === "Draft" && <button type="button" onClick={() => onFinalizeInvoice(invoice)} className="rounded-lg bg-emerald-600 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-700">Finalize</button>}{Number(invoice.balance_due) > 0 && invoice.status !== "Cancelled" && invoice.status !== "Draft" && <><button type="button" onClick={() => onRecordPayment(invoice)} className="rounded-lg bg-gradient-to-r from-primary to-primary-dark px-2 py-1 text-xs font-semibold text-white">Payment</button><button type="button" onClick={() => onCreateCreditNote(invoice)} className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100">Return</button></>}{invoice.status !== "Cancelled" && Number(invoice.amount_paid) === 0 && Number(invoice.credited_amount || 0) === 0 && <button type="button" onClick={() => onCancelInvoice(invoice)} className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-100">Cancel</button>}</div></td></tr>)}
                             {!profile.invoices?.length && <tr><td colSpan="8" className="p-6 text-center text-gray-500">No invoices recorded.</td></tr>}</tbody></table>
                     </div>
                 </div></section>
@@ -471,13 +503,14 @@ function CreditNoteModal({ invoice, form, setForm, saving, onClose, onSubmit }) 
             </div>
             <div className="overflow-hidden rounded-2xl border border-gray-200">
                 <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-sm">
-                    <thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]"><tr><th className="p-3">Invoice item</th><th className="p-3">Sold</th><th className="p-3">Remaining returnable</th><th className="p-3">Return qty</th></tr></thead>
+                <table className="w-full min-w-[720px] text-left text-sm">
+                    <thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]"><tr><th className="p-3">Invoice item</th><th className="p-3">Sold</th><th className="p-3">Remaining returnable</th><th className="p-3">Return qty</th><th className="p-3">Stock disposition</th></tr></thead>
                     <tbody className="divide-y divide-gray-50">{items.map((item) => <tr key={item.id} className="hover:bg-gray-50/60">
                         <td className="p-3 font-semibold">{item.product_name}</td><td className="p-3">{item.quantity}</td><td className="p-3">{item.remaining_quantity}</td>
                         <td className="p-3"><input type="number" min="0" max={item.remaining_quantity} step="1" value={form.quantities[item.id] || ""} onChange={(event) => update("quantities", { ...form.quantities, [item.id]: Math.max(0, Math.min(Number(item.remaining_quantity), Number(event.target.value) || 0)) })} className="w-24 rounded-lg border border-gray-200 bg-gray-50 p-2 outline-none focus:border-primary focus:ring-2 focus:ring-orange-500/20" /></td>
+                        <td className="p-3"><select value={form.dispositions[item.id] || "pending"} onChange={(event) => update("dispositions", { ...form.dispositions, [item.id]: event.target.value })} className="rounded-lg border border-gray-200 bg-white p-2 text-xs"><option value="pending">Pending inspection</option><option value="sellable">Sellable - restore stock</option><option value="damaged">Damaged - quarantine</option><option value="none">No stock change</option></select></td>
                     </tr>)}
-                        {!items.length && <tr><td colSpan="4" className="p-5 text-center text-gray-500">This invoice has no returnable line items.</td></tr>}
+                        {!items.length && <tr><td colSpan="5" className="p-5 text-center text-gray-500">This invoice has no returnable line items.</td></tr>}
                     </tbody>
                 </table>
                 </div>

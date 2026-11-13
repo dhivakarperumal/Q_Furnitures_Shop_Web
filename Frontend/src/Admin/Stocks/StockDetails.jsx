@@ -49,6 +49,8 @@ const StockDetails = () => {
     const [manualTotalStock, setManualTotalStock] = useState("0");
     const [isUpdating, setIsUpdating] = useState(false);
     const [fetchingDetail, setFetchingDetail] = useState(false);
+    const [allowNegativeStock, setAllowNegativeStock] = useState(false);
+    const [savingStockSetting, setSavingStockSetting] = useState(false);
 
     const fetchProducts = async () => {
         const params = {
@@ -90,13 +92,36 @@ const StockDetails = () => {
         fetchProducts();
     }, [currentPage, searchTerm]);
 
+    useEffect(() => {
+        api.get("/stock/settings")
+            .then((response) => setAllowNegativeStock(Boolean(response.data?.allow_negative_stock)))
+            .catch((error) => {
+                console.error("Stock settings failed to load:", error);
+                toast.error(error.response?.data?.message || "Could not load stock settings.");
+            });
+    }, []);
+
+    const updateNegativeStockSetting = async (enabled) => {
+        setSavingStockSetting(true);
+        try {
+            const response = await api.put("/stock/settings", { allow_negative_stock: enabled });
+            setAllowNegativeStock(Boolean(response.data?.allow_negative_stock));
+            toast.success(enabled ? "Negative stock is enabled." : "Negative stock is disabled.");
+        } catch (error) {
+            console.error("Stock settings update failed:", error);
+            toast.error(error.response?.data?.message || "Could not update stock settings.");
+        } finally {
+            setSavingStockSetting(false);
+        }
+    };
+
     const handleSync = () => {
         setIsSyncing(true);
         fetchProducts();
     };
 
     const getStockLevel = (product) => {
-        const stock = product.total_stock ?? product.stock ?? 0;
+        const stock = product.available_stock ?? product.total_stock ?? product.stock ?? 0;
         return stock;
     };
 
@@ -109,9 +134,10 @@ const StockDetails = () => {
         }
     };
 
-    const deriveStatus = (stock) => {
+    const deriveStatus = (product) => {
+        const stock = getStockLevel(product);
         if (stock <= 0) return "Out of Stock";
-        if (stock < 10) return "Low Stock";
+        if (stock <= Number(product.minimum_stock ?? 5)) return "Low Stock";
         return "Active";
     };
 
@@ -168,7 +194,7 @@ const StockDetails = () => {
     };
 
     const getCurrentStockValue = (product) => {
-        const current = Number.parseInt(product?.total_stock ?? product?.stock ?? 0, 10) || 0;
+        const current = Number.parseInt(product?.available_stock ?? product?.total_stock ?? product?.stock ?? 0, 10) || 0;
         return Math.max(0, current);
     };
 
@@ -197,7 +223,7 @@ const StockDetails = () => {
                 newTotalStock = currentStock + addedStock;
             }
 
-            const status = newTotalStock <= 0 ? "Out of Stock" : newTotalStock < 10 ? "Low Stock" : "Active";
+            const status = newTotalStock <= 0 ? "Out of Stock" : newTotalStock <= Number(selectedProduct.minimum_stock ?? 5) ? "Low Stock" : "Active";
 
             const payload = {
                 ...selectedProduct,
@@ -211,7 +237,7 @@ const StockDetails = () => {
 
             setProducts(products.map(p =>
                 p.id === selectedProduct.id
-                    ? { ...p, total_stock: newTotalStock, variants: vars, status: status }
+                    ? { ...p, total_stock: newTotalStock, available_stock: newTotalStock, variants: vars, status: status }
                     : p
             ));
 
@@ -260,8 +286,17 @@ const StockDetails = () => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
             <Toaster position="top-right" />
 
-           
-            
+            <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                <div>
+                    <p className="text-sm font-black text-secondary-dark">Negative stock permission</p>
+                    <p className="text-xs text-gray-600">When enabled, authorized admins can finalize invoices beyond available stock.</p>
+                </div>
+                <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-slate-700">
+                    <span>{allowNegativeStock ? "Enabled" : "Disabled"}</span>
+                    <input type="checkbox" checked={allowNegativeStock} disabled={savingStockSetting} onChange={(event) => updateNegativeStockSetting(event.target.checked)} className="h-5 w-5 accent-orange-600" />
+                </label>
+            </section>
+
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
@@ -363,7 +398,7 @@ const StockDetails = () => {
                                 {currentItems.length > 0 ? (
                                     currentItems.map((product, index) => {
                                         const stock = getStockLevel(product);
-                                        const status = product.status && product.status !== "Active" ? product.status : deriveStatus(stock);
+                                        const status = product.status && product.status !== "Active" ? product.status : deriveStatus(product);
 
                                         return (
                                             <tr key={product.id} className="hover:bg-[#240046]/5 transition-colors group">
@@ -410,6 +445,7 @@ const StockDetails = () => {
                                                         <span className="underline decoration-dotted decoration-gray-300 group-hover/stock:decoration-[#7b2cbf]">{stock}</span>
                                                         <span className="opacity-0 group-hover/stock:opacity-100 transition-opacity text-[10px] bg-[#240046]/10 text-[#7b2cbf] px-1.5 py-0.5 rounded font-bold">edit</span>
                                                     </button>
+                                                    <p className="mt-1 text-[10px] text-gray-500">Reserved {product.reserved_stock || 0} · Damaged {product.damaged_stock || 0} · Reorder at {product.minimum_stock ?? 5}</p>
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <span className={`px-3 py-1 rounded-lg text-[11px] font-bold border ` + getStatusStyle(status)}>
@@ -443,7 +479,7 @@ const StockDetails = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-5">
                             {currentItems.length > 0 ? currentItems.map((product) => {
                                 const stock = getStockLevel(product);
-                                const status = product.status && product.status !== "Active" ? product.status : deriveStatus(stock);
+                                const status = product.status && product.status !== "Active" ? product.status : deriveStatus(product);
 
                                 return (
                                     <div key={product.id} className="group overflow-hidden border border-gray-100 rounded-2xl bg-white hover:-translate-y-0.5 hover:shadow-lg transition-all">
@@ -475,6 +511,8 @@ const StockDetails = () => {
                                                     <button onClick={() => openUpdateModal(product)} className="text-lg font-black text-slate-800 hover:text-[#7b2cbf] transition-colors">
                                                         {stock}
                                                     </button>
+                                                    <p className="mt-1 text-[10px] text-gray-500">Reserved {product.reserved_stock || 0} · Damaged {product.damaged_stock || 0}</p>
+                                                    <p className="text-[10px] text-gray-500">Reorder at {product.minimum_stock ?? 5}</p>
                                                 </div>
                                             </div>
                                             <button

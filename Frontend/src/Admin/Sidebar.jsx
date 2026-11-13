@@ -20,7 +20,8 @@ import {
   Archive,
   Handshake,
   Video,
-  Image
+  Image,
+  Activity,
 } from "lucide-react";
 
 import { useAuth } from "../PrivateRouter/AuthContext";
@@ -51,7 +52,8 @@ const navItems = [
       { path: "/admin/products/all", label: "All Products", icon: List },
       { path: "/admin/products/add", label: "Add Product", icon: PlusCircle },
       { path: "/admin/products/category", label: "Categories", icon: Layers },
-      { path: "/admin/products/stock", label: "Stock Details", icon: Archive },
+      { path: "/admin/products/stock", label: "Stock Details", icon: Archive, exact: true },
+      { path: "/admin/products/stock/movements", label: "Stock Movements", icon: Activity },
     ],
   },
 
@@ -261,7 +263,9 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
                     >
                       {item.children.map((sub) => {
                         const SubIcon = sub.icon;
-                        const isActive = location.pathname === sub.path;
+                        const isActive = sub.exact
+                          ? location.pathname === sub.path
+                          : location.pathname === sub.path || location.pathname.startsWith(sub.path);
 
                         // Get count badge for this item
                         let badgeCount = 0;
@@ -277,13 +281,13 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
                             onClick={() => isOpen && onClose()}
                             className={`
                               flex items-center gap-3 px-4 py-2.5 rounded-md text-xs font-medium tracking-wide transition-all
-                              ${(location.pathname === sub.path || (sub.path !== "/admin" && location.pathname.startsWith(sub.path)))
+                              ${isActive
                                 ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-orange-900/30"
                                 : "text-white/75 hover:text-white hover:bg-white/10"
                               }
                             `}
                           >
-                            <SubIcon className={`w-5 h-6 shrink-0 ${(location.pathname === sub.path || (sub.path !== "/admin" && location.pathname.startsWith(sub.path))) ? "text-white" : ""}`} />
+                            <SubIcon className={`w-5 h-6 shrink-0 ${isActive ? "text-white" : ""}`} />
                             <span className="flex-1">{sub.label}</span>
                             {badgeCount > 0 && (
                               <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-fit">

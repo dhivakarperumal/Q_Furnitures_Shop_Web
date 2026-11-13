@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FiArrowLeft, FiPlus, FiSave, FiSearch, FiTrash2 } from "react-icons/fi";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import ExcelJS from "exceljs";
 import api from "../../api";
 
 const today = new Date().toISOString().slice(0, 10);
@@ -11,6 +12,41 @@ const money = (value) => Number(value || 0).toLocaleString("en-IN", {
 });
 const productData = (product) => product?.data || product?.product_data || product || {};
 const fieldClass = "w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-orange-100";
+const invoiceProductColumns = [
+    { header: "Product Name", key: "product_name", width: 30 },
+    { header: "SKU", key: "sku", width: 20 },
+    { header: "Category", key: "category", width: 20 },
+    { header: "Quantity", key: "quantity", width: 12 },
+    { header: "Unit Price", key: "unit_price", width: 16 },
+    { header: "GST (%)", key: "gst", width: 12 },
+    { header: "Discount", key: "discount", width: 14 },
+    { header: "Total Amount", key: "total", width: 18 },
+];
+
+function toInvoiceExportRow(item) {
+    const gst = Number(item.gst_rate ?? productData(item.product).gst_percentage ?? productData(item.product).gst_rate ?? 18);
+    const taxable = Math.max(0, item.price * item.quantity - item.discount_amount);
+    return {
+        product_name: item.product.name,
+        sku: item.product.product_code || "",
+        category: item.product.category || "",
+        quantity: item.quantity,
+        unit_price: item.price,
+        gst,
+        discount: item.discount_amount,
+        total: taxable * (1 + gst / 100),
+    };
+}
+
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+    })[character]);
+}
 
 export default function AddInvoice() {
     const navigate = useNavigate();
@@ -19,6 +55,17 @@ export default function AddInvoice() {
     const [products, setProducts] = useState([]);
     const [loadingData, setLoadingData] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [allowNegativeStock, setAllowNegativeStock] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importPreview, setImportPreview] = useState(null);
+    const [previewingImport, setPreviewingImport] = useState(false);
+    const [confirmingImport, setConfirmingImport] = useState(false);
+    const [selectedItemIds, setSelectedItemIds] = useState([]);
+    const [exportScope, setExportScope] = useState("current");
+    const [exportDealerId, setExportDealerId] = useState("");
+    const [exportFrom, setExportFrom] = useState("");
+    const [exportTo, setExportTo] = useState("");
+    const [exporting, setExporting] = useState("");
     const [search, setSearch] = useState("");
     const [dealerSearch, setDealerSearch] = useState("");
     const [form, setForm] = useState({
@@ -72,6 +119,12 @@ export default function AddInvoice() {
         }).finally(() => {
             if (mounted) setLoadingData(false);
         });
+        api.get("/stock/settings").then((response) => {
+            if (mounted) setAllowNegativeStock(Boolean(response.data?.allow_negative_stock));
+        }).catch((error) => {
+            console.error("Stock settings load failed:", error);
+            toast.error(error.response?.data?.message || "Could not load stock settings.");
+        });
         return () => { mounted = false; };
     }, [searchParams]);
 
@@ -81,6 +134,11 @@ export default function AddInvoice() {
             .toLowerCase().includes(dealerSearch.toLowerCase()));
     const filteredProducts = products.filter((product) =>
         `${product.name} ${product.product_code || ""}`.toLowerCase().includes(search.toLowerCase()));
+    const insufficientStockItems = form.items.filter((item) => {
+        const rule = item.product.deduction_rule || productData(item.product).deduction_rule || "available";
+        return rule !== "none" && !allowNegativeStock &&
+            item.quantity > Number(item.product.available_stock ?? item.product.total_stock ?? 0);
+    });
 
     const totals = useMemo(() => {
         const subtotal = form.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -89,7 +147,7 @@ export default function AddInvoice() {
         const taxable = Math.max(0, subtotal - itemDiscount - additionalDiscount);
         const sameState = form.seller_state.trim().toLowerCase() === form.place_of_supply.trim().toLowerCase();
         const gst = form.items.reduce((sum, item) => {
-            const rate = Number(productData(item.product).gst_percentage ?? productData(item.product).gst_rate ?? 18);
+            const rate = Number(item.gst_rate ?? productData(item.product).gst_percentage ?? productData(item.product).gst_rate ?? 18);
             const lineTaxable = item.price * item.quantity - item.discount_amount;
             return sum + Math.max(0, lineTaxable) * rate / 100;
         }, 0);
@@ -135,6 +193,7 @@ export default function AddInvoice() {
                     product_id: product.id,
                     product,
                     price,
+                    gst_rate: Number(productData(product).gst_percentage ?? productData(product).gst_rate ?? 18),
                     quantity: 1,
                     discount_type: "none",
                     discount_value: 0,
@@ -158,26 +217,198 @@ export default function AddInvoice() {
         }),
     }));
 
+    const downloadFile = (blob, fileName) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const downloadTemplate = async () => {
+        try {
+            const response = await api.get("/invoice-products/import/template", { responseType: "blob" });
+            downloadFile(response.data, "invoice-products-template.xlsx");
+        } catch (error) {
+            console.error("Invoice import template download failed:", error);
+            toast.error(error.response?.data?.message || "Could not download the import template.");
+        }
+    };
+
+    const previewProductsImport = async () => {
+        if (!importFile) return toast.error("Choose an Excel or CSV file first.");
+        const data = new FormData();
+        data.append("file", importFile);
+        setPreviewingImport(true);
+        try {
+            const response = await api.post("/invoice-products/import/preview", data);
+            setImportPreview(response.data);
+        } catch (error) {
+            console.error("Invoice product import preview failed:", error);
+            toast.error(error.response?.data?.message || "Could not preview this import file.");
+        } finally {
+            setPreviewingImport(false);
+        }
+    };
+
+    const confirmProductsImport = async () => {
+        if (!importPreview?.import_token) return;
+        setConfirmingImport(true);
+        try {
+            const response = await api.post("/invoice-products/import/confirm", {
+                import_token: importPreview.import_token,
+            });
+            const existing = new Set(form.items.map((item) => Number(item.product_id)));
+            const additions = response.data.items
+                .filter((row) => !existing.has(Number(row.product_id)))
+                .map((row) => {
+                    const product = products.find((candidate) => Number(candidate.id) === Number(row.product_id));
+                    if (!product) return null;
+                    const quantity = Number(row.quantity);
+                    const discount = Number(row.discount_amount || 0);
+                    return {
+                        product_id: product.id,
+                        product,
+                        price: Number(row.unit_price),
+                        gst_rate: Number(row.gst_rate),
+                        quantity,
+                        discount_type: discount > 0 ? "fixed" : "none",
+                        discount_value: discount > 0 ? discount / quantity : 0,
+                        discount_amount: discount,
+                    };
+                }).filter(Boolean);
+            if (!additions.length) {
+                setImportPreview(null);
+                toast.error("No new matched products could be added to this invoice.");
+                return;
+            }
+            setForm((current) => ({ ...current, items: [...current.items, ...additions] }));
+            setImportPreview(null);
+            setImportFile(null);
+            toast.success(`${additions.length} product${additions.length === 1 ? "" : "s"} added to the invoice.`);
+        } catch (error) {
+            console.error("Invoice product import confirmation failed:", error);
+            toast.error(error.response?.data?.message || "Could not confirm this import.");
+        } finally {
+            setConfirmingImport(false);
+        }
+    };
+
+    const exportInvoiceProducts = async (format) => {
+        const exportKey = `${exportScope}-${format}`;
+        setExporting(exportKey);
+        let printWindow = null;
+        try {
+            let rows;
+            if (exportScope === "current" || exportScope === "selected") {
+                const items = exportScope === "selected"
+                    ? form.items.filter((item) => selectedItemIds.includes(String(item.product_id)))
+                    : form.items;
+                if (!items.length) throw new Error(exportScope === "selected" ? "Select at least one invoice product." : "Add products before exporting.");
+                rows = items.map(toInvoiceExportRow);
+            } else {
+                const params = { scope: exportScope };
+                if (exportScope === "dealer") {
+                    if (!exportDealerId) throw new Error("Select a dealer for this export.");
+                    params.dealer_id = exportDealerId;
+                }
+                if (exportScope === "date") {
+                    if (!exportFrom || !exportTo) throw new Error("Choose both dates for this export.");
+                    params.from = exportFrom;
+                    params.to = exportTo;
+                }
+                if (format === "pdf") {
+                    printWindow = window.open("", "_blank");
+                    if (!printWindow) throw new Error("Allow pop-ups to generate the PDF print view.");
+                    const response = await api.get("/invoice-products/export/data", { params });
+                    rows = response.data.rows.map((row) => ({
+                        ...row,
+                        gst: row.gst_rate,
+                        discount: row.discount_amount,
+                        total: row.line_total,
+                    }));
+                } else {
+                    const response = await api.get(`/invoice-products/export/${format}`, {
+                        params,
+                        responseType: "blob",
+                    });
+                    downloadFile(response.data, `invoice-products-${exportScope}.${format === "excel" ? "xlsx" : "csv"}`);
+                    toast.success("Invoice products exported.");
+                    return;
+                }
+            }
+
+            if (format === "pdf") {
+                printWindow = printWindow || window.open("", "_blank");
+                if (!printWindow) throw new Error("Allow pop-ups to generate the PDF print view.");
+                const headings = invoiceProductColumns.map((column) => `<th>${escapeHtml(column.header)}</th>`).join("");
+                const body = rows.map((row) => `<tr>${invoiceProductColumns.map((column) =>
+                    `<td>${escapeHtml(row[column.key])}</td>`).join("")}</tr>`).join("");
+                printWindow.document.write(`<!doctype html><html><head><title>Invoice Products</title>
+                    <style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h1{font-size:20px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#eee}@media print{button{display:none}}</style>
+                    </head><body><h1>Invoice Products</h1><table><thead><tr>${headings}</tr></thead><tbody>${body}</tbody></table>
+                    <script>window.onload=()=>window.print()</script></body></html>`);
+                printWindow.document.close();
+                return;
+            }
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet("Invoice Products");
+            worksheet.columns = invoiceProductColumns;
+            const exportRows = format === "csv"
+                ? rows.map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [
+                    key,
+                    typeof value === "string" && /^[=+\-@]/.test(value) ? `'${value}` : value,
+                ])))
+                : rows;
+            worksheet.addRows(exportRows);
+            const buffer = format === "csv" ? await workbook.csv.writeBuffer() : await workbook.xlsx.writeBuffer();
+            const mimeType = format === "csv" ? "text/csv;charset=utf-8" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            downloadFile(new Blob([buffer], { type: mimeType }), `invoice-products-${exportScope}.${format === "excel" ? "xlsx" : "csv"}`);
+            toast.success("Invoice products exported.");
+        } catch (error) {
+            if (printWindow && !printWindow.closed) printWindow.close();
+            console.error("Invoice products export failed:", error);
+            toast.error(error.response?.data?.message || error.message || "Could not export invoice products.");
+        } finally {
+            setExporting("");
+        }
+    };
+
     const submit = async (event) => {
         event.preventDefault();
+        const isDraft = event.nativeEvent.submitter?.value === "draft";
         if (!form.dealer_id) return toast.error("Select an active dealer.");
         if (!form.items.length) return toast.error("Add at least one product.");
-        if (form.amount_received > totals.grandTotal) return toast.error("Payment cannot exceed the invoice total.");
+        if (!isDraft && insufficientStockItems.length) {
+            return toast.error(`Insufficient stock for ${insufficientStockItems.map((item) => item.product.name).join(", ")}.`);
+        }
+        if (!isDraft && form.amount_received > totals.grandTotal) return toast.error("Payment cannot exceed the invoice total.");
         setSaving(true);
         try {
             const response = await api.post("/invoices", {
                 ...form,
+                is_draft: isDraft,
+                amount_received: isDraft ? 0 : form.amount_received,
                 dealer_id: Number(form.dealer_id),
                 customer_name: selectedDealer.company_name || selectedDealer.name,
                 mobile: selectedDealer.mobile,
                 gstin: selectedDealer.gstin || "",
                 billing_address: selectedDealer.billing_address || "",
                 shipping_address: selectedDealer.shipping_address || "",
-                items: form.items.map(({ product_id, quantity, discount_type, discount_value }) => ({
-                    product_id, quantity, discount_type, discount_value,
+                items: form.items.map(({ product_id, quantity, price, gst_rate, discount_type, discount_value }) => ({
+                    product_id,
+                    quantity,
+                    unit_price: price,
+                    gst_rate,
+                    discount_type,
+                    discount_value,
                 })),
             });
-            toast.success(`Invoice ${response.data.invoice.invoice_number} created.`);
+            toast.success(isDraft ? "Invoice draft saved." : `Invoice ${response.data.invoice.invoice_number} created.`);
             navigate("/admin/dealers");
         } catch (error) {
             console.error("Invoice creation failed:", error);
@@ -249,6 +480,85 @@ export default function AddInvoice() {
                                 <h2 className="text-sm font-black text-secondary-dark">Products and quantities</h2>
                                 <span className="text-xs text-gray-500">{products.length} active products loaded</span>
                             </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <button type="button" onClick={downloadTemplate} className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-primary-dark transition-colors hover:bg-orange-100">
+                                    Download sample template
+                                </button>
+                                <label className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-gray-50">
+                                    Choose .xlsx or .csv
+                                    <input key={importFile?.name || "empty-import"} type="file" accept=".xlsx,.csv" className="sr-only" onChange={(event) => {
+                                        setImportFile(event.target.files?.[0] || null);
+                                        setImportPreview(null);
+                                    }} />
+                                </label>
+                                <span className="max-w-48 truncate text-xs text-gray-500">{importFile?.name || "No file selected"}</span>
+                                <button type="button" onClick={previewProductsImport} disabled={!importFile || previewingImport} className="rounded-lg bg-secondary-dark px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
+                                    {previewingImport ? "Checking file..." : "Preview import"}
+                                </button>
+                            </div>
+                            <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <label className="text-xs font-bold text-slate-600">Export</label>
+                                    <select value={exportScope} onChange={(event) => setExportScope(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs">
+                                        <option value="current">Current invoice</option>
+                                        <option value="selected">Selected products</option>
+                                        <option value="all">All invoices</option>
+                                        <option value="dealer">Dealer-wise</option>
+                                        <option value="date">Date-wise</option>
+                                    </select>
+                                    {exportScope === "dealer" && (
+                                        <select value={exportDealerId} onChange={(event) => setExportDealerId(event.target.value)} className="min-w-40 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs">
+                                            <option value="">Select dealer</option>
+                                            {dealers.map((dealer) => <option key={dealer.id} value={dealer.id}>{dealer.company_name || dealer.name}</option>)}
+                                        </select>
+                                    )}
+                                    {exportScope === "date" && <>
+                                        <input aria-label="Export from date" type="date" value={exportFrom} onChange={(event) => setExportFrom(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-2 text-xs" />
+                                        <input aria-label="Export to date" type="date" value={exportTo} min={exportFrom || undefined} onChange={(event) => setExportTo(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-2 text-xs" />
+                                    </>}
+                                    {["excel", "csv", "pdf"].map((format) => (
+                                        <button type="button" key={format} onClick={() => exportInvoiceProducts(format)} disabled={Boolean(exporting)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold uppercase text-slate-600 transition-colors hover:border-orange-200 hover:text-primary-dark disabled:opacity-50">
+                                            {exporting === `${exportScope}-${format}` ? "Exporting..." : format === "excel" ? "Excel" : format}
+                                        </button>
+                                    ))}
+                                </div>
+                                {exportScope === "selected" && <p className="text-xs text-gray-500">Choose invoice rows using the checkboxes in the table.</p>}
+                            </div>
+                            {importPreview && (
+                                <div className="space-y-3 rounded-xl border border-orange-200 bg-orange-50/50 p-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div>
+                                            <p className="text-sm font-black text-secondary-dark">Import preview</p>
+                                            <p className="text-xs text-gray-600">
+                                                {importPreview.valid_count} valid · {importPreview.invalid_count} invalid · {importPreview.row_count} total rows
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button type="button" onClick={() => { setImportPreview(null); setImportFile(null); }} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-600">Cancel import</button>
+                                            <button type="button" onClick={confirmProductsImport} disabled={!importPreview.valid_count || confirmingImport} className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
+                                                {confirmingImport ? "Adding products..." : "Confirm valid rows"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {importPreview.rows?.length > 0 && (
+                                        <div className="max-h-64 overflow-auto rounded-lg border border-orange-100 bg-white">
+                                            <table className="w-full min-w-[700px] text-left text-xs">
+                                                <thead className="sticky top-0 bg-slate-100 text-slate-600"><tr>
+                                                    <th className="p-2">Row</th><th className="p-2">SKU</th><th className="p-2">Product</th><th className="p-2">Qty</th><th className="p-2">Unit price</th><th className="p-2">GST</th><th className="p-2">Status / errors</th>
+                                                </tr></thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {importPreview.rows.map((row) => (
+                                                        <tr key={row.row_number} className={row.valid ? "" : "bg-red-50/70"}>
+                                                            <td className="p-2">{row.row_number}</td><td className="p-2">{row.sku || "—"}</td><td className="p-2">{row.product_name || "—"}</td><td className="p-2">{row.quantity ?? "—"}</td><td className="p-2">{row.unit_price == null ? "—" : `₹${money(row.unit_price)}`}</td><td className="p-2">{row.gst_rate == null ? "—" : `${row.gst_rate}%`}</td>
+                                                            <td className={`p-2 ${row.valid ? "font-bold text-green-700" : "text-red-700"}`}>{row.valid ? "Valid" : (row.errors || []).join(" ")}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="relative">
                                 <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-gray-400" />
                                 <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products by name or SKU" className={`${fieldClass} bg-gray-50 pl-11`} />
@@ -256,7 +566,7 @@ export default function AddInvoice() {
                                     <div className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-gray-200 bg-white shadow-xl">
                                         {filteredProducts.map((product) => (
                                             <button type="button" key={product.id} onClick={() => addProduct(product)} className="flex w-full items-center justify-between border-b border-gray-50 p-3 text-left transition-colors hover:bg-orange-50">
-                                                <span><b>{product.name}</b><small className="ml-2 text-gray-500">{product.product_code}</small></span>
+                                                <span><b>{product.name}</b><small className="ml-2 text-gray-500">{product.product_code}</small><small className="ml-2 text-gray-500">Stock: {product.available_stock ?? product.total_stock ?? 0}</small></span>
                                                 <span className="font-semibold">₹{money(product.offer_price ?? product.selling_price)}</span>
                                                 <FiPlus />
                                             </button>
@@ -269,14 +579,16 @@ export default function AddInvoice() {
                             <div className="overflow-x-auto">
                                 <table className="w-full min-w-[700px] text-left text-sm">
                                     <thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]">
-                                        <tr><th className="p-3">Product</th><th className="p-3">Unit price</th><th className="p-3">Qty</th><th className="p-3">Discount</th><th className="p-3 text-right">Line total</th><th /></tr>
+                                        <tr><th className="p-3">Select</th><th className="p-3">Product</th><th className="p-3">Unit price</th><th className="p-3">Qty</th><th className="p-3">Available</th><th className="p-3">Discount</th><th className="p-3 text-right">Line total</th><th /></tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
                                         {form.items.map((item, index) => (
                                             <tr key={item.product_id} className="transition-colors hover:bg-gray-50/60">
+                                                <td className="p-3"><input type="checkbox" checked={selectedItemIds.includes(String(item.product_id))} onChange={(event) => setSelectedItemIds((current) => event.target.checked ? [...new Set([...current, String(item.product_id)])] : current.filter((id) => id !== String(item.product_id)))} aria-label={`Select ${item.product.name} for export`} /></td>
                                                 <td className="p-3"><b>{item.product.name}</b><small className="block text-gray-500">{item.product.product_code || "No SKU"}</small></td>
                                                 <td className="p-3">₹{money(item.price)}</td>
                                                 <td className="p-3"><input type="number" min="1" step="1" value={item.quantity} onChange={(event) => updateItem(index, { quantity: Math.max(1, Number(event.target.value) || 1) })} className="w-20 rounded-lg border border-gray-200 bg-gray-50 p-2 outline-none focus:border-primary focus:ring-2 focus:ring-orange-500/20" /></td>
+                                                <td className={`p-3 font-semibold ${!allowNegativeStock && item.quantity > Number(item.product.available_stock ?? item.product.total_stock ?? 0) ? "text-red-600" : "text-slate-600"}`}>{item.product.available_stock ?? item.product.total_stock ?? 0}</td>
                                                 <td className="p-3">
                                                     <div className="flex gap-1">
                                                         <select value={item.discount_type} onChange={(event) => updateItem(index, { discount_type: event.target.value })} className="rounded-lg border border-gray-200 bg-white p-2 outline-none focus:border-primary">
@@ -289,7 +601,7 @@ export default function AddInvoice() {
                                                 <td className="p-3"><button type="button" onClick={() => setForm((current) => ({ ...current, items: current.items.filter((_, itemIndex) => itemIndex !== index) }))} aria-label={`Remove ${item.product.name}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-500 transition-colors hover:bg-red-100"><FiTrash2 size={14} /></button></td>
                                             </tr>
                                         ))}
-                                        {!form.items.length && <tr><td colSpan="6" className="p-8 text-center text-gray-400">Search and add products to this invoice.</td></tr>}
+                                        {!form.items.length && <tr><td colSpan="8" className="p-8 text-center text-gray-400">Search and add products to this invoice.</td></tr>}
                                     </tbody>
                                 </table>
                             </div>
@@ -321,6 +633,13 @@ export default function AddInvoice() {
                             <p className="text-xs font-bold uppercase tracking-widest text-primary-dark">Grand total</p>
                             <p className="mt-1 text-3xl font-black text-secondary-dark">₹{money(totals.grandTotal)}</p>
                         </div>
+                        {insufficientStockItems.length > 0 && (
+                            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+                                Insufficient stock: {insufficientStockItems.map((item) =>
+                                    `${item.product.name} (available ${item.product.available_stock ?? item.product.total_stock ?? 0})`).join(", ")}.
+                                You can save a draft, but finalizing requires enough stock.
+                            </div>
+                        )}
                         <div className="space-y-3 border-t border-gray-100 pt-4">
                             <label className="block text-sm font-semibold text-gray-600">Amount received
                                 <input type="number" min="0" max={totals.grandTotal} step="0.01" value={form.amount_received} onChange={(event) => updateForm("amount_received", Number(event.target.value) || 0)} className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-slate-700 outline-none focus:border-primary focus:ring-2 focus:ring-orange-100" />
@@ -337,7 +656,10 @@ export default function AddInvoice() {
                             <SummaryRow label="Balance due" value={totals.balance} />
                             <textarea value={form.notes} onChange={(event) => updateForm("notes", event.target.value)} placeholder="Invoice notes" rows="3" className={`${fieldClass} resize-none`} />
                             <button type="submit" disabled={saving || loadingData} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-4 py-3 font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95 disabled:opacity-60">
-                                <FiSave /> {saving ? "Saving invoice..." : "Create invoice"}
+                                <FiSave /> {saving ? "Saving invoice..." : "Finalize invoice"}
+                            </button>
+                            <button type="submit" value="draft" disabled={saving || loadingData} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 font-bold text-secondary-dark transition-colors hover:bg-gray-50 disabled:opacity-60">
+                                {saving ? "Saving invoice..." : "Save as draft"}
                             </button>
                         </div>
                     </aside>

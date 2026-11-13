@@ -72,9 +72,13 @@ const Dashboard = () => {
     const { dashboardData, setDashboardCached } = useAdmin();
     const [loading, setLoading] = useState(!dashboardData);
     const [salesRange, setSalesRange] = useState("week");
+    const [stockAlertCount, setStockAlertCount] = useState(0);
 
     useEffect(() => {
         fetchDashboardData("week");
+        api.get("/stock/low-stock", { params: { page: 1, limit: 1 } })
+            .then((response) => setStockAlertCount(Number(response.data?.pagination?.total || 0)))
+            .catch((error) => console.error("Low-stock dashboard alert failed to load:", error));
     }, []);
 
     const fetchDashboardData = async (range = salesRange) => {
@@ -277,6 +281,16 @@ const Dashboard = () => {
                     );
                 })}
             </div>
+
+            {stockAlertCount > 0 && (
+                <button type="button" onClick={() => navigate("/admin/products/stock")} className="flex w-full items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-amber-900 transition-colors hover:bg-amber-100">
+                    <span className="flex items-center gap-3">
+                        <FiAlertTriangle className="shrink-0 text-amber-600" size={20} />
+                        <span><b>{stockAlertCount} product{stockAlertCount === 1 ? "" : "s"}</b> at or below their reorder level.</span>
+                    </span>
+                    <span className="shrink-0 text-sm font-bold">Review stock →</span>
+                </button>
+            )}
 
             {/* Quick Actions */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">

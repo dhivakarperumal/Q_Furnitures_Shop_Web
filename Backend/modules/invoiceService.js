@@ -1,3 +1,5 @@
+const { createStockService } = require("./stockService");
+
 function roundMoney(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
@@ -24,7 +26,7 @@ function invoiceStatus(amountPaid, total, dueDate) {
   return "Unpaid";
 }
 
-function createInvoiceService(pool) {
+function createInvoiceService(pool, stockService = createStockService(pool)) {
   async function getById(id, executor = pool) {
     const [rows] = await executor.execute(
       `SELECT i.*, d.dealer_code
@@ -142,7 +144,7 @@ function createInvoiceService(pool) {
 
     getById,
 
-    async createCreditNote(invoiceId, creditNote) {
+    async createCreditNote(invoiceId, creditNote, actor = null) {
       const connection = await pool.getConnection();
       try {
         await connection.beginTransaction();
@@ -158,6 +160,11 @@ function createInvoiceService(pool) {
         }
         if (invoice.status === "Cancelled") {
           const error = new Error("Credit notes cannot be issued for a cancelled invoice.");
+          error.status = 400;
+          throw error;
+        }
+        if (invoice.status === "Draft") {
+          const error = new Error("Draft invoices must be finalized before a credit note can be issued.");
           error.status = 400;
           throw error;
         }
@@ -212,9 +219,11 @@ function createInvoiceService(pool) {
           const igst = portion(source.igst_amount, previous.igst_amount);
           requestedCredits.push({
             invoice_item_id: source.id,
+            product_id: source.product_id,
             product_name: source.product_name,
             hsn_code: source.hsn_code,
             quantity: requested.quantity,
+            stock_disposition: requested.stock_disposition,
             taxable_amount: taxable,
             cgst_amount: cgst,
             sgst_amount: sgst,
@@ -241,13 +250,26 @@ function createInvoiceService(pool) {
           await connection.execute(
             `INSERT INTO credit_note_items
               (credit_note_id, invoice_item_id, product_name, hsn_code, quantity,
-               taxable_amount, cgst_amount, sgst_amount, igst_amount, amount)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+               taxable_amount, cgst_amount, sgst_amount, igst_amount, amount, stock_disposition)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               noteId, item.invoice_item_id, item.product_name, item.hsn_code, item.quantity,
-              item.taxable_amount, item.cgst_amount, item.sgst_amount, item.igst_amount, item.amount,
+              item.taxable_amount, item.cgst_amount, item.sgst_amount, item.igst_amount,
+              item.amount, item.stock_disposition,
             ],
           );
+          await stockService.restoreReturnedStock(connection, {
+            invoiceId,
+            invoiceItemId: item.invoice_item_id,
+            creditNoteId: noteId,
+            creditNoteNumber: noteNumber,
+            productId: item.product_id,
+            productName: item.product_name,
+            productSku: invoiceItems.find((line) => Number(line.id) === Number(item.invoice_item_id))?.sku,
+            quantity: item.quantity,
+            disposition: item.stock_disposition,
+            actor,
+          });
         }
         const creditedAmount = roundMoney(Number(invoice.credited_amount || 0) + amount);
         const balanceDue = roundMoney(Number(invoice.grand_total) - Number(invoice.amount_paid) - creditedAmount);
@@ -277,7 +299,7 @@ function createInvoiceService(pool) {
       }
     },
 
-    async create(input) {
+    async create(input, actor = null) {
       const connection = await pool.getConnection();
       try {
         await connection.beginTransaction();
@@ -320,10 +342,10 @@ function createInvoiceService(pool) {
           }
           const data = parseProductData(product.product_data);
           const quantity = requestedItem.quantity;
-          const unitPrice = Number(product.offer_price ?? product.selling_price);
+          const unitPrice = Number(requestedItem.unit_price ?? product.offer_price ?? product.selling_price);
           const discountType = requestedItem.discount_type || "none";
           const discountValue = Number(requestedItem.discount_value || 0);
-          const gstRate = Number(data.gst_percentage ?? data.gst_rate ?? 18);
+          const gstRate = Number(requestedItem.gst_rate ?? data.gst_percentage ?? data.gst_rate ?? 18);
           if (!Number.isFinite(unitPrice) || unitPrice <= 0 || !Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) {
             const error = new Error(`Product ${product.name} has invalid price or GST configuration.`);
             error.status = 400;
@@ -401,19 +423,20 @@ function createInvoiceService(pool) {
         const beforeRound = taxableAmount + cgst + sgst + igst + delivery + installation;
         const grandTotal = roundMoney(Math.round(beforeRound));
         const roundOff = roundMoney(grandTotal - beforeRound);
-        const amountReceived = input.amount_received;
+        const isDraft = input.is_draft === true;
+        const amountReceived = isDraft ? 0 : input.amount_received;
         if (amountReceived > grandTotal) {
           const error = new Error("Amount received cannot exceed the invoice total.");
           error.status = 400;
           throw error;
         }
         const balanceDue = roundMoney(grandTotal - amountReceived);
-        const status = invoiceStatus(amountReceived, grandTotal, input.due_date);
+        const status = isDraft ? "Draft" : invoiceStatus(amountReceived, grandTotal, input.due_date);
         let previousOutstanding = 0;
         if (dealer) {
           const [balanceRows] = await connection.execute(
             `SELECT ? + COALESCE(SUM(balance_due), 0) AS balance
-             FROM invoices WHERE dealer_id = ? AND status <> 'Cancelled'`,
+             FROM invoices WHERE dealer_id = ? AND status NOT IN ('Cancelled', 'Draft')`,
             [Number(dealer.opening_balance || 0), dealer.id],
           );
           previousOutstanding = roundMoney(balanceRows[0]?.balance || 0);
@@ -440,8 +463,9 @@ function createInvoiceService(pool) {
         const invoiceNumber = `QF-INV-${input.invoice_date.slice(0, 4)}-${String(invoiceId).padStart(6, "0")}`;
         await connection.execute("UPDATE invoices SET invoice_number = ? WHERE id = ?", [invoiceNumber, invoiceId]);
 
+        const savedItems = [];
         for (const item of invoiceItems) {
-          await connection.execute(
+          const [itemResult] = await connection.execute(
             `INSERT INTO invoice_items
               (invoice_id, product_id, sku, product_name, category, hsn_code, material, dimensions,
                quantity, unit, unit_price, discount_type, discount_value, discount_amount, gst_rate,
@@ -455,17 +479,27 @@ function createInvoiceService(pool) {
               item.gst_amount, item.line_total,
             ],
           );
+          savedItems.push({ ...item, id: itemResult.insertId });
         }
 
-        await insertLedgerEntry(connection, dealer?.id, {
-          invoiceId,
-          date: input.invoice_date,
-          type: "Sales Invoice",
-          reference: invoiceNumber,
-          description: `Invoice ${invoiceNumber}`,
-          debit: grandTotal,
-        });
-        if (amountReceived > 0) {
+        if (!isDraft) {
+          await stockService.deductInvoiceStock(
+            connection,
+            { id: invoiceId, invoice_number: invoiceNumber },
+            savedItems,
+            actor,
+          );
+          await connection.execute("UPDATE invoices SET stock_deducted = 1 WHERE id = ?", [invoiceId]);
+          await insertLedgerEntry(connection, dealer?.id, {
+            invoiceId,
+            date: input.invoice_date,
+            type: "Sales Invoice",
+            reference: invoiceNumber,
+            description: `Invoice ${invoiceNumber}`,
+            debit: grandTotal,
+          });
+        }
+        if (!isDraft && amountReceived > 0) {
           await connection.execute(
             `INSERT INTO invoice_payments
               (invoice_id, dealer_id, paid_at, payment_method, transaction_id, reference_number, amount, notes)
@@ -496,6 +530,65 @@ function createInvoiceService(pool) {
       }
     },
 
+    async finalizeDraft(invoiceId, actor = null) {
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+        const [rows] = await connection.execute(
+          "SELECT * FROM invoices WHERE id = ? FOR UPDATE",
+          [invoiceId],
+        );
+        const invoice = rows[0];
+        if (!invoice) {
+          const error = new Error("Invoice was not found.");
+          error.status = 404;
+          throw error;
+        }
+        if (invoice.status === "Cancelled") {
+          const error = new Error("A cancelled invoice cannot be finalized.");
+          error.status = 409;
+          throw error;
+        }
+        if (Number(invoice.stock_deducted)) {
+          const existingInvoice = await getById(invoiceId, connection);
+          await connection.commit();
+          return existingInvoice;
+        }
+        if (invoice.status !== "Draft") {
+          const error = new Error("Only draft invoices can be finalized.");
+          error.status = 409;
+          throw error;
+        }
+        const [items] = await connection.execute(
+          "SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY product_id, id FOR UPDATE",
+          [invoiceId],
+        );
+        await stockService.deductInvoiceStock(connection, invoice, items, actor);
+        const status = invoiceStatus(Number(invoice.amount_paid), Number(invoice.grand_total), invoice.due_date);
+        const balanceDue = roundMoney(Number(invoice.grand_total) - Number(invoice.amount_paid) - Number(invoice.credited_amount || 0));
+        await connection.execute(
+          "UPDATE invoices SET status = ?, balance_due = ?, stock_deducted = 1 WHERE id = ?",
+          [status, balanceDue, invoiceId],
+        );
+        await insertLedgerEntry(connection, invoice.dealer_id, {
+          invoiceId,
+          date: dateOnly(invoice.invoice_date),
+          type: "Sales Invoice",
+          reference: invoice.invoice_number,
+          description: `Invoice ${invoice.invoice_number}`,
+          debit: Number(invoice.grand_total),
+        });
+        const finalizedInvoice = await getById(invoiceId, connection);
+        await connection.commit();
+        return finalizedInvoice;
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    },
+
     async recordPayment(invoiceId, payment) {
       const connection = await pool.getConnection();
       try {
@@ -512,6 +605,11 @@ function createInvoiceService(pool) {
         }
         if (invoice.status === "Cancelled") {
           const error = new Error("Payments cannot be added to a cancelled invoice.");
+          error.status = 400;
+          throw error;
+        }
+        if (invoice.status === "Draft") {
+          const error = new Error("Draft invoices must be finalized before payments can be recorded.");
           error.status = 400;
           throw error;
         }
@@ -555,7 +653,7 @@ function createInvoiceService(pool) {
       }
     },
 
-    async cancel(id) {
+    async cancel(id, reason = "Cancelled by administrator", actor = null) {
       const connection = await pool.getConnection();
       try {
         await connection.beginTransaction();
@@ -565,6 +663,11 @@ function createInvoiceService(pool) {
           const error = new Error("Invoice was not found.");
           error.status = 404;
           throw error;
+        }
+        if (invoice.status === "Cancelled") {
+          const cancelledInvoice = await getById(id, connection);
+          await connection.commit();
+          return cancelledInvoice;
         }
         if (Number(invoice.amount_paid) > 0) {
           const error = new Error("A paid invoice cannot be cancelled. Record a credit note or refund first.");
@@ -576,8 +679,18 @@ function createInvoiceService(pool) {
           error.status = 409;
           throw error;
         }
-        if (invoice.status !== "Cancelled") {
-          await connection.execute("UPDATE invoices SET status = 'Cancelled', balance_due = 0 WHERE id = ?", [id]);
+        if (Number(invoice.stock_deducted)) {
+          const [items] = await connection.execute(
+            "SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY product_id, id FOR UPDATE",
+            [id],
+          );
+          await stockService.restoreInvoiceStock(connection, invoice, items, actor);
+        }
+        await connection.execute(
+          "UPDATE invoices SET status = 'Cancelled', balance_due = 0, stock_deducted = 0, cancel_reason = ? WHERE id = ?",
+          [reason, id],
+        );
+        if (invoice.status !== "Draft") {
           await insertLedgerEntry(connection, invoice.dealer_id, {
             invoiceId: id,
             date: new Date().toISOString().slice(0, 10),

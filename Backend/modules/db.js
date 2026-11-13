@@ -50,7 +50,7 @@ async function initializeDatabase(pool) {
       offer_type VARCHAR(32) NOT NULL DEFAULT 'Percentage',
       offer_price DECIMAL(12,2) NOT NULL,
       selling_price DECIMAL(12,2) NOT NULL,
-      total_stock INT UNSIGNED NOT NULL DEFAULT 0,
+      total_stock INT NOT NULL DEFAULT 0,
       rating DECIMAL(2,1) NOT NULL DEFAULT 5.0,
       status VARCHAR(32) NOT NULL DEFAULT 'Active',
       product_data JSON NOT NULL,
@@ -62,6 +62,51 @@ async function initializeDatabase(pool) {
       KEY products_name_idx (name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS product_stock (
+      product_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+      available_stock INT NOT NULL DEFAULT 0,
+      reserved_stock INT UNSIGNED NOT NULL DEFAULT 0,
+      damaged_stock INT UNSIGNED NOT NULL DEFAULT 0,
+      minimum_stock INT UNSIGNED NOT NULL DEFAULT 5,
+      stock_type VARCHAR(32) NOT NULL DEFAULT 'Ready-Made Furniture',
+      deduction_rule VARCHAR(16) NOT NULL DEFAULT 'deduct',
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT product_stock_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+      KEY product_stock_alert_idx (available_stock, minimum_stock)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stock_settings (
+      id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+      allow_negative_stock TINYINT(1) NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS product_import_logs (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      import_token CHAR(36) NOT NULL UNIQUE,
+      created_by VARCHAR(191) NULL,
+      file_name VARCHAR(255) NOT NULL,
+      status VARCHAR(16) NOT NULL DEFAULT 'preview',
+      row_count INT UNSIGNED NOT NULL DEFAULT 0,
+      valid_count INT UNSIGNED NOT NULL DEFAULT 0,
+      errors JSON NULL,
+      preview_data JSON NULL,
+      confirmed_at TIMESTAMP NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      KEY product_import_created_idx (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  const [importLogColumns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'product_import_logs'`,
+  );
+  if (!importLogColumns.some((column) => column.COLUMN_NAME === "preview_data")) {
+    await pool.query("ALTER TABLE product_import_logs ADD COLUMN preview_data JSON NULL AFTER errors");
+  }
   const [productsMissingCode] = await pool.execute(
     `SELECT id, created_at
      FROM products
@@ -198,6 +243,125 @@ async function initializeDatabase(pool) {
       KEY invoice_items_product_idx (product_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [invoiceStockColumns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoices'`,
+  );
+  const invoiceStockColumnNames = new Set(invoiceStockColumns.map((column) => column.COLUMN_NAME));
+  if (!invoiceStockColumnNames.has("stock_deducted")) {
+    await pool.query("ALTER TABLE invoices ADD COLUMN stock_deducted TINYINT(1) NOT NULL DEFAULT 0");
+  }
+  if (!invoiceStockColumnNames.has("cancel_reason")) {
+    await pool.query("ALTER TABLE invoices ADD COLUMN cancel_reason TEXT NULL");
+  }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stock_transactions (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      transaction_ref VARCHAR(191) NOT NULL UNIQUE,
+      transaction_type VARCHAR(40) NOT NULL,
+      reference_type VARCHAR(32) NULL,
+      reference_id BIGINT UNSIGNED NULL,
+      reference_number VARCHAR(100) NULL,
+      created_by VARCHAR(191) NULL,
+      remarks TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      KEY stock_transactions_reference_idx (reference_type, reference_id),
+      KEY stock_transactions_created_idx (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stock_movements (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      transaction_id BIGINT UNSIGNED NOT NULL,
+      product_id BIGINT UNSIGNED NULL,
+      invoice_id BIGINT UNSIGNED NULL,
+      invoice_item_id BIGINT UNSIGNED NULL,
+      movement_key VARCHAR(191) NOT NULL UNIQUE,
+      transaction_type VARCHAR(40) NOT NULL,
+      product_name VARCHAR(191) NOT NULL,
+      product_sku VARCHAR(128) NULL,
+      previous_stock INT NOT NULL,
+      stock_in INT UNSIGNED NOT NULL DEFAULT 0,
+      stock_out INT UNSIGNED NOT NULL DEFAULT 0,
+      damaged_in INT UNSIGNED NOT NULL DEFAULT 0,
+      current_stock INT NOT NULL,
+      updated_by VARCHAR(191) NULL,
+      remarks TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT stock_movements_transaction_fk FOREIGN KEY (transaction_id) REFERENCES stock_transactions(id) ON DELETE RESTRICT,
+      CONSTRAINT stock_movements_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+      CONSTRAINT stock_movements_invoice_fk FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE SET NULL,
+      CONSTRAINT stock_movements_invoice_item_fk FOREIGN KEY (invoice_item_id) REFERENCES invoice_items(id) ON DELETE SET NULL,
+      KEY stock_movements_product_date_idx (product_id, created_at, id),
+      KEY stock_movements_invoice_idx (invoice_id),
+      KEY stock_movements_type_date_idx (transaction_type, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  const [stockMovementColumns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stock_movements'`,
+  );
+  if (!stockMovementColumns.some((column) => column.COLUMN_NAME === "damaged_in")) {
+    await pool.query("ALTER TABLE stock_movements ADD COLUMN damaged_in INT UNSIGNED NOT NULL DEFAULT 0 AFTER stock_out");
+  }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stock_adjustments (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      transaction_id BIGINT UNSIGNED NOT NULL,
+      product_id BIGINT UNSIGNED NULL,
+      quantity_change INT NOT NULL,
+      reason VARCHAR(191) NOT NULL,
+      created_by VARCHAR(191) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT stock_adjustments_transaction_fk FOREIGN KEY (transaction_id) REFERENCES stock_transactions(id) ON DELETE RESTRICT,
+      CONSTRAINT stock_adjustments_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+      KEY stock_adjustments_product_date_idx (product_id, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    INSERT IGNORE INTO product_stock
+      (product_id, available_stock, minimum_stock, stock_type, deduction_rule)
+    SELECT id, total_stock, 5,
+           LEFT(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(product_data, '$.inventory_type')), ''), 'Ready-Made Furniture'), 32),
+           CASE
+             WHEN LOWER(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(product_data, '$.stock_deduction_rule')), 'deduct')) IN ('none', 'made-to-order')
+               OR LOWER(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(product_data, '$.inventory_type')), '')) LIKE '%made-to-order%' THEN 'none'
+             ELSE 'deduct'
+           END
+    FROM products
+  `);
+  await pool.query("INSERT IGNORE INTO stock_settings (id, allow_negative_stock) VALUES (1, 0)");
+  await pool.query(`
+    INSERT IGNORE INTO stock_transactions
+      (transaction_ref, transaction_type, reference_type, reference_id, reference_number, remarks)
+    SELECT CONCAT('opening-stock:', p.id), 'Opening Stock', 'product', p.id, p.product_code,
+           'Existing product stock loaded into the stock ledger'
+    FROM products p
+    JOIN product_stock ps ON ps.product_id = p.id
+    WHERE ps.available_stock > 0
+  `);
+  await pool.query(`
+    INSERT IGNORE INTO stock_movements
+      (transaction_id, product_id, movement_key, transaction_type, product_name, product_sku,
+       previous_stock, stock_in, stock_out, current_stock, remarks)
+    SELECT st.id, p.id, CONCAT('opening-stock:', p.id), 'Opening Stock', p.name, p.product_code,
+           0, ps.available_stock, 0, ps.available_stock,
+           'Existing product stock loaded into the stock ledger'
+    FROM products p
+    JOIN product_stock ps ON ps.product_id = p.id
+    JOIN stock_transactions st ON st.transaction_ref = CONCAT('opening-stock:', p.id)
+    WHERE ps.available_stock > 0
+  `);
+  const [productStockColumns] = await pool.execute(
+    `SELECT COLUMN_TYPE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'total_stock'`,
+  );
+  if (productStockColumns[0]?.COLUMN_TYPE.includes("unsigned")) {
+    await pool.query("ALTER TABLE products MODIFY COLUMN total_stock INT NOT NULL DEFAULT 0");
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS invoice_payments (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -245,11 +409,20 @@ async function initializeDatabase(pool) {
       sgst_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
       igst_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
       amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      stock_disposition VARCHAR(16) NOT NULL DEFAULT 'pending',
       CONSTRAINT credit_note_items_note_fk FOREIGN KEY (credit_note_id) REFERENCES credit_notes(id) ON DELETE CASCADE,
       CONSTRAINT credit_note_items_invoice_item_fk FOREIGN KEY (invoice_item_id) REFERENCES invoice_items(id) ON DELETE RESTRICT,
       KEY credit_note_items_invoice_item_idx (invoice_item_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [creditItemColumns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'credit_note_items'`,
+  );
+  if (!creditItemColumns.some((column) => column.COLUMN_NAME === "stock_disposition")) {
+    await pool.query("ALTER TABLE credit_note_items ADD COLUMN stock_disposition VARCHAR(16) NOT NULL DEFAULT 'pending'");
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS dealer_ledger (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

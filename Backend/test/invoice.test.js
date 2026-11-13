@@ -164,8 +164,13 @@ test("creates a tax invoice, allocates invoice discount, and writes matching led
     items: [{ product_id: 3, quantity: 2 }],
   });
 
-  const created = await createInvoiceService(pool).create(input);
+  const stockDeductionCalls = [];
+  const created = await createInvoiceService(pool, {
+    async deductInvoiceStock(...args) { stockDeductionCalls.push(args); },
+  }).create(input);
   assert.ok(statements.some((sql) => sql.startsWith("INSERT INTO invoices")));
+  assert.equal(stockDeductionCalls.length, 1);
+  assert.equal(stockDeductionCalls[0][1].invoice_number, "QF-INV-2025-000042");
   assert.equal(created.invoice_number, "QF-INV-2025-000042");
   assert.equal(created.items[0].taxable_amount, 190);
   assert.equal(created.items[0].gst_amount, 34.2);

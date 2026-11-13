@@ -72,9 +72,9 @@ function createDealerService(pool) {
       const offset = (page - 1) * limit;
       const [rows] = await pool.execute(
         `SELECT d.*,
-                COUNT(DISTINCT CASE WHEN i.status <> 'Cancelled' THEN i.id END) AS total_invoices,
-                COALESCE(SUM(CASE WHEN i.status <> 'Cancelled' THEN i.grand_total - i.credited_amount ELSE 0 END), 0) AS total_purchases,
-                d.opening_balance + COALESCE(SUM(CASE WHEN i.status <> 'Cancelled' THEN i.grand_total - i.amount_paid - i.credited_amount ELSE 0 END), 0) AS outstanding_balance
+                COUNT(DISTINCT CASE WHEN i.status NOT IN ('Cancelled', 'Draft') THEN i.id END) AS total_invoices,
+                COALESCE(SUM(CASE WHEN i.status NOT IN ('Cancelled', 'Draft') THEN i.grand_total - i.credited_amount ELSE 0 END), 0) AS total_purchases,
+                d.opening_balance + COALESCE(SUM(CASE WHEN i.status NOT IN ('Cancelled', 'Draft') THEN i.grand_total - i.amount_paid - i.credited_amount ELSE 0 END), 0) AS outstanding_balance
          FROM dealers d
          LEFT JOIN invoices i ON i.dealer_id = d.id
          ${whereClause}
@@ -94,7 +94,7 @@ function createDealerService(pool) {
          FROM dealers`,
       );
       const [invoiceRows] = await pool.execute(
-        "SELECT COUNT(*) AS total FROM invoices WHERE status <> 'Cancelled'",
+        "SELECT COUNT(*) AS total FROM invoices WHERE status NOT IN ('Cancelled', 'Draft')",
       );
       return {
         dealers: rows,
@@ -135,11 +135,10 @@ function createDealerService(pool) {
          WHERE cn.dealer_id = ? ORDER BY cn.credit_date DESC, cn.id DESC`,
         [id],
       );
-      const totalPurchases = invoices
-        .filter((invoice) => invoice.status !== "Cancelled")
+      const financialInvoices = invoices.filter((invoice) => !["Cancelled", "Draft"].includes(invoice.status));
+      const totalPurchases = financialInvoices
         .reduce((total, invoice) => total + Number(invoice.grand_total || 0) - Number(invoice.credited_amount || 0), 0);
-      const outstanding = Number(dealer.opening_balance || 0) + invoices
-        .filter((invoice) => invoice.status !== "Cancelled")
+      const outstanding = Number(dealer.opening_balance || 0) + financialInvoices
         .reduce((total, invoice) => total + Number(invoice.balance_due || 0), 0);
       return {
         ...dealer,
@@ -147,10 +146,10 @@ function createDealerService(pool) {
         ledger,
         credit_notes: creditNotes,
         total_purchases: totalPurchases,
-        total_invoices: invoices.filter((invoice) => invoice.status !== "Cancelled").length,
+        total_invoices: financialInvoices.length,
         outstanding_balance: outstanding,
         total_paid: invoices.reduce((total, invoice) => total + Number(invoice.amount_paid || 0), 0),
-        last_transaction: invoices[0]?.invoice_date || null,
+        last_transaction: financialInvoices[0]?.invoice_date || null,
       };
     },
 

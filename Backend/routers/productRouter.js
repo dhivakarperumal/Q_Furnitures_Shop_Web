@@ -158,7 +158,7 @@ function createProductRouter(productService) {
 
   router.post("/", requireAuthentication, requireAdmin, async (request, response, next) => {
     try {
-      const product = await productService.create(normalizeProduct(request.body || {}));
+      const product = await productService.create(normalizeProduct(request.body || {}), request.auth.user_id);
       return response.status(201).json(product);
     } catch (error) {
       if (error.status === 400) return response.status(400).json({ message: error.message });
@@ -174,7 +174,7 @@ function createProductRouter(productService) {
       const id = parseId(request.params.id);
       const existing = await productService.getById(id);
       if (!existing) return response.status(404).json({ message: "Product was not found." });
-      const product = await productService.update(id, normalizeProduct(request.body || {}, existing));
+      const product = await productService.update(id, normalizeProduct(request.body || {}, existing), request.auth.user_id);
       return response.json(product);
     } catch (error) {
       if (error.status === 400) return response.status(400).json({ message: error.message });
