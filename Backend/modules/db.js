@@ -312,6 +312,50 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS coupons (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      code VARCHAR(64) NOT NULL UNIQUE,
+      name VARCHAR(160) NOT NULL,
+      description TEXT NULL,
+      discount_type ENUM('percentage', 'fixed') NOT NULL,
+      discount_value DECIMAL(12,2) NOT NULL,
+      min_order_value DECIMAL(12,2) NOT NULL DEFAULT 0,
+      start_date DATETIME NOT NULL,
+      expiry_date DATETIME NOT NULL,
+      usage_limit_global INT UNSIGNED NULL,
+      usage_limit_per_customer INT UNSIGNED NOT NULL DEFAULT 1,
+      usage_count INT UNSIGNED NOT NULL DEFAULT 0,
+      status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+      coupon_scope ENUM(
+        'all',
+        'first_order_only',
+        'new_customers_only',
+        'specific_products',
+        'specific_categories'
+      ) NOT NULL DEFAULT 'all',
+      applicable_product_ids JSON NOT NULL,
+      applicable_category_ids JSON NOT NULL,
+      applicable_subcategory_ids JSON NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY coupons_status_expiry_idx (status, expiry_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS offers (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(160) NOT NULL,
+      offer_percentage DECIMAL(5,2) NOT NULL DEFAULT 0,
+      description TEXT NULL,
+      icon VARCHAR(32) NOT NULL DEFAULT 'Tag',
+      status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+      show_in_header TINYINT(1) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY offers_header_visibility_idx (status, show_in_header)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS reviews (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       product_id BIGINT UNSIGNED NULL,

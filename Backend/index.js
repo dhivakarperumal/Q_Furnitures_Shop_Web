@@ -12,6 +12,8 @@ const { createOrderService } = require("./modules/orderService");
 const { createBannerService } = require("./modules/bannerService");
 const { createReviewService } = require("./modules/reviewService");
 const { createYoutubeVideoService } = require("./modules/youtubeVideoService");
+const { createCouponService } = require("./modules/couponService");
+const { createOfferService } = require("./modules/offerService");
 const createAuthRouter = require("./routers/authRouter");
 const createCategoryRouter = require("./routers/categoryRouter");
 const createProductRouter = require("./routers/productRouter");
@@ -19,6 +21,8 @@ const createOrderRouter = require("./routers/orderRouter");
 const createBannerRouter = require("./routers/bannerRouter");
 const createReviewRouter = require("./routers/reviewRouter");
 const createYoutubeVideoRouter = require("./routers/youtubeVideoRouter");
+const createCouponRouter = require("./routers/couponRouter");
+const createOfferRouter = require("./routers/offerRouter");
 const createUserRouter = require("./routers/userRouter");
 const { createUploadRouter } = require("./routers/uploadRouter");
 
@@ -39,6 +43,8 @@ const orderService = createOrderService(pool);
 const bannerService = createBannerService(pool);
 const reviewService = createReviewService(pool);
 const youtubeVideoService = createYoutubeVideoService(pool);
+const couponService = createCouponService(pool);
+const offerService = createOfferService(pool);
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
@@ -55,6 +61,8 @@ app.get("/api/health", async (request, response) => {
 app.use("/api/auth", createAuthRouter(authController));
 app.use("/api/categories", createCategoryRouter(categoryService));
 app.use("/api/products", createProductRouter(productService));
+app.use("/api/coupons", createCouponRouter(couponService));
+app.use("/api/offers", createOfferRouter(offerService));
 app.use("/api/orders", createOrderRouter(orderService));
 app.use("/api/admin/banners", createBannerRouter(bannerService));
 app.use("/api/reviews", createReviewRouter(reviewService));
