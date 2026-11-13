@@ -248,7 +248,7 @@ const Dashboard = () => {
     ];
 
     return (
-        <div className="space-y-6 pb-12 bg-slate-50 min-h-screen">
+        <div className="space-y-6 pb-12 min-h-screen">
             <Toaster position="top-right" />
 
             {/* Top Stats Grid */}
