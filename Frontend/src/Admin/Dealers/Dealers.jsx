@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiDownload, FiEdit2, FiFileText, FiPlus, FiSearch, FiTrash2, FiTruck, FiX } from "react-icons/fi";
+import { FiDownload, FiEdit2, FiFileText, FiGrid, FiList, FiPlus, FiSearch, FiTrash2, FiTruck, FiX } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../api";
@@ -15,6 +15,7 @@ export default function Dealers() {
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("All");
+    const [viewMode, setViewMode] = useState("table");
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
@@ -209,55 +210,92 @@ export default function Dealers() {
                     <p className="mt-1 text-sm text-gray-500">Manage dealer accounts, invoices, balances, and transaction history.</p>
                 </div>
                 <div className="flex gap-2">
-                    <button type="button" onClick={exportCsv} disabled={!dealers.length || exporting} className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50"><FiDownload /> {exporting ? "Exporting..." : "Export CSV"}</button>
-                    <button type="button" onClick={() => { setEditingDealer(null); setModalOpen(true); }} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white"><FiPlus /> Add dealer</button>
+                    <button type="button" onClick={exportCsv} disabled={!dealers.length || exporting} className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-600 shadow-sm transition-all hover:bg-orange-50 hover:text-primary-dark disabled:opacity-50"><FiDownload /> {exporting ? "Exporting..." : "Export CSV"}</button>
+                    <button type="button" onClick={() => { setEditingDealer(null); setModalOpen(true); }} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95"><FiPlus /> Add dealer</button>
                 </div>
             </header>
 
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard label="Total dealers" value={summary.total} icon={<FiTruck />} />
-                <StatCard label="Active dealers" value={summary.active} />
-                <StatCard label="Inactive dealers" value={summary.inactive} />
-                <StatCard label="Invoices issued" value={summary.invoices} icon={<FiFileText />} />
+                <StatCard label="Total dealers" value={summary.total} icon={<FiTruck />} tone="orange" />
+                <StatCard label="Active dealers" value={summary.active} tone="green" />
+                <StatCard label="Inactive dealers" value={summary.inactive} tone="amber" />
+                <StatCard label="Invoices issued" value={summary.invoices} icon={<FiFileText />} tone="brown" />
             </section>
 
-            <section className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-                <div className="flex flex-col gap-3 border-b p-4 sm:flex-row">
+            <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <label className="relative flex-1">
-                        <FiSearch className="absolute left-3 top-3.5 text-gray-400" />
-                        <input value={search} onChange={(event) => { setLoading(true); setSearch(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} placeholder="Search name, phone, GSTIN, or dealer code" className="w-full rounded-lg border py-3 pl-10 pr-3 text-sm outline-none focus:border-primary" />
+                        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-gray-400" />
+                        <input value={search} onChange={(event) => { setLoading(true); setSearch(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} placeholder="Search name, phone, GSTIN, or dealer code" className="w-full rounded-xl border border-gray-100 bg-gray-50 py-2.5 pl-11 pr-4 text-sm font-medium text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-orange-100" />
                     </label>
-                    <select value={status} onChange={(event) => { setLoading(true); setStatus(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} className="rounded-lg border px-3 py-2 text-sm">
-                        <option value="All">All statuses</option><option value="Active">Active</option><option value="Inactive">Inactive</option>
-                    </select>
+                    <div className="flex items-center gap-3">
+                        <select value={status} onChange={(event) => { setLoading(true); setStatus(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} className="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-600 outline-none focus:border-primary">
+                            <option value="All">Select Status</option><option value="Active">Active</option><option value="Inactive">Inactive</option>
+                        </select>
+                        <div className="flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+                            <button type="button" onClick={() => setViewMode("table")} aria-label="Table view" className={`rounded-lg p-2 transition-all ${viewMode === "table" ? "bg-orange-100 text-primary-dark" : "text-gray-400 hover:text-slate-600"}`}><FiList size={18} /></button>
+                            <button type="button" onClick={() => setViewMode("grid")} aria-label="Grid view" className={`rounded-lg p-2 transition-all ${viewMode === "grid" ? "bg-orange-100 text-primary-dark" : "text-gray-400 hover:text-slate-600"}`}><FiGrid size={18} /></button>
+                        </div>
+                    </div>
                 </div>
+                {viewMode === "table" ? (
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[940px] text-left text-sm">
-                        <thead className="bg-slate-900 text-xs uppercase tracking-wide text-white">
-                            <tr><th className="p-4">Dealer</th><th className="p-4">Contact</th><th className="p-4">GSTIN</th><th className="p-4">Invoices</th><th className="p-4">Outstanding</th><th className="p-4">Status</th><th className="p-4 text-right">Actions</th></tr>
+                        <thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]">
+                            <tr><th className="rounded-tl-2xl p-4 font-bold">Dealer</th><th className="p-4 font-bold">Contact</th><th className="p-4 font-bold">GSTIN</th><th className="p-4 font-bold">Invoices</th><th className="p-4 font-bold">Outstanding</th><th className="p-4 font-bold">Status</th><th className="rounded-tr-2xl p-4 text-right font-bold">Actions</th></tr>
                         </thead>
-                        <tbody className="divide-y">
+                        <tbody className="divide-y divide-gray-50">
                             {loading ? <tr><td colSpan="7" className="p-10 text-center text-gray-500">Loading dealers...</td></tr>
                                 : dealers.length === 0 ? <tr><td colSpan="7" className="p-10 text-center text-gray-500">No dealers found.</td></tr>
                                     : dealers.map((dealer) => (
-                                        <tr key={dealer.id} className="hover:bg-orange-50/40">
+                                        <tr key={dealer.id} className="group transition-colors hover:bg-gray-50/60">
                                             <td className="p-4"><p className="font-bold text-slate-800">{dealer.name}</p><p className="text-xs text-gray-500">{dealer.dealer_code || "—"} · {dealer.company_name}</p></td>
                                             <td className="p-4"><p>{dealer.mobile}</p><p className="text-xs text-gray-500">{dealer.email || "—"}</p></td>
                                             <td className="p-4">{dealer.gstin || "—"}</td>
                                             <td className="p-4">{dealer.total_invoices || 0}<p className="text-xs text-gray-500">{currency(dealer.total_purchases)}</p></td>
                                             <td className="p-4 font-semibold">{currency(dealer.outstanding_balance)}</td>
-                                            <td className="p-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${dealer.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{dealer.status}</span></td>
+                                            <td className="p-4"><span className={`rounded-lg px-3 py-1 text-[11px] font-bold ${dealer.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>{dealer.status}</span></td>
                                             <td className="p-4"><div className="flex justify-end gap-2">
-                                                <button type="button" onClick={() => openProfile(dealer)} className="rounded-lg border px-3 py-2 text-xs font-bold hover:bg-gray-50">History</button>
-                                                <button type="button" onClick={() => navigate(`/admin/invoices/add?dealerId=${dealer.id}`)} className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">Invoice</button>
-                                                <button type="button" onClick={() => { setEditingDealer(dealer); setModalOpen(true); }} className="rounded-lg border p-2 text-gray-600 hover:bg-gray-50" aria-label={`Edit ${dealer.name}`}><FiEdit2 /></button>
-                                                <button type="button" onClick={() => removeDealer(dealer)} className="rounded-lg border p-2 text-red-600 hover:bg-red-50" aria-label={`Delete ${dealer.name}`}><FiTrash2 /></button>
+                                                <button type="button" onClick={() => openProfile(dealer)} className="rounded-lg border border-orange-200 px-3 py-2 text-xs font-bold text-primary-dark transition-colors hover:bg-orange-50">History</button>
+                                                <button type="button" onClick={() => navigate(`/admin/invoices/add?dealerId=${dealer.id}`)} className="rounded-lg bg-gradient-to-r from-primary to-primary-dark px-3 py-2 text-xs font-bold text-white shadow-sm transition-all hover:from-secondary-light hover:to-secondary-dark">Invoice</button>
+                                                <button type="button" onClick={() => { setEditingDealer(dealer); setModalOpen(true); }} className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 text-primary-dark transition-colors hover:bg-orange-100" aria-label={`Edit ${dealer.name}`}><FiEdit2 size={14} /></button>
+                                                <button type="button" onClick={() => removeDealer(dealer)} className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-500 transition-colors hover:bg-red-100" aria-label={`Delete ${dealer.name}`}><FiTrash2 size={14} /></button>
                                             </div></td>
                                         </tr>
                                     ))}
                         </tbody>
                     </table>
                 </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-5 p-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {loading ? <p className="col-span-full p-10 text-center font-bold text-gray-500">Loading dealers...</p>
+                            : dealers.length === 0 ? <p className="col-span-full p-10 text-center font-bold text-gray-500">No dealers found.</p>
+                                : dealers.map((dealer) => (
+                                    <article key={dealer.id} className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+                                        <div className="mb-4 flex items-start justify-between gap-3">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-lg font-black text-white shadow-md shadow-orange-200">{dealer.name?.charAt(0)?.toUpperCase() || <FiTruck />}</div>
+                                                <div className="min-w-0"><h3 className="truncate text-sm font-bold text-slate-800">{dealer.name}</h3><p className="text-[11px] font-medium text-gray-400">ID: {dealer.dealer_code || "N/A"}</p></div>
+                                            </div>
+                                            <span className={`shrink-0 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${dealer.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>{dealer.status}</span>
+                                        </div>
+                                        <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl bg-gray-50 p-3">
+                                            <div><p className="text-[10px] font-medium text-gray-400">Invoices</p><p className="text-sm font-bold text-slate-800">{dealer.total_invoices || 0}</p></div>
+                                            <div><p className="text-[10px] font-medium text-gray-400">Outstanding</p><p className="text-sm font-bold text-slate-800">{currency(dealer.outstanding_balance)}</p></div>
+                                        </div>
+                                        <div className="flex-1 space-y-1.5 text-xs text-gray-500">
+                                            <p>{dealer.company_name}</p><p>{dealer.mobile}</p><p>{dealer.email || "No email provided"}</p><p>{[dealer.city, dealer.state].filter(Boolean).join(", ") || "No location provided"}</p>
+                                        </div>
+                                        <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-100 pt-4">
+                                            <button type="button" onClick={() => openProfile(dealer)} className="flex-1 rounded-lg border border-orange-200 px-3 py-2 text-xs font-bold text-primary-dark hover:bg-orange-50">History</button>
+                                            <button type="button" onClick={() => navigate(`/admin/invoices/add?dealerId=${dealer.id}`)} className="flex-1 rounded-lg bg-gradient-to-r from-primary to-primary-dark px-3 py-2 text-xs font-bold text-white hover:from-secondary-light hover:to-secondary-dark">New invoice</button>
+                                            <button type="button" onClick={() => { setEditingDealer(dealer); setModalOpen(true); }} aria-label={`Edit ${dealer.name}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 text-primary-dark hover:bg-orange-100"><FiEdit2 size={14} /></button>
+                                            <button type="button" onClick={() => removeDealer(dealer)} aria-label={`Delete ${dealer.name}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100"><FiTrash2 size={14} /></button>
+                                        </div>
+                                    </article>
+                                ))}
+                    </div>
+                )}
                 <footer className="flex items-center justify-between border-t p-4 text-sm text-gray-500">
                     <span>{pagination.total} dealers</span>
                     <div className="flex items-center gap-2">
@@ -276,40 +314,72 @@ export default function Dealers() {
     );
 }
 
-function StatCard({ label, value, icon }) {
-    return <article className="flex items-center gap-4 rounded-2xl border bg-white p-5 shadow-sm">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-primary">{icon || <FiTruck />}</div>
-        <div><p className="text-xs font-semibold text-gray-500">{label}</p><p className="text-2xl font-black text-slate-800">{Number(value || 0).toLocaleString()}</p></div>
+function StatCard({ label, value, icon, tone }) {
+    const tones = {
+        orange: {
+            border: "border-orange-100/80 hover:border-orange-200",
+            stripe: "from-primary-light to-primary-dark",
+            icon: "from-primary to-primary-dark shadow-orange-200/70",
+            watermark: "text-orange-300/20",
+        },
+        green: {
+            border: "border-emerald-100/80 hover:border-emerald-200",
+            stripe: "from-emerald-400 to-emerald-600",
+            icon: "from-emerald-400 to-emerald-600 shadow-emerald-200/70",
+            watermark: "text-emerald-300/20",
+        },
+        amber: {
+            border: "border-amber-100/80 hover:border-amber-200",
+            stripe: "from-amber-400 to-amber-600",
+            icon: "from-amber-400 to-amber-600 shadow-amber-200/70",
+            watermark: "text-amber-300/20",
+        },
+        brown: {
+            border: "border-orange-100/80 hover:border-orange-200",
+            stripe: "from-secondary-light to-secondary-dark",
+            icon: "from-secondary-light to-secondary-dark shadow-orange-200/70",
+            watermark: "text-orange-300/20",
+        },
+    };
+    const colors = tones[tone] || tones.orange;
+    return <article className={`group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)] ${colors.border}`}>
+        <div className={`absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b ${colors.stripe}`} />
+        <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-lg transition-transform duration-200 group-hover:scale-105 ${colors.icon}`}>{icon || <FiTruck className="text-xl" />}</div>
+        <div className="relative z-10"><p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">{label}</p><p className="mb-1 text-3xl font-black leading-none text-secondary-dark">{Number(value || 0).toLocaleString()}</p><p className="text-[10px] font-medium text-stone-500">Dealer management</p></div>
+        <FiTruck className={`pointer-events-none absolute -right-1 bottom-1 ${colors.watermark}`} size={60} />
     </article>;
 }
 
 function DealerProfile({ profile, loading, onClose, onCreateInvoice, onRecordPayment, onCreateCreditNote, onPrintInvoice }) {
-    return <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-        <section className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-2xl bg-white shadow-2xl">
-            <header className="flex items-center justify-between border-b p-5">
+    return <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+        <section className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-[24px] bg-white shadow-2xl">
+            <header className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white p-6">
                 <div><h2 className="text-xl font-black text-slate-800">{profile.name}</h2><p className="text-sm text-gray-500">{profile.dealer_code} · {profile.mobile} · {profile.gstin || "No GSTIN"}</p></div>
-                <div className="flex gap-2"><button type="button" onClick={onCreateInvoice} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white">New invoice</button><button type="button" onClick={onClose} className="rounded-lg border p-2" aria-label="Close"><FiX /></button></div>
+                <div className="flex gap-2"><button type="button" onClick={onCreateInvoice} className="rounded-xl bg-gradient-to-r from-primary to-primary-dark px-4 py-2 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark">New invoice</button><button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-slate-700" aria-label="Close"><FiX /></button></div>
             </header>
-            {loading ? <p className="p-8 text-center text-gray-500">Loading account history...</p> : <div className="space-y-6 p-5">
+            {loading ? <p className="p-8 text-center font-bold text-gray-500">Loading account history...</p> : <div className="space-y-6 p-6">
                 <div className="grid gap-3 sm:grid-cols-3">
                     <Summary label="Total purchases" value={currency(profile.total_purchases)} />
                     <Summary label="Outstanding" value={currency(profile.outstanding_balance)} />
                     <Summary label="Total paid" value={currency(profile.total_paid)} />
                 </div>
-                <section><h3 className="mb-3 font-bold">Invoices</h3><div className="overflow-x-auto rounded-lg border">
-                    <table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-gray-50"><tr><th className="p-3">Invoice</th><th className="p-3">Date</th><th className="p-3">Total</th><th className="p-3">Paid</th><th className="p-3">Credited</th><th className="p-3">Balance</th><th className="p-3">Status</th><th className="p-3">Actions</th></tr></thead>
-                        <tbody className="divide-y">{profile.invoices?.map((invoice) => <tr key={invoice.id}><td className="p-3 font-semibold">{invoice.invoice_number}</td><td className="p-3">{String(invoice.invoice_date).slice(0, 10)}</td><td className="p-3">{currency(invoice.grand_total)}</td><td className="p-3">{currency(invoice.amount_paid)}</td><td className="p-3">{currency(invoice.credited_amount)}</td><td className="p-3">{currency(invoice.balance_due)}</td><td className="p-3">{invoice.status}</td><td className="p-3"><div className="flex gap-2"><button type="button" onClick={() => onPrintInvoice(invoice)} className="rounded border px-2 py-1 text-xs font-semibold">Print</button>{Number(invoice.balance_due) > 0 && invoice.status !== "Cancelled" && <><button type="button" onClick={() => onRecordPayment(invoice)} className="rounded bg-primary px-2 py-1 text-xs font-semibold text-white">Payment</button><button type="button" onClick={() => onCreateCreditNote(invoice)} className="rounded border border-amber-300 px-2 py-1 text-xs font-semibold text-amber-800">Return</button></>}</div></td></tr>)}
+                <section><h3 className="mb-3 text-sm font-black text-secondary-dark">Invoices</h3><div className="overflow-hidden rounded-2xl border border-gray-200">
+                    <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]"><tr><th className="p-3">Invoice</th><th className="p-3">Date</th><th className="p-3">Total</th><th className="p-3">Paid</th><th className="p-3">Credited</th><th className="p-3">Balance</th><th className="p-3">Status</th><th className="p-3">Actions</th></tr></thead>
+                        <tbody className="divide-y divide-gray-50">{profile.invoices?.map((invoice) => <tr key={invoice.id} className="transition-colors hover:bg-gray-50/60"><td className="p-3 font-semibold">{invoice.invoice_number}</td><td className="p-3">{String(invoice.invoice_date).slice(0, 10)}</td><td className="p-3">{currency(invoice.grand_total)}</td><td className="p-3">{currency(invoice.amount_paid)}</td><td className="p-3">{currency(invoice.credited_amount)}</td><td className="p-3">{currency(invoice.balance_due)}</td><td className="p-3">{invoice.status}</td><td className="p-3"><div className="flex gap-2"><button type="button" onClick={() => onPrintInvoice(invoice)} className="rounded-lg border border-orange-200 px-2 py-1 text-xs font-semibold text-primary-dark transition-colors hover:bg-orange-50">Print</button>{Number(invoice.balance_due) > 0 && invoice.status !== "Cancelled" && <><button type="button" onClick={() => onRecordPayment(invoice)} className="rounded-lg bg-gradient-to-r from-primary to-primary-dark px-2 py-1 text-xs font-semibold text-white">Payment</button><button type="button" onClick={() => onCreateCreditNote(invoice)} className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100">Return</button></>}</div></td></tr>)}
                             {!profile.invoices?.length && <tr><td colSpan="8" className="p-6 text-center text-gray-500">No invoices recorded.</td></tr>}</tbody></table>
+                    </div>
                 </div></section>
-                <section><h3 className="mb-3 font-bold">Dealer ledger</h3><div className="overflow-x-auto rounded-lg border">
-                    <table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-gray-50"><tr><th className="p-3">Date</th><th className="p-3">Type</th><th className="p-3">Reference</th><th className="p-3">Description</th><th className="p-3">Debit</th><th className="p-3">Credit</th><th className="p-3">Balance</th></tr></thead>
-                        <tbody className="divide-y">{profile.ledger?.map((entry) => <tr key={entry.id}><td className="p-3">{String(entry.transaction_date).slice(0, 10)}</td><td className="p-3">{entry.transaction_type}</td><td className="p-3">{entry.reference_number || "—"}</td><td className="p-3">{entry.description}</td><td className="p-3">{currency(entry.debit)}</td><td className="p-3">{currency(entry.credit)}</td><td className="p-3">{currency(entry.balance)}</td></tr>)}
+                <section><h3 className="mb-3 text-sm font-black text-secondary-dark">Dealer ledger</h3><div className="overflow-hidden rounded-2xl border border-gray-200">
+                    <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]"><tr><th className="p-3">Date</th><th className="p-3">Type</th><th className="p-3">Reference</th><th className="p-3">Description</th><th className="p-3">Debit</th><th className="p-3">Credit</th><th className="p-3">Balance</th></tr></thead>
+                        <tbody className="divide-y divide-gray-50">{profile.ledger?.map((entry) => <tr key={entry.id} className="transition-colors hover:bg-gray-50/60"><td className="p-3">{String(entry.transaction_date).slice(0, 10)}</td><td className="p-3">{entry.transaction_type}</td><td className="p-3">{entry.reference_number || "—"}</td><td className="p-3">{entry.description}</td><td className="p-3">{currency(entry.debit)}</td><td className="p-3">{currency(entry.credit)}</td><td className="p-3">{currency(entry.balance)}</td></tr>)}
                             {!profile.ledger?.length && <tr><td colSpan="7" className="p-6 text-center text-gray-500">No ledger activity recorded.</td></tr>}</tbody></table>
+                    </div>
                 </div></section>
-                <section><h3 className="mb-3 font-bold">Credit notes / returns</h3><div className="overflow-x-auto rounded-lg border">
-                    <table className="w-full min-w-[600px] text-left text-sm"><thead className="bg-gray-50"><tr><th className="p-3">Credit note</th><th className="p-3">Invoice</th><th className="p-3">Date</th><th className="p-3">Reason</th><th className="p-3">Amount</th></tr></thead>
-                        <tbody className="divide-y">{profile.credit_notes?.map((note) => <tr key={note.id}><td className="p-3 font-semibold">{note.credit_note_number}</td><td className="p-3">{note.invoice_number}</td><td className="p-3">{String(note.credit_date).slice(0, 10)}</td><td className="p-3">{note.reason}</td><td className="p-3">{currency(note.amount)}</td></tr>)}
+                <section><h3 className="mb-3 text-sm font-black text-secondary-dark">Credit notes / returns</h3><div className="overflow-hidden rounded-2xl border border-gray-200">
+                    <div className="overflow-x-auto"><table className="w-full min-w-[600px] text-left text-sm"><thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]"><tr><th className="p-3">Credit note</th><th className="p-3">Invoice</th><th className="p-3">Date</th><th className="p-3">Reason</th><th className="p-3">Amount</th></tr></thead>
+                        <tbody className="divide-y divide-gray-50">{profile.credit_notes?.map((note) => <tr key={note.id} className="transition-colors hover:bg-gray-50/60"><td className="p-3 font-semibold">{note.credit_note_number}</td><td className="p-3">{note.invoice_number}</td><td className="p-3">{String(note.credit_date).slice(0, 10)}</td><td className="p-3">{note.reason}</td><td className="p-3">{currency(note.amount)}</td></tr>)}
                             {!profile.credit_notes?.length && <tr><td colSpan="5" className="p-6 text-center text-gray-500">No credit notes issued.</td></tr>}</tbody></table>
+                    </div>
                 </div></section>
             </div>}
         </section>
@@ -317,41 +387,42 @@ function DealerProfile({ profile, loading, onClose, onCreateInvoice, onRecordPay
 }
 
 function Summary({ label, value }) {
-    return <div className="rounded-xl bg-gray-50 p-4"><p className="text-xs text-gray-500">{label}</p><p className="mt-1 font-black text-slate-800">{value}</p></div>;
+    return <div className="rounded-xl border border-orange-100/80 bg-white p-4 shadow-[0_8px_24px_rgba(74,46,25,0.06)]"><p className="text-xs font-bold tracking-wide text-secondary-light">{label}</p><p className="mt-1 font-black text-secondary-dark">{value}</p></div>;
 }
 
 function PaymentModal({ invoice, form, setForm, saving, onClose, onSubmit }) {
     const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
-    return <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-        <form onSubmit={onSubmit} className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 shadow-2xl">
-            <header><h2 className="text-xl font-black text-slate-800">Record payment</h2><p className="text-sm text-gray-500">{invoice.invoice_number} · Remaining {currency(invoice.balance_due)}</p></header>
+    const inputClass = "mt-1 w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-orange-500/20";
+    return <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+        <form onSubmit={onSubmit} className="w-full max-w-lg space-y-4 overflow-hidden rounded-[24px] border border-gray-100 bg-white p-6 shadow-2xl">
+            <header className="border-b border-gray-100 pb-4"><h2 className="text-xl font-black text-slate-800">Record payment</h2><p className="mt-1 text-sm text-gray-500">{invoice.invoice_number} · Remaining {currency(invoice.balance_due)}</p></header>
             <label className="block text-sm font-semibold">Amount *
-                <input type="number" min="0.01" max={invoice.balance_due} step="0.01" required value={form.amount} onChange={(event) => update("amount", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                <input type="number" min="0.01" max={invoice.balance_due} step="0.01" required value={form.amount} onChange={(event) => update("amount", event.target.value)} className={inputClass} />
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm font-semibold">Payment date *
-                    <input type="date" required value={form.paid_at} onChange={(event) => update("paid_at", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                    <input type="date" required value={form.paid_at} onChange={(event) => update("paid_at", event.target.value)} className={inputClass} />
                 </label>
                 <label className="block text-sm font-semibold">Method *
-                    <select value={form.payment_method} onChange={(event) => update("payment_method", event.target.value)} className="mt-1 w-full rounded-lg border p-3">
+                    <select value={form.payment_method} onChange={(event) => update("payment_method", event.target.value)} className={inputClass}>
                         {["Cash", "UPI", "Card", "Bank Transfer", "Cheque", "Other"].map((method) => <option key={method}>{method}</option>)}
                     </select>
                 </label>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm font-semibold">Transaction ID
-                    <input value={form.transaction_id} onChange={(event) => update("transaction_id", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                    <input value={form.transaction_id} onChange={(event) => update("transaction_id", event.target.value)} className={inputClass} />
                 </label>
                 <label className="block text-sm font-semibold">Reference
-                    <input value={form.reference_number} onChange={(event) => update("reference_number", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                    <input value={form.reference_number} onChange={(event) => update("reference_number", event.target.value)} className={inputClass} />
                 </label>
             </div>
             <label className="block text-sm font-semibold">Notes
-                <textarea rows="2" value={form.notes} onChange={(event) => update("notes", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                <textarea rows="2" value={form.notes} onChange={(event) => update("notes", event.target.value)} className={inputClass} />
             </label>
-            <footer className="flex justify-end gap-2 border-t pt-4">
-                <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 font-semibold">Cancel</button>
-                <button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2 font-bold text-white disabled:opacity-60">{saving ? "Saving..." : "Record payment"}</button>
+            <footer className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50/80 -mx-6 -mb-6 p-5">
+                <button type="button" onClick={onClose} className="rounded-xl px-4 py-2 font-bold text-gray-600 transition-all hover:bg-gray-200">Cancel</button>
+                <button type="submit" disabled={saving} className="rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-2 font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark disabled:opacity-60">{saving ? "Saving..." : "Record payment"}</button>
             </footer>
         </form>
     </div>;
@@ -364,36 +435,39 @@ function CreditNoteModal({ invoice, form, setForm, saving, onClose, onSubmit }) 
         return total + (Number(item.line_total) / Number(item.quantity)) * quantity;
     }, 0);
     const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
-    return <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-        <form onSubmit={onSubmit} className="max-h-[90vh] w-full max-w-2xl space-y-4 overflow-auto rounded-2xl bg-white p-6 shadow-2xl">
-            <header><h2 className="text-xl font-black text-slate-800">Create credit note / return</h2><p className="text-sm text-gray-500">{invoice.invoice_number} · Unpaid balance {currency(invoice.balance_due)}</p></header>
+    const inputClass = "mt-1 w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-orange-500/20";
+    return <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+        <form onSubmit={onSubmit} className="max-h-[90vh] w-full max-w-2xl space-y-4 overflow-auto rounded-[24px] border border-gray-100 bg-white p-6 shadow-2xl">
+            <header className="border-b border-gray-100 pb-4"><h2 className="text-xl font-black text-slate-800">Create credit note / return</h2><p className="mt-1 text-sm text-gray-500">{invoice.invoice_number} · Unpaid balance {currency(invoice.balance_due)}</p></header>
             <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm font-semibold">Credit date *
-                    <input type="date" min={String(invoice.invoice_date).slice(0, 10)} required value={form.credit_date} onChange={(event) => update("credit_date", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                    <input type="date" min={String(invoice.invoice_date).slice(0, 10)} required value={form.credit_date} onChange={(event) => update("credit_date", event.target.value)} className={inputClass} />
                 </label>
                 <label className="block text-sm font-semibold">Reason *
-                    <input required maxLength="191" value={form.reason} onChange={(event) => update("reason", event.target.value)} placeholder="Damaged goods, return..." className="mt-1 w-full rounded-lg border p-3" />
+                    <input required maxLength="191" value={form.reason} onChange={(event) => update("reason", event.target.value)} placeholder="Damaged goods, return..." className={inputClass} />
                 </label>
             </div>
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-hidden rounded-2xl border border-gray-200">
+                <div className="overflow-x-auto">
                 <table className="w-full min-w-[560px] text-left text-sm">
-                    <thead className="bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="p-3">Invoice item</th><th className="p-3">Sold</th><th className="p-3">Remaining returnable</th><th className="p-3">Return qty</th></tr></thead>
-                    <tbody className="divide-y">{items.map((item) => <tr key={item.id}>
+                    <thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]"><tr><th className="p-3">Invoice item</th><th className="p-3">Sold</th><th className="p-3">Remaining returnable</th><th className="p-3">Return qty</th></tr></thead>
+                    <tbody className="divide-y divide-gray-50">{items.map((item) => <tr key={item.id} className="hover:bg-gray-50/60">
                         <td className="p-3 font-semibold">{item.product_name}</td><td className="p-3">{item.quantity}</td><td className="p-3">{item.remaining_quantity}</td>
-                        <td className="p-3"><input type="number" min="0" max={item.remaining_quantity} step="1" value={form.quantities[item.id] || ""} onChange={(event) => update("quantities", { ...form.quantities, [item.id]: Math.max(0, Math.min(Number(item.remaining_quantity), Number(event.target.value) || 0)) })} className="w-24 rounded border p-2" /></td>
+                        <td className="p-3"><input type="number" min="0" max={item.remaining_quantity} step="1" value={form.quantities[item.id] || ""} onChange={(event) => update("quantities", { ...form.quantities, [item.id]: Math.max(0, Math.min(Number(item.remaining_quantity), Number(event.target.value) || 0)) })} className="w-24 rounded-lg border border-gray-200 bg-gray-50 p-2 outline-none focus:border-primary focus:ring-2 focus:ring-orange-500/20" /></td>
                     </tr>)}
                         {!items.length && <tr><td colSpan="4" className="p-5 text-center text-gray-500">This invoice has no returnable line items.</td></tr>}
                     </tbody>
                 </table>
+                </div>
             </div>
             <label className="block text-sm font-semibold">Notes
-                <textarea rows="2" value={form.notes} onChange={(event) => update("notes", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                <textarea rows="2" value={form.notes} onChange={(event) => update("notes", event.target.value)} className={inputClass} />
             </label>
-            <div className="flex items-center justify-between rounded-lg bg-amber-50 p-3 text-sm"><span>Estimated credit value</span><b>{currency(estimate)}</b></div>
+            <div className="flex items-center justify-between rounded-xl border border-orange-100 bg-orange-50 p-3 text-sm text-secondary-dark"><span className="font-semibold">Estimated credit value</span><b>{currency(estimate)}</b></div>
             {estimate > Number(invoice.balance_due) && <p className="text-sm font-semibold text-red-600">Return value cannot exceed this invoice’s unpaid balance.</p>}
-            <footer className="flex justify-end gap-2 border-t pt-4">
-                <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 font-semibold">Cancel</button>
-                <button type="submit" disabled={saving || !items.length || estimate <= 0 || estimate > Number(invoice.balance_due)} className="rounded-lg bg-primary px-4 py-2 font-bold text-white disabled:opacity-50">{saving ? "Issuing..." : "Issue credit note"}</button>
+            <footer className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50/80 -mx-6 -mb-6 p-5">
+                <button type="button" onClick={onClose} className="rounded-xl px-4 py-2 font-bold text-gray-600 transition-all hover:bg-gray-200">Cancel</button>
+                <button type="submit" disabled={saving || !items.length || estimate <= 0 || estimate > Number(invoice.balance_due)} className="rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-2 font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark disabled:opacity-50">{saving ? "Issuing..." : "Issue credit note"}</button>
             </footer>
         </form>
     </div>;

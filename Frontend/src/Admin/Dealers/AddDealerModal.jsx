@@ -75,13 +75,14 @@ export default function AddDealerModal({ isOpen, onClose, onSuccess, dealer = nu
     ];
 
     return createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-            <section className="max-h-[92vh] w-full max-w-4xl overflow-auto rounded-2xl bg-white shadow-2xl">
-                <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-6 py-4">
-                    <div><h2 className="text-xl font-black text-slate-800">{dealer ? "Edit dealer" : "Add dealer"}</h2><p className="text-sm text-gray-500">Contact, GST, address and credit settings</p></div>
-                    <button type="button" onClick={onClose} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100" aria-label="Close"><FiX size={20} /></button>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+            <section className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl">
+                <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-gray-100 bg-white p-6">
+                    <div><h2 className="text-xl font-black text-slate-800">{dealer ? "Edit dealer" : "Add dealer"}</h2><p className="mt-1 text-xs font-medium text-gray-500">Contact, GST, address and credit settings</p></div>
+                    <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-slate-700" aria-label="Close"><FiX size={20} /></button>
                 </header>
-                <form onSubmit={submit} className="space-y-6 p-6">
+                <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+                    <div className="flex-1 space-y-6 overflow-y-auto p-6">
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {fields.map(([name, label, required]) => (
                             <label key={name} className="space-y-1 text-xs font-bold text-slate-600">
@@ -93,35 +94,36 @@ export default function AddDealerModal({ isOpen, onClose, onSuccess, dealer = nu
                                     required={required}
                                     value={form[name] ?? ""}
                                     onChange={(event) => set(name, event.target.value)}
-                                    className={inputClass}
+                                    className={`${inputClass} focus:ring-2 focus:ring-orange-500/20`}
                                 />
                             </label>
                         ))}
                         <label className="space-y-1 text-xs font-bold text-slate-600">Dealer type
-                            <select value={form.dealer_type} onChange={(event) => set("dealer_type", event.target.value)} className={inputClass}>
+                            <select value={form.dealer_type} onChange={(event) => set("dealer_type", event.target.value)} className={`${inputClass} focus:ring-2 focus:ring-orange-500/20`}>
                                 {dealerTypes.map((type) => <option key={type}>{type}</option>)}
                             </select>
                         </label>
                         <label className="space-y-1 text-xs font-bold text-slate-600">Status
-                            <select value={form.status} onChange={(event) => set("status", event.target.value)} className={inputClass}>
+                            <select value={form.status} onChange={(event) => set("status", event.target.value)} className={`${inputClass} focus:ring-2 focus:ring-orange-500/20`}>
                                 <option>Active</option><option>Inactive</option>
                             </select>
                         </label>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <label className="space-y-1 text-xs font-bold text-slate-600">Billing address
-                            <textarea rows="3" value={form.billing_address ?? ""} onChange={(event) => set("billing_address", event.target.value)} className={inputClass} />
+                            <textarea rows="3" value={form.billing_address ?? ""} onChange={(event) => set("billing_address", event.target.value)} className={`${inputClass} focus:ring-2 focus:ring-orange-500/20`} />
                         </label>
                         <label className="space-y-1 text-xs font-bold text-slate-600">Shipping address
-                            <textarea rows="3" value={form.shipping_address ?? ""} onChange={(event) => set("shipping_address", event.target.value)} className={inputClass} />
+                            <textarea rows="3" value={form.shipping_address ?? ""} onChange={(event) => set("shipping_address", event.target.value)} className={`${inputClass} focus:ring-2 focus:ring-orange-500/20`} />
                         </label>
                         <label className="space-y-1 text-xs font-bold text-slate-600 sm:col-span-2">Notes
-                            <textarea rows="2" value={form.notes ?? ""} onChange={(event) => set("notes", event.target.value)} className={inputClass} />
+                            <textarea rows="2" value={form.notes ?? ""} onChange={(event) => set("notes", event.target.value)} className={`${inputClass} focus:ring-2 focus:ring-orange-500/20`} />
                         </label>
                     </div>
-                    <footer className="flex justify-end gap-3 border-t pt-4">
-                        <button type="button" onClick={onClose} className="rounded-lg border px-5 py-2.5 text-sm font-bold text-gray-600">Cancel</button>
-                        <button type="submit" disabled={saving} className="rounded-lg bg-primary px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60">{saving ? "Saving..." : dealer ? "Save changes" : "Create dealer"}</button>
+                    </div>
+                    <footer className="flex shrink-0 justify-end gap-3 border-t border-gray-100 bg-gray-50/80 p-5">
+                        <button type="button" onClick={onClose} className="rounded-xl px-5 py-2.5 text-sm font-bold text-gray-600 transition-all hover:bg-gray-200 hover:text-slate-800">Cancel</button>
+                        <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95 disabled:opacity-60">{saving ? "Saving..." : dealer ? "Save changes" : "Create dealer"}</button>
                     </footer>
                 </form>
             </section>
