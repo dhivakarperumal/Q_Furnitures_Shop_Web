@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiDownload, FiEdit2, FiFileText, FiGrid, FiList, FiPlus, FiSearch, FiTrash2, FiTruck, FiX } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiDownload, FiEdit2, FiFileText, FiGrid, FiList, FiPlus, FiSearch, FiTrash2, FiTruck, FiX } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../api";
@@ -7,6 +7,7 @@ import AddDealerModal from "./AddDealerModal";
 
 const currency = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const initialSummary = { total: 0, active: 0, inactive: 0, invoices: 0 };
+const dealersPageSize = 25;
 
 export default function Dealers() {
     const navigate = useNavigate();
@@ -28,10 +29,17 @@ export default function Dealers() {
     const [creditSaving, setCreditSaving] = useState(false);
     const [paymentForm, setPaymentForm] = useState(() => ({ paid_at: new Date().toISOString().slice(0, 10), amount: "", payment_method: "Cash", transaction_id: "", reference_number: "", notes: "" }));
     const [creditForm, setCreditForm] = useState(() => ({ credit_date: new Date().toISOString().slice(0, 10), reason: "", notes: "", quantities: {} }));
+    const currentPage = Number(pagination.page) || 1;
+    const totalPages = Math.max(Number(pagination.totalPages) || 1, 1);
+    const totalDealers = Number(pagination.total) || 0;
+    const firstDealer = totalDealers ? (currentPage - 1) * dealersPageSize + 1 : 0;
+    const lastDealer = Math.min(currentPage * dealersPageSize, totalDealers);
+    const firstVisiblePage = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+    const visiblePages = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => firstVisiblePage + index);
 
     useEffect(() => {
         let current = true;
-        api.get("/dealers", { params: { page: pagination.page, limit: 25, search, status } })
+        api.get("/dealers", { params: { page: pagination.page, limit: dealersPageSize, search, status } })
             .then((response) => {
                 if (!current) return;
                 setDealers(response.data.dealers || []);
@@ -51,7 +59,7 @@ export default function Dealers() {
         setLoading(true);
         try {
             const response = await api.get("/dealers", {
-                params: { page: pagination.page, limit: 25, search, status },
+                params: { page: pagination.page, limit: dealersPageSize, search, status },
             });
             setDealers(response.data.dealers || []);
             setSummary(response.data.summary || initialSummary);
@@ -296,13 +304,27 @@ export default function Dealers() {
                                 ))}
                     </div>
                 )}
-                <footer className="flex items-center justify-between p-4 text-sm text-gray-500">
-                    <span>{pagination.total} dealers</span>
-                    <div className="flex items-center gap-2">
-                        <button type="button" disabled={pagination.page <= 1 || loading} onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page: current.page - 1 })); }} className="rounded-lg border px-3 py-2 disabled:opacity-40">Previous</button>
-                        <span>Page {pagination.page} of {pagination.totalPages}</span>
-                        <button type="button" disabled={pagination.page >= pagination.totalPages || loading} onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page: current.page + 1 })); }} className="rounded-lg border px-3 py-2 disabled:opacity-40">Next</button>
-                    </div>
+                <footer className="flex flex-col items-center justify-between gap-3 bg-white p-4 text-sm text-gray-500 sm:flex-row">
+                <p className="text-xs font-medium text-gray-500">Showing {firstDealer} to {lastDealer} of {totalDealers} dealers</p>
+                <div className="flex items-center gap-2">
+                    <button type="button" aria-label="Previous page" disabled={currentPage <= 1 || loading} onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page: current.page - 1 })); }} className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:border-primary hover:text-primary-dark disabled:cursor-not-allowed disabled:opacity-40"><FiChevronLeft size={16} /></button>
+                    {firstVisiblePage > 1 && (
+                        <>
+                            <button type="button" onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page: 1 })); }} className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-sm font-bold text-gray-600 transition-colors hover:border-primary">1</button>
+                            {firstVisiblePage > 2 && <span className="px-1 text-gray-400">...</span>}
+                        </>
+                    )}
+                    {visiblePages.map((page) => (
+                        <button key={page} type="button" aria-current={currentPage === page ? "page" : undefined} onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page })); }} className={`flex h-10 w-10 items-center justify-center rounded-xl border text-sm font-bold transition-all ${currentPage === page ? "border-primary-dark bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-orange-200" : "border-gray-200 text-gray-600 hover:border-primary"}`}>{page}</button>
+                    ))}
+                    {visiblePages[visiblePages.length - 1] < totalPages && (
+                        <>
+                            {visiblePages[visiblePages.length - 1] < totalPages - 1 && <span className="px-1 text-gray-400">...</span>}
+                            <button type="button" onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page: totalPages })); }} className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-sm font-bold text-gray-600 transition-colors hover:border-primary">{totalPages}</button>
+                        </>
+                    )}
+                    <button type="button" aria-label="Next page" disabled={currentPage >= totalPages || loading} onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page: current.page + 1 })); }} className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:border-primary hover:text-primary-dark disabled:cursor-not-allowed disabled:opacity-40"><FiChevronRight size={16} /></button>
+                </div>
                 </footer>
             </section>
 
