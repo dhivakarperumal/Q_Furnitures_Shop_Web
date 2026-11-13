@@ -206,43 +206,49 @@ const Reviews = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
+    <div className="min-h-screen space-y-6 pb-20 font-sans animate-in fade-in slide-in-from-bottom-4 duration-700">
 
       {/* HEADER SECTION */}
       <div className="flex flex-col gap-4">
         <div className="w-full">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-            <div className="bg-white p-5 min-h-[116px] rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:-translate-y-0.5 hover:shadow-md">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shrink-0">
+            <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+              <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-primary-light to-primary-dark" />
+              <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-orange-200/70 transition-transform duration-200 group-hover:scale-105">
                 <MessageSquare className="w-5 h-5" />
               </div>
-              <div>
-                <p className="text-xs text-slate-400 font-medium">Total</p>
-                <p className="text-3xl font-black text-slate-800 leading-none my-0.5">{stats?.total_reviews || 0}</p>
-                <p className="text-[10px] text-slate-400">All customer reviews</p>
+              <div className="relative z-10">
+                <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">Total Reviews</p>
+                <p className="mb-1 text-3xl font-black leading-none text-secondary-dark">{stats?.total_reviews || 0}</p>
+                <p className="text-[10px] font-medium text-stone-500">All customer reviews</p>
               </div>
+              <MessageSquare className="pointer-events-none absolute -right-1 bottom-1 text-orange-300/20" size={60} />
             </div>
 
-            <div className="bg-white p-5 min-h-[116px] rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:-translate-y-0.5 hover:shadow-md">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white shadow-lg shrink-0">
+            <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-amber-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+              <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-amber-400 to-amber-600" />
+              <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg shadow-amber-200/70 transition-transform duration-200 group-hover:scale-105">
                 <Star className="w-5 h-5 fill-white" />
               </div>
-              <div>
-                <p className="text-xs text-slate-400 font-medium">Avg Rating</p>
-                <p className="text-3xl font-black text-slate-800 leading-none my-0.5">{stats?.average_rating || 0}</p>
-                <p className="text-[10px] text-slate-400">Based on all reviews</p>
+              <div className="relative z-10">
+                <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">Average Rating</p>
+                <p className="mb-1 text-3xl font-black leading-none text-secondary-dark">{stats?.average_rating || 0}</p>
+                <p className="text-[10px] font-medium text-stone-500">Based on all reviews</p>
               </div>
+              <Star className="pointer-events-none absolute -right-1 bottom-1 fill-amber-300/20 text-amber-300/20" size={60} />
             </div>
 
-            <div className="bg-white p-5 min-h-[116px] rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:-translate-y-0.5 hover:shadow-md">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white shadow-lg shrink-0">
+            <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-emerald-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+              <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-emerald-400 to-emerald-600" />
+              <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200/70 transition-transform duration-200 group-hover:scale-105">
                 <ShieldAlert className="w-5 h-5" />
               </div>
-              <div>
-                <p className="text-xs text-slate-400 font-medium">Pending</p>
-                <p className="text-3xl font-black text-slate-800 leading-none my-0.5">{stats?.pending_count || 0}</p>
-                <p className="text-[10px] text-slate-400">Awaiting moderation</p>
+              <div className="relative z-10">
+                <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">Pending</p>
+                <p className="mb-1 text-3xl font-black leading-none text-secondary-dark">{stats?.pending_count || 0}</p>
+                <p className="text-[10px] font-medium text-stone-500">Awaiting moderation</p>
               </div>
+              <ShieldAlert className="pointer-events-none absolute -right-1 bottom-1 text-emerald-300/20" size={60} />
             </div>
           </div>
         </div>
@@ -251,32 +257,32 @@ const Reviews = () => {
       </div>
 
       {/* FILTERS AND SEARCH BAR */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="relative w-full xl:max-w-md group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#4b0b78]" />
-          <input type="text" placeholder="Search reviews, products or users..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full min-h-[48px] bg-slate-50 border border-slate-100 rounded-xl pl-11 pr-4 text-sm font-semibold focus:outline-none focus:border-[#4b0b78]" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-primary" />
+          <input type="text" placeholder="Search reviews, products or users..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full rounded-xl border border-gray-100 bg-gray-50 py-2.5 pl-11 pr-4 text-sm font-medium text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-orange-100" />
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <div className="relative">
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               aria-label="Filter reviews by status"
-              className="appearance-none min-w-40 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 pr-9 text-xs font-black uppercase tracking-widest text-[#4b0b78] outline-none focus:border-[#4b0b78]"
+              className="min-w-40 cursor-pointer appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-4 pr-10 text-sm font-bold text-gray-600 outline-none focus:border-primary"
             >
               <option value="All">All</option>
               <option value="Pending">Pending</option>
               <option value="Published">Published</option>
               <option value="Flagged">Flagged</option>
             </select>
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none">▼</span>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><ChevronRight className="h-4 w-4 rotate-90" /></span>
           </div>
           <div className="relative">
             <select
               value={selectedRating || ""}
               onChange={(e) => setSelectedRating(e.target.value ? Number(e.target.value) : null)}
               aria-label="Filter reviews by rating"
-              className="appearance-none min-w-36 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 pr-9 text-xs font-black uppercase tracking-widest text-[#4b0b78] outline-none focus:border-[#4b0b78]"
+              className="min-w-36 cursor-pointer appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-4 pr-10 text-sm font-bold text-gray-600 outline-none focus:border-primary"
             >
               <option value="">All Ratings</option>
               <option value="5">5 Stars</option>
@@ -285,18 +291,18 @@ const Reviews = () => {
               <option value="2">2 Stars</option>
               <option value="1">1 Star</option>
             </select>
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none">▼</span>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><ChevronRight className="h-4 w-4 rotate-90" /></span>
           </div>
-          <div className="flex items-center gap-1 rounded-xl border border-slate-100 bg-slate-50 p-1">
-            <button type="button" onClick={() => setViewMode("card")} className={`p-2 rounded-lg ${viewMode === "card" ? "bg-white text-[#4b0b78] shadow-sm" : "text-slate-400"}`} aria-label="Card mode" title="Card mode"><LayoutGrid className="w-4 h-4" /></button>
-            <button type="button" onClick={() => setViewMode("table")} className={`p-2 rounded-lg ${viewMode === "table" ? "bg-white text-[#4b0b78] shadow-sm" : "text-slate-400"}`} aria-label="Table mode" title="Table mode"><List className="w-4 h-4" /></button>
+          <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+            <button type="button" onClick={() => setViewMode("card")} className={`rounded-lg p-2 transition-all ${viewMode === "card" ? "bg-orange-100 text-primary-dark" : "text-gray-400 hover:text-slate-600"}`} aria-label="Card mode" title="Card mode"><LayoutGrid className="w-4 h-4" /></button>
+            <button type="button" onClick={() => setViewMode("table")} className={`rounded-lg p-2 transition-all ${viewMode === "table" ? "bg-orange-100 text-primary-dark" : "text-gray-400 hover:text-slate-600"}`} aria-label="Table mode" title="Table mode"><List className="w-4 h-4" /></button>
           </div>
-           <div className="flex items-center justify-end gap-4">
+          <div className="flex items-center justify-end gap-4">
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-6 py-2 bg-[#4b0b78] text-white rounded-md text-xs font-black uppercase tracking-widest hover:bg-[#260642] shadow-xl shadow-purple-900/10 transition-all active:scale-95"
+            className="flex items-center gap-2 rounded-md bg-gradient-to-r from-primary to-primary-dark px-5 py-3 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95"
           >
-            <Plus className="w-4 h-6" /> Add Review
+            <Plus className="h-5 w-5" /> Add Review
           </button>
 
           {/* STATS MINI CARDS */}
@@ -307,48 +313,104 @@ const Reviews = () => {
 
       {/* REVIEWS GRID */}
       {loading ? (
-        <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 bg-white/50 rounded-[2.5rem] border border-dashed border-slate-200">
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-2xl border border-gray-200 bg-white p-12 shadow-sm">
           <div className="relative">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-100 border-t-blue-600 animate-spin"></div>
+            <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-orange-100 border-t-primary"></div>
           </div>
-          <p className="text-slate-400 font-black text-xs uppercase tracking-widest animate-pulse">Synchronizing Feedback...</p>
+          <p className="animate-pulse font-bold text-gray-500">Loading reviews...</p>
         </div>
       ) : reviews.length === 0 ? (
-        <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 bg-white rounded-[2.5rem] border border-slate-100 border-dashed">
-          <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-200 mb-2">
-            <MessageSquare className="w-10 h-10" />
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-2xl border border-gray-200 bg-white p-16 shadow-sm">
+          <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-primary">
+            <MessageSquare className="h-8 w-8" />
           </div>
-          <p className="text-slate-900 font-black text-lg">No reviews found</p>
-          <p className="text-slate-400 text-sm font-medium">Try adjusting your filters or search query</p>
+          <p className="text-lg font-black text-secondary-dark">No reviews found</p>
+          <p className="text-sm font-medium text-gray-500">Try adjusting your filters or search query</p>
           <button
             onClick={() => { setFilter("All"); setSelectedRating(null); setSearchQuery(""); }}
-            className="mt-4 px-6 py-3 bg-[#4b0b78] text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#260642] transition-colors"
+            className="mt-4 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95"
           >
             Clear All Filters
           </button>
         </div>
       ) : (
         viewMode === "table" ? (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
-            <table className="w-full text-left border-collapse whitespace-nowrap">
-              <thead><tr className="bg-gradient-to-r from-[#260642] to-[#4b0b78] text-[#facc15] text-[11px] font-black uppercase tracking-wider"><th className="px-4 py-4 text-center">S No</th><th className="px-6 py-4">Reviewer</th><th className="px-6 py-4">Product</th><th className="px-6 py-4">Rating</th><th className="px-6 py-4">Status</th><th className="px-6 py-4 text-right">Actions</th></tr></thead>
-              <tbody>{reviews.map((item, index) => <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50/60"><td className="px-4 py-4 text-center text-sm font-bold text-slate-400">{index + 1}</td><td className="px-6 py-4"><p className="font-bold text-slate-800">{item.user_name}</p><p className="text-xs text-slate-400">{new Date(item.created_at).toLocaleDateString()}</p></td><td className="px-6 py-4 text-sm font-semibold text-slate-600">{item.product_name || "Product Deleted"}</td><td className="px-6 py-4"><span className="inline-flex items-center gap-1 font-bold text-amber-500">{item.rating}<Star className="w-3.5 h-3.5 fill-current" /></span></td><td className="px-6 py-4"><span className={`px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase ${getStatusColor(item.status)}`}>{item.status}</span></td><td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => handleStatusUpdate(item.id, "Published")} className="px-3 py-2 rounded-lg bg-[#4b0b78] text-white text-xs font-bold hover:bg-[#260642]">Approve</button><button onClick={() => setActiveReplyId(item.id)} className="px-3 py-2 rounded-lg bg-[#4b0b78] text-white text-xs font-bold hover:bg-[#260642]">Reply</button><button onClick={() => handleDelete(item.id)} className="p-2 rounded-lg bg-[#4b0b78] text-white hover:bg-[#260642]" aria-label="Delete review"><Trash2 className="w-4 h-4" /></button></div></td></tr>)}</tbody>
-            </table>
+          <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full whitespace-nowrap text-left">
+                <thead>
+                  <tr className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light">
+                    <th className="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">S No</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Reviewer</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Product</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Rating</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Status</th>
+                    <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {reviews.map((item, index) => (
+                    <tr key={item.id} className="group transition-colors hover:bg-gray-50/50">
+                      <td className="px-4 py-4 text-center text-sm font-bold text-gray-500">{index + 1}</td>
+                      <td className="px-6 py-4">
+                        <p className="font-bold text-slate-800">{item.user_name}</p>
+                        <p className="text-xs text-gray-400">{new Date(item.created_at).toLocaleDateString()}</p>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-600">{item.product_name || "Product Deleted"}</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1 font-bold text-amber-500">
+                          {item.rating}<Star className="h-3.5 w-3.5 fill-current" />
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-block rounded-lg border px-3 py-1 text-[11px] font-bold ${getStatusColor(item.status)}`}>{item.status}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleStatusUpdate(item.id, "Published")}
+                            className="flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-600 transition-colors hover:bg-emerald-100"
+                          >
+                            <CheckCircle className="h-4 w-4" /> Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveReplyId(item.id)}
+                            className="flex items-center gap-1.5 rounded-lg border border-orange-100 bg-orange-50 px-3 py-2 text-xs font-bold text-primary-dark transition-colors hover:bg-orange-100"
+                          >
+                            <Reply className="h-4 w-4" /> Reply
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item.id)}
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-red-500 transition-colors hover:bg-red-100"
+                            aria-label="Delete review"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {reviews.map((item, index) => (
             <div
               key={item.id}
-              className={`group relative bg-white rounded-xl border border-slate-100 border-t-4 border-t-[#4b0b78] flex flex-col overflow-hidden hover:shadow-xl hover:shadow-purple-900/10 transition-all duration-300 hover:-translate-y-1 min-w-0
-                ${item.status === 'Pending' ? 'ring-2 ring-amber-500/20 shadow-lg shadow-amber-500/5' : ''}`}
+              className={`group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-orange-200 hover:shadow-md
+                ${item.status === "Pending" ? "ring-2 ring-amber-500/20 shadow-lg shadow-amber-500/5" : ""}`}
             >
-              <span className="absolute top-3 left-5 z-10 px-2 py-1 rounded-md bg-[#4b0b78] text-white text-[9px] font-black uppercase tracking-widest">S No. {index + 1}</span>
+              <span className="absolute left-5 top-3 z-10 rounded-lg bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-dark">S No. {index + 1}</span>
               {/* Header: User & Rating */}
               <div className="p-5 pt-12 pb-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-[#4b0b78] flex items-center justify-center text-white text-sm font-black shadow-lg shadow-purple-900/20">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-sm font-black text-white shadow-lg shadow-orange-200/70">
                       {item.user_name?.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -376,15 +438,15 @@ const Reviews = () => {
               {/* Body: Comment & Product */}
               <div className="flex-1 px-5 space-y-4">
                 <div className="relative">
-                  <p className="text-sm font-semibold text-slate-600 italic leading-relaxed line-clamp-4 min-h-[5rem] pl-3 border-l-2 border-purple-200">
+                  <p className="min-h-[5rem] border-l-2 border-orange-200 pl-3 text-sm font-semibold italic leading-relaxed text-slate-600 line-clamp-4">
                     "{item.comment}"
                   </p>
                 </div>
 
-                <div className="p-3 rounded-xl bg-purple-50/50 border border-purple-100">
+                <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-3">
                   <div className="flex items-center justify-between gap-2 overflow-hidden">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Package className="w-3.5 h-3.5 text-[#4b0b78]" />
+                      <Package className="h-3.5 w-3.5 text-primary-dark" />
                       <p className="text-[10px] font-black text-slate-700 truncate">
                         {item.product_name || "Product Deleted"}
                       </p>
@@ -411,8 +473,8 @@ const Reviews = () => {
                 )}
 
                 {item.admin_reply && (
-                  <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100/50 relative">
-                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Official Reply</p>
+                  <div className="relative rounded-xl border border-orange-100 bg-orange-50/50 p-4">
+                    <p className="mb-1 text-[9px] font-black uppercase tracking-widest text-primary-dark">Official Reply</p>
                     <p className="text-[11px] font-medium text-slate-500 italic leading-snug line-clamp-2">
                       {item.admin_reply}
                     </p>
@@ -421,13 +483,13 @@ const Reviews = () => {
               </div>
 
               {/* Footer: Actions */}
-              <div className="p-4 mt-5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between">
+              <div className="mt-5 flex items-center justify-between border-t border-gray-100 bg-gray-50/70 p-4">
                 <div className="flex items-center gap-1">
                   {item.status !== "Published" && (
                     <button
                       onClick={() => handleStatusUpdate(item.id, "Published")}
                       title="Approve"
-                      className="p-2.5 bg-[#4b0b78] text-white border border-[#4b0b78] rounded-xl hover:bg-[#260642] transition-all shadow-sm"
+                      className="rounded-full bg-emerald-50 p-2.5 text-emerald-600 transition-colors hover:bg-emerald-100"
                     >
                       <CheckCircle className="w-4 h-4" />
                     </button>
@@ -436,7 +498,7 @@ const Reviews = () => {
                     <button
                       onClick={() => handleStatusUpdate(item.id, "Flagged")}
                       title="Flag"
-                      className="p-2.5 bg-[#4b0b78] text-white border border-[#4b0b78] rounded-xl hover:bg-[#260642] transition-all shadow-sm"
+                      className="rounded-full bg-orange-50 p-2.5 text-primary-dark transition-colors hover:bg-orange-100"
                     >
                       <AlertCircle className="w-4 h-4" />
                     </button>
@@ -446,8 +508,8 @@ const Reviews = () => {
                     title="Reply"
                     className={`p-2.5 rounded-xl border transition-all shadow-sm
                       ${activeReplyId === item.id
-                        ? "bg-slate-900 text-white border-slate-900"
-                        : "bg-[#4b0b78] text-white border-[#4b0b78] hover:bg-[#260642]"}`}
+                        ? "border-orange-300 bg-orange-100 text-primary-dark"
+                        : "border-orange-100 bg-orange-50 text-primary-dark hover:bg-orange-100"}`}
                   >
                     <Reply className="w-4 h-4" />
                   </button>
@@ -456,7 +518,7 @@ const Reviews = () => {
                 <button
                   onClick={() => handleDelete(item.id)}
                   title="Delete"
-                  className="p-2.5 bg-[#4b0b78] text-white hover:bg-[#260642] rounded-xl transition-all"
+                  className="rounded-full bg-red-50 p-2.5 text-red-500 transition-colors hover:bg-red-100"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -464,10 +526,10 @@ const Reviews = () => {
 
               {/* REPLY OVERLAY */}
               {activeReplyId === item.id && (
-                <div className="absolute inset-0 z-20 bg-white p-6 flex flex-col animate-in slide-in-from-bottom-full duration-300">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Official Reply</span>
-                    <button onClick={() => setActiveReplyId(null)} className="text-slate-400 hover:text-slate-600">
+                <div className="absolute inset-0 z-20 flex animate-in slide-in-from-bottom-full flex-col bg-white p-6 duration-300">
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Official Reply</span>
+                    <button type="button" onClick={() => setActiveReplyId(null)} className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-slate-700">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -475,12 +537,12 @@ const Reviews = () => {
                     placeholder="Type response..."
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    className="flex-1 w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 focus:outline-none focus:border-blue-500 text-xs font-semibold text-slate-700 resize-none mb-4"
+                    className="mb-4 w-full flex-1 resize-none rounded-xl border border-gray-200 bg-white p-4 text-sm font-medium text-slate-700 outline-none transition focus:border-primary focus:ring-2 focus:ring-orange-100"
                   />
                   <button
                     onClick={() => handleReply(item.id)}
                     disabled={!replyText.trim()}
-                    className="w-full py-3 bg-[#4b0b78] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#260642] disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark py-3 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Send className="w-3 h-3" /> Send Reply
                   </button>
@@ -495,155 +557,167 @@ const Reviews = () => {
       {/* ADD REVIEW MODAL */}
       {showAddModal && (
         createPortal(
-        <div className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center p-4 sm:p-6 italic">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] animate-in fade-in duration-300" onClick={() => setShowAddModal(false)}></div>
-
-          <div className="relative w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-            {/* Header */}
-            <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
-              <div>
-                <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Create Manual Review</h2>
-                <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-widest">Admin Control Panel</p>
-              </div>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-all">
-                <X className="w-6 h-6 text-slate-400" />
-              </button>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmitNewReview} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Target Product *</label>
-                  <select
-                    required
-                    value={newReview.product_id}
-                    onChange={(e) => setNewReview({ ...newReview, product_id: e.target.value })}
-                    className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 text-sm font-semibold transition-all"
-                  >
-                    <option value="">Select a Product</option>
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md">
+            <button
+              type="button"
+              onClick={() => setShowAddModal(false)}
+              className="absolute inset-0 cursor-default"
+              aria-label="Close review dialog"
+            />
+            <div className="relative flex h-[min(90vh,720px)] max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="flex shrink-0 items-center justify-between border-b border-gray-100 p-6">
+                <div>
+                  <h2 className="text-xl font-black text-slate-800">Create Manual Review</h2>
+                  <p className="mt-1 text-xs font-medium text-gray-500">Add customer feedback to a product</p>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Customer Name *</label>
-                  <input
-                    required
-                    type="text"
-                    placeholder="e.g. Rahul Sharma"
-                    value={newReview.user_name}
-                    onChange={(e) => setNewReview({ ...newReview, user_name: e.target.value })}
-                    className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 text-sm font-semibold transition-all"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  aria-label="Close dialog"
+                  className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-slate-700"
+                >
+                  <X size={20} />
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Customer Email (Optional)</label>
-                  <input
-                    type="email"
-                    placeholder="email@example.com"
-                    value={newReview.user_email}
-                    onChange={(e) => setNewReview({ ...newReview, user_email: e.target.value })}
-                    className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 text-sm font-semibold transition-all"
-                  />
-                </div>
+              <form onSubmit={handleSubmitNewReview} className="min-h-0 flex-1 space-y-5 overflow-y-auto p-6">
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-gray-700">Target Product *</label>
+                    <select
+                      required
+                      value={newReview.product_id}
+                      onChange={(e) => setNewReview({ ...newReview, product_id: e.target.value })}
+                      className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 outline-none transition focus:border-primary focus:ring-2 focus:ring-orange-500/20"
+                    >
+                      <option value="">Select a Product</option>
+                      {products.map((product) => (
+                        <option key={product.id} value={product.id}>{product.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Customer Rating</label>
-                  <div className="flex items-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setNewReview({ ...newReview, rating: star })}
-                        className="hover:scale-125 transition-transform"
-                      >
-                        <Star
-                          className={`w-6 h-6 ${star <= newReview.rating ? "fill-amber-400 text-amber-400" : "text-slate-200"}`}
-                        />
-                      </button>
-                    ))}
-                    <span className="ml-2 text-xs font-black text-slate-400 uppercase">{newReview.rating} Stars</span>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-gray-700">Customer Name *</label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="e.g. Rahul Sharma"
+                      value={newReview.user_name}
+                      onChange={(e) => setNewReview({ ...newReview, user_name: e.target.value })}
+                      className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-orange-500/20"
+                    />
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Review Comment *</label>
-                <textarea
-                  required
-                  rows="4"
-                  placeholder="Write the customer's feedback here..."
-                  value={newReview.comment}
-                  onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                  className="w-full p-5 rounded-2xl border border-slate-100 bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 text-sm font-semibold transition-all resize-none"
-                ></textarea>
-              </div>
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-gray-700">Customer Email (Optional)</label>
+                    <input
+                      type="email"
+                      placeholder="email@example.com"
+                      value={newReview.user_email}
+                      onChange={(e) => setNewReview({ ...newReview, user_email: e.target.value })}
+                      className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-orange-500/20"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Review Image (Optional)</label>
-                <div className="relative group overflow-hidden">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-gray-700">Customer Rating</label>
+                    <div className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setNewReview({ ...newReview, rating: star })}
+                          aria-label={`${star} star${star === 1 ? "" : "s"}`}
+                          aria-pressed={star === newReview.rating}
+                          className="rounded-md transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                        >
+                          <Star className={`h-5 w-5 ${star <= newReview.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
+                        </button>
+                      ))}
+                      <span className="ml-1 text-xs font-bold text-gray-500">{newReview.rating} Stars</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-gray-700">Review Comment *</label>
+                  <textarea
+                    required
+                    rows="4"
+                    placeholder="Write the customer's feedback here..."
+                    value={newReview.comment}
+                    onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                    className="mt-1.5 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-orange-500/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-gray-700">Review Image (Optional)</label>
                   <input
+                    id="review-image-upload"
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                    className="sr-only"
                   />
-                  <div className="w-full p-8 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center gap-3 bg-slate-50 group-hover:bg-blue-50/30 group-hover:border-blue-200 transition-all">
+                  <label
+                    htmlFor="review-image-upload"
+                    className="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center transition-all hover:border-orange-400 hover:bg-orange-50/50"
+                  >
                     {newReview.review_image ? (
-                      <div className="relative">
-                        <img src={resolveReviewImage(newReview.review_image)} className="w-32 h-32 rounded-2xl object-cover shadow-xl" />
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setNewReview({ ...newReview, review_image: null }); }}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <img
+                        src={resolveReviewImage(newReview.review_image)}
+                        alt="Review upload preview"
+                        className="h-28 w-28 rounded-xl border border-gray-200 object-cover"
+                      />
                     ) : (
                       <>
-                        <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-slate-300 shadow-sm">
-                          <Camera className="w-6 h-6" />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Click to upload photo</p>
-                          <p className="text-[10px] text-slate-400 font-bold mt-1">PNG, JPG or WEBP max 5MB</p>
-                        </div>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary shadow-sm">
+                          <Camera size={19} />
+                        </span>
+                        <span>
+                          <span className="block text-xs font-bold text-slate-700">Upload review image</span>
+                          <span className="mt-1 block text-[10px] font-medium text-gray-500">PNG, JPG or WEBP up to 5 MB</span>
+                        </span>
                       </>
                     )}
-                  </div>
+                  </label>
+                  {newReview.review_image && (
+                    <button
+                      type="button"
+                      onClick={() => setNewReview({ ...newReview, review_image: null })}
+                      className="mt-2 text-xs font-semibold text-gray-500 transition-colors hover:text-red-500"
+                    >
+                      Remove image
+                    </button>
+                  )}
                 </div>
-              </div>
-            </form>
+              </form>
 
-            {/* Footer */}
-            <div className="p-8 border-t border-slate-50 bg-slate-50/30 flex items-center justify-end gap-3 sticky bottom-0">
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="px-6 py-3 text-slate-400 text-xs font-black uppercase tracking-widest hover:text-slate-600 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitNewReview}
-                disabled={submitting}
-                className="flex items-center gap-2 px-8 py-3 bg-[#4b0b78] text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#260642] shadow-xl shadow-purple-900/20 transition-all active:scale-95 disabled:opacity-50"
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {submitting ? "Creating..." : "Create Review"}
-              </button>
+              <div className="flex shrink-0 items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/80 p-5">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="rounded-xl px-5 py-2.5 text-sm font-bold text-gray-600 transition-all hover:bg-gray-200 hover:text-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmitNewReview}
+                  disabled={submitting}
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {submitting ? "Creating..." : "Create Review"}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
+          </div>,
+          document.body,
         )
       )}
     </div>
