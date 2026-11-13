@@ -178,7 +178,6 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
         
         flex flex-col transition-all duration-300
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0
         ${collapsed ? "lg:w-20 w-full" : "w-full lg:w-[19rem]"}
       `}
         style={{
@@ -330,14 +329,15 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
         {/* ========== COLLAPSE BUTTON ========== */}
         <button
           onClick={onToggleCollapse}
-          className="
-            hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2
+          className={`
+            hidden absolute -right-3 top-1/2 -translate-y-1/2
+            ${isOpen ? "lg:flex" : "lg:hidden"}
             w-6 h-6 rounded-full
             bg-gradient-to-br from-primary to-primary-dark border border-orange-200/70
             shadow-[0_4px_12px_rgba(232,103,14,0.35)]
             items-center justify-center
             text-white hover:from-secondary-light hover:to-secondary-dark hover:scale-110 transition-all z-50
-          "
+          `}
         >
           <ChevronLeft
             className={`w-4 h-4 transition-transform ${collapsed ? "rotate-180" : ""

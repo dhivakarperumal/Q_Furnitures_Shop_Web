@@ -213,6 +213,19 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS banners (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(191) NOT NULL,
+      image_url VARCHAR(512) NOT NULL,
+      link_url VARCHAR(2048) NULL,
+      status ENUM('Active', 'Inactive') NOT NULL DEFAULT 'Active',
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY banners_status_order_idx (status, sort_order)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS products (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       product_code VARCHAR(128) NULL,

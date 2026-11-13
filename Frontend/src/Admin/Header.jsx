@@ -60,7 +60,7 @@ const pageTitles = {
   "/admin/products/stock/add": "Add Stock",
   "/admin/products": "Inventory",
   "/admin/orders/billing": "Billing",
-  "/admin/orders/shop-create": "Create Shop Order",
+  "/admin/orders/shop-create": "New Bills",
   "/admin/orders/new": "New Orders",
   "/admin/orders/all": "All Orders",
   "/admin/orders/delivery": "Delivery Orders",
@@ -81,7 +81,7 @@ const pageTitles = {
   "/admin/settings/profile": "Profile",
 };
 
-const Header = ({ onMenuClick }) => {
+const Header = ({ onMenuClick, onSearchQueryChange }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -110,6 +110,9 @@ const Header = ({ onMenuClick }) => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isShopCreatePage = location.pathname === "/admin/orders/shop-create";
+  const [searchPath, setSearchPath] = useState(location.pathname);
+  const routeSearchQuery = searchPath === location.pathname ? searchQuery : "";
 
   useEffect(() => {
     if (showSearch && searchInputRef.current) {
@@ -195,7 +198,15 @@ const Header = ({ onMenuClick }) => {
   // Live search filter
   const handleSearchInput = (e) => {
     const q = e.target.value;
+    setSearchPath(location.pathname);
     setSearchQuery(q);
+    if (isShopCreatePage) {
+      onSearchQueryChange?.(q);
+      setSearchResults([]);
+      setShowSearchResults(false);
+      setSearchLoading(false);
+      return;
+    }
     if (!q.trim()) {
       setSearchResults([]);
       setShowSearchResults(false);
@@ -221,6 +232,7 @@ const Header = ({ onMenuClick }) => {
 
   const handleSearchResultClick = (orderId) => {
     navigate(`/admin/orders/${orderId}`);
+    setSearchPath(location.pathname);
     setSearchQuery("");
     setSearchResults([]);
     setShowSearchResults(false);
@@ -228,9 +240,11 @@ const Header = ({ onMenuClick }) => {
   };
 
   const clearSearch = () => {
+    setSearchPath(location.pathname);
     setSearchQuery("");
     setSearchResults([]);
     setShowSearchResults(false);
+    if (isShopCreatePage) onSearchQueryChange?.("");
   };
 
   // Close all dropdowns on outside click
@@ -240,7 +254,7 @@ const Header = ({ onMenuClick }) => {
       if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target)) {
         setShowSearchResults(false);
         // If search is open but empty, close the search bar too
-        if (showSearch && !searchQuery.trim()) {
+        if (showSearch && !routeSearchQuery.trim()) {
           setShowSearch(false);
         }
       }
@@ -263,7 +277,7 @@ const Header = ({ onMenuClick }) => {
     
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showSearch, searchQuery]); // Dependencies to check search state
+  }, [showSearch, routeSearchQuery]);
 
   // Fetch low stock products
   const fetchLowStockProducts = async () => {
@@ -309,6 +323,89 @@ const Header = ({ onMenuClick }) => {
       ? role.charAt(0).toUpperCase() + role.slice(1)
       : "Administrator";
 
+  const searchControl = (
+    <div className={`relative flex min-w-0 items-center ${isShopCreatePage ? "flex-1" : ""}`} ref={searchWrapperRef}>
+      <div className={`flex items-center overflow-visible transition-all duration-300 ${isShopCreatePage ? "w-32 opacity-100 sm:w-48 lg:w-64" : showSearch ? "mr-2 w-56 opacity-100 sm:w-72" : "pointer-events-none w-0 opacity-0"}`}>
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-600" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={routeSearchQuery}
+            onChange={handleSearchInput}
+            onFocus={() => routeSearchQuery && !isShopCreatePage && setShowSearchResults(true)}
+            placeholder={isShopCreatePage ? "Search products by name or code..." : "Order ID, name, phone..."}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-8 text-sm text-slate-700 transition focus:border-gray-300 focus:outline-none focus:ring-3 focus:ring-gray-500/10 sm:py-3"
+          />
+          {routeSearchQuery && (
+            <button onClick={clearSearch} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+
+          {!isShopCreatePage && showSearchResults && routeSearchQuery && (
+            <div className="absolute left-0 right-0 top-full z-[200] mt-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl">
+              {searchLoading ? (
+                <div className="px-4 py-3 text-xs font-bold text-slate-400">Searching...</div>
+              ) : searchResults.length > 0 ? (
+                <div className="max-h-[320px] divide-y divide-slate-50 overflow-y-auto">
+                  <div className="bg-slate-50 px-4 py-2">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{searchResults.length} Result{searchResults.length > 1 ? "s" : ""} found</p>
+                  </div>
+                  {searchResults.map(order => (
+                    <button
+                      key={order.id}
+                      onClick={() => handleSearchResultClick(order.id)}
+                      className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-all hover:bg-blue-50/50"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-black text-white shadow">
+                        {(order.customer_name || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-xs font-black text-slate-800">{order.customer_name || "Unknown"}</p>
+                          <span className="shrink-0 rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-black text-blue-600">ORD-0{order.id}</span>
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-2">
+                          <span className="truncate text-[10px] font-bold text-slate-400">{order.customer_phone || "No phone"}</span>
+                          <span className="text-[9px] text-slate-300">•</span>
+                          <span className="text-[10px] font-black text-emerald-600">₹{Number(order.total_amount).toLocaleString("en-IN")}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className={`rounded px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider ${order.status === "Order Placed" ? "bg-blue-100 text-blue-700" :
+                          order.status === "Delivered" ? "bg-emerald-100 text-emerald-700" :
+                            order.status === "Cancelled" ? "bg-red-100 text-red-700" :
+                              "bg-amber-100 text-amber-700"
+                          }`}>{order.status}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-6 text-center">
+                  <Search className="mx-auto mb-2 h-6 w-6 text-slate-200" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">No orders found</p>
+                  <p className="mt-1 text-[9px] text-slate-300">Try name, phone or order ID</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {!isShopCreatePage && (
+        <button
+          onClick={() => { setShowSearch(p => !p); if (showSearch) clearSearch(); }}
+          className={`rounded-xl p-2.5 transition-all active:scale-95 ${showSearch
+            ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-orange-700/30"
+            : "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-orange-700/20 hover:scale-105 hover:shadow-lg"}`}
+        >
+          <Search className="h-[18px] w-[18px]" />
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <header className="sticky top-0 z-30 
       bg-[#FFF8F0]/75 backdrop-blur-sm
@@ -318,7 +415,7 @@ const Header = ({ onMenuClick }) => {
       <div className="flex items-center justify-between px-4 py-3 sm:px-6">
 
         {/* LEFT */}
-        <div className="flex items-center gap-4 min-w-0">
+        <div className={`flex min-w-0 items-center gap-3 sm:gap-4 ${isShopCreatePage ? "flex-1" : ""}`}>
           <button
             onClick={onMenuClick}
             className="lg:hidden p-2 rounded-xl 
@@ -328,102 +425,37 @@ const Header = ({ onMenuClick }) => {
             <Menu className="w-6 h-6" />
           </button>
 
-          <div className="hidden sm:flex flex-col">
-            <h1 className="text-xl sm:text-2xl font-black 
-              text-slate-800 tracking-tight truncate leading-none">
+          {isShopCreatePage && (
+            <Link
+              to="/admin/orders/billing"
+              aria-label="Go to Billing"
+              title="Go to Billing"
+              className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-orange-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:h-12 sm:w-12"
+            >
+              <img
+                src="/images/logo1.png"
+                alt="Q Living Furniture"
+                className="h-full w-full object-contain"
+              />
+            </Link>
+          )}
+
+          <div className={`${isShopCreatePage ? "flex" : "hidden sm:flex"} min-w-0 flex-col`}>
+            <h1 className={`${isShopCreatePage ? "text-base sm:text-2xl" : "text-xl sm:text-2xl"} font-black
+              text-slate-800 tracking-tight truncate leading-none`}>
               {getPageTitle()}
             </h1>
             <p className="hidden sm:block text-[10px] text-orange-700 font-bold uppercase tracking-[0.2em] mt-1 opacity-80">
               Hi Welcome, {userName} ({userRole})
             </p>
           </div>
+          {isShopCreatePage && searchControl}
         </div>
 
         {/* RIGHT */}
         <div className="flex items-center gap-3">
 
-          {/* SEARCH */}
-          <div className="relative flex items-center" ref={searchWrapperRef}>
-            <div className={`flex items-center transition-all duration-300 overflow-visible ${showSearch ? 'w-56 sm:w-72 opacity-100 mr-2' : 'w-0 opacity-0 pointer-events-none'}`}>
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-600" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchInput}
-                  onFocus={() => searchQuery && setShowSearchResults(true)}
-                  placeholder="Order ID, name, phone..."
-                  className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-8 py-3 text-sm focus:outline-none focus:ring-3 focus:ring-gray-500/10 focus:border-gray-300 text-slate-700 transition-all"
-                />
-                {searchQuery && (
-                  <button onClick={clearSearch} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-
-                {/* Search Results Dropdown */}
-                {showSearchResults && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl z-[200] overflow-hidden">
-                    {searchLoading ? (
-                      <div className="px-4 py-3 text-xs text-slate-400 font-bold">Searching...</div>
-                    ) : searchResults.length > 0 ? (
-                      <div className="divide-y divide-slate-50 max-h-[320px] overflow-y-auto">
-                        <div className="px-4 py-2 bg-slate-50">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{searchResults.length} Result{searchResults.length > 1 ? 's' : ''} found</p>
-                        </div>
-                        {searchResults.map(order => (
-                          <button
-                            key={order.id}
-                            onClick={() => handleSearchResultClick(order.id)}
-                            className="w-full px-4 py-3 flex items-center gap-3 hover:bg-blue-50/50 transition-all text-left group"
-                          >
-                            {/* Avatar */}
-                            <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white text-xs font-black shrink-0 shadow">
-                              {(order.customer_name || "?").charAt(0).toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-xs font-black text-slate-800 truncate">{order.customer_name || "Unknown"}</p>
-                                <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded shrink-0">ORD-0{order.id}</span>
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-slate-400 font-bold truncate">{order.customer_phone || "No phone"}</span>
-                                <span className="text-[9px] text-slate-300">•</span>
-                                <span className="text-[10px] font-black text-emerald-600">₹{Number(order.total_amount).toLocaleString('en-IN')}</span>
-                              </div>
-                            </div>
-                            <div>
-                              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${order.status === 'Order Placed' ? 'bg-blue-100 text-blue-700' :
-                                order.status === 'Delivered' ? 'bg-emerald-100 text-emerald-700' :
-                                  order.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                                    'bg-amber-100 text-amber-700'
-                                }`}>{order.status}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="px-4 py-6 text-center">
-                        <Search className="w-6 h-6 text-slate-200 mx-auto mb-2" />
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No orders found</p>
-                        <p className="text-[9px] text-slate-300 mt-1">Try name, phone or order ID</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => { setShowSearch(p => !p); if (showSearch) clearSearch(); }}
-              className={`p-2.5 rounded-xl transition-all active:scale-95
-              ${showSearch
-                ? 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-orange-700/30'
-                : 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-orange-700/20 hover:shadow-lg hover:scale-105'}`}
-            >
-              <Search className="w-[18px] h-[18px]" />
-            </button>
-          </div>
+          {!isShopCreatePage && searchControl}
 
           {/* LOW STOCK ALERT */}
           <div className="relative" ref={lowStockRef}>

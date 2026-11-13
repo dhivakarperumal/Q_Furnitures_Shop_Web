@@ -9,10 +9,12 @@ const { createAuthController } = require("./controllers/authController");
 const { createCategoryService } = require("./modules/categoryService");
 const { createProductService } = require("./modules/productService");
 const { createOrderService } = require("./modules/orderService");
+const { createBannerService } = require("./modules/bannerService");
 const createAuthRouter = require("./routers/authRouter");
 const createCategoryRouter = require("./routers/categoryRouter");
 const createProductRouter = require("./routers/productRouter");
 const createOrderRouter = require("./routers/orderRouter");
+const createBannerRouter = require("./routers/bannerRouter");
 const createUserRouter = require("./routers/userRouter");
 const { createUploadRouter } = require("./routers/uploadRouter");
 
@@ -30,6 +32,7 @@ const authController = createAuthController(authService);
 const categoryService = createCategoryService(pool);
 const productService = createProductService(pool);
 const orderService = createOrderService(pool);
+const bannerService = createBannerService(pool);
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
@@ -47,6 +50,7 @@ app.use("/api/auth", createAuthRouter(authController));
 app.use("/api/categories", createCategoryRouter(categoryService));
 app.use("/api/products", createProductRouter(productService));
 app.use("/api/orders", createOrderRouter(orderService));
+app.use("/api/banners", createBannerRouter(bannerService));
 app.use("/api/users", createUserRouter(authService));
 app.use("/api/auth/users", createUserRouter(authService));
 app.use("/api", createUploadRouter(authService));
