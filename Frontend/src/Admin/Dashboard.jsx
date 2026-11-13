@@ -12,9 +12,15 @@ import {
     FiCheckCircle,
     FiAlertTriangle,
     FiMapPin,
-    FiTrendingUp,
+    FiArrowUpRight,
     FiEye,
-    FiTag
+    FiGrid,
+    FiTag,
+    FiBriefcase,
+    FiCreditCard,
+    FiImage,
+    FiPercent,
+    FiStar
 } from "react-icons/fi";
 import { FaRupeeSign, FaTshirt, FaTruck } from "react-icons/fa";
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -247,6 +253,20 @@ const Dashboard = () => {
         { border: "border-violet-100/80", hoverBorder: "hover:border-violet-200", accent: "from-violet-400 to-violet-600", iconGradient: "from-violet-400 to-violet-600", iconShadow: "shadow-violet-200/70", watermark: "text-violet-300/20" },
     ];
 
+    const quickActions = [
+        { label: "Add Product", description: "Add an item to your catalog", icon: <FiBox size={19} />, color: "from-primary to-primary-dark", border: "hover:border-orange-200", path: "/admin/products/add" },
+        { label: "New Order", description: "Create a shop order", icon: <FiShoppingBag size={19} />, color: "from-blue-500 to-blue-700", border: "hover:border-blue-200", path: "/admin/orders/shop-create" },
+        { label: "Categories", description: "Manage product categories", icon: <FiGrid size={19} />, color: "from-emerald-400 to-emerald-600", border: "hover:border-emerald-200", path: "/admin/products/category" },
+        { label: "Customers", description: "View customer accounts", icon: <FiUsers size={19} />, color: "from-violet-500 to-violet-700", border: "hover:border-violet-200", path: "/admin/users/all" },
+        { label: "Stock Details", description: "Review available inventory", icon: <FiAlertTriangle size={19} />, color: "from-amber-400 to-amber-600", border: "hover:border-amber-200", path: "/admin/products/stock" },
+        { label: "Offers", description: "Manage active promotions", icon: <FiTag size={19} />, color: "from-rose-500 to-rose-700", border: "hover:border-rose-200", path: "/admin/offers" },
+        { label: "New Billing", description: "Open billing and create orders", icon: <FiCreditCard size={19} />, color: "from-cyan-500 to-cyan-700", border: "hover:border-cyan-200", path: "/admin/orders/billing" },
+        { label: "Banners", description: "Manage promotional banners", icon: <FiImage size={19} />, color: "from-indigo-500 to-indigo-700", border: "hover:border-indigo-200", path: "/admin/banners" },
+        { label: "Add Dealer", description: "Create or manage dealer accounts", icon: <FiBriefcase size={19} />, color: "from-teal-500 to-teal-700", border: "hover:border-teal-200", path: "/admin/dealers" },
+        { label: "Coupons", description: "Manage discount coupons", icon: <FiPercent size={19} />, color: "from-fuchsia-500 to-fuchsia-700", border: "hover:border-fuchsia-200", path: "/admin/coupons" },
+        { label: "Reviews", description: "Review customer feedback", icon: <FiStar size={19} />, color: "from-sky-500 to-sky-700", border: "hover:border-sky-200", path: "/admin/reviews" },
+    ];
+
     return (
         <div className="space-y-6 pb-12 min-h-screen">
             <Toaster position="top-right" />
@@ -283,29 +303,33 @@ const Dashboard = () => {
             )}
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Quick Actions</h3>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Shortcuts</span>
+            <div className="rounded-2xl border border-orange-100/70 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.06)]">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                        <h3 className="text-base font-black text-slate-800">Quick Actions</h3>
+                        <p className="mt-0.5 text-xs text-stone-500">Jump to common admin tasks</p>
+                    </div>
+                    <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-700">
+                        {quickActions.length} shortcuts
+                    </span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {[
-                        { label: "Add Product",    icon: <FiBox size={20} />,          color: "from-[#6C3DE8] to-[#A855F7]", path: "/admin/products/add" },
-                        { label: "New Order",      icon: <FiShoppingBag size={20} />,  color: "from-[#2563EB] to-[#0EA5E9]", path: "/admin/orders/create" },
-                        { label: "All Orders",     icon: <FaTruck size={20} />,         color: "from-[#059669] to-[#10B981]", path: "/admin/orders/all" },
-                        { label: "Customers",      icon: <FiUsers size={20} />,        color: "from-[#F59E0B] to-[#FBBF24]", path: "/admin/users/all" },
-                        { label: "Stock Details",  icon: <FiAlertTriangle size={20} />,color: "from-[#EF4444] to-[#F97316]", path: "/admin/products/stock" },
-                        { label: "Reports",        icon: <FiTrendingUp size={20} />,   color: "from-[#DB2777] to-[#EC4899]", path: "/admin/reports" },
-                    ].map((action, i) => (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
+                    {quickActions.map((action) => (
                         <button
-                            key={i}
+                            key={action.label}
+                            type="button"
                             onClick={() => navigate(action.path)}
-                            className="flex flex-col items-center gap-2.5 p-4 rounded-2xl border border-gray-100 hover:border-transparent hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
+                            className={`group relative flex min-h-20 items-center gap-2 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-2.5 py-3 text-left shadow-[0_8px_24px_rgba(74,46,25,0.06)] transition-all duration-200 hover:-translate-y-0.5 ${action.border} hover:shadow-[0_14px_30px_rgba(74,46,25,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/40`}
                         >
-                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${action.color} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform duration-200`}>
+                            <span className={`absolute inset-y-3 left-0 w-1 rounded-r-full bg-gradient-to-b ${action.color}`} />
+                            <div className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-lg transition-transform duration-200 group-hover:scale-105 ${action.color}`}>
                                 {action.icon}
                             </div>
-                            <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 text-center leading-tight">{action.label}</span>
+                            <span className="relative z-10 min-w-0 flex-1">
+                                <span className="block truncate text-xs font-bold text-slate-800 xl:text-sm">{action.label}</span>
+                                <span className="mt-0.5 hidden truncate text-[11px] text-stone-500 xl:block">{action.description}</span>
+                            </span>
+                            <FiArrowUpRight className="relative z-10 hidden shrink-0 text-stone-400 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-orange-600 xl:block" size={16} />
                         </button>
                     ))}
                 </div>
