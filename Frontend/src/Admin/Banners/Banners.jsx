@@ -32,6 +32,7 @@ const emptyForm = {
   description: "",
   offer: "",
   destination_link: "",
+  destination_links: [],
   target_section: "hero",
   is_published: true,
   desktop_image: null,
@@ -43,6 +44,13 @@ const labelClassName = "mb-1.5 block text-xs font-bold text-gray-700";
 
 function getPublishedValue(value) {
   return value === true || Number(value) === 1;
+}
+
+function getDestinationLinks(banner) {
+  if (Array.isArray(banner.destination_links)) return banner.destination_links;
+  return banner.destination_link
+    ? [{ label: "Shop now", url: banner.destination_link }]
+    : [];
 }
 
 function formatDate(value) {
@@ -130,6 +138,7 @@ function BannerModal({ banner, saving, onClose, onSubmit }) {
       description: banner.description || "",
       offer: banner.offer || "",
       destination_link: banner.destination_link || "",
+      destination_links: getDestinationLinks(banner),
       target_section: banner.target_section || "hero",
       is_published: getPublishedValue(banner.is_published),
       desktop_image: banner.desktop_image || null,
@@ -154,6 +163,29 @@ function BannerModal({ banner, saving, onClose, onSubmit }) {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
+  const setDestinationLink = (index, field, value) => {
+    setForm((current) => ({
+      ...current,
+      destination_links: current.destination_links.map((link, linkIndex) => (
+        linkIndex === index ? { ...link, [field]: value } : link
+      )),
+    }));
+  };
+
+  const addDestinationLink = () => {
+    setForm((current) => ({
+      ...current,
+      destination_links: [...current.destination_links, { label: "", url: "" }],
+    }));
+  };
+
+  const removeDestinationLink = (index) => {
+    setForm((current) => ({
+      ...current,
+      destination_links: current.destination_links.filter((_, linkIndex) => linkIndex !== index),
+    }));
+  };
+
   const submit = (event) => {
     event.preventDefault();
     if (!form.title.trim()) {
@@ -164,13 +196,18 @@ function BannerModal({ banner, saving, onClose, onSubmit }) {
       toast.error("Add a desktop banner visual.");
       return;
     }
+    if (form.destination_links.some((link) => !link.label.trim() || !link.url.trim())) {
+      toast.error("Add a label and destination URL for each link.");
+      return;
+    }
 
     const data = new FormData();
     data.append("title", form.title.trim());
     data.append("subtitle", form.subtitle.trim());
     data.append("description", form.description.trim());
     data.append("offer", form.offer);
-    data.append("destination_link", form.destination_link.trim());
+    data.append("destination_links", JSON.stringify(form.destination_links));
+    data.append("destination_link", form.destination_links[0]?.url.trim() || "");
     data.append("target_section", form.target_section);
     data.append("is_published", String(form.is_published));
     if (form.desktop_image?.file instanceof File) {
@@ -283,19 +320,57 @@ function BannerModal({ banner, saving, onClose, onSubmit }) {
             </label>
           )}
 
-          <label className="block">
-            <span className={`${labelClassName} mb-1.5`}>Action Destination (Link)</span>
-            <span className="relative block">
-              <LinkIcon size={16} aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={form.destination_link}
-                onChange={(event) => setField("destination_link", event.target.value)}
-                placeholder="e.g. /shop, shop or https://..."
-                maxLength={2048}
-                className={`${inputClassName} pl-11`}
-              />
-            </span>
-          </label>
+          <section>
+            <div className="flex items-center justify-between gap-3">
+              <span className={labelClassName}>Action Destinations (Links)</span>
+              <button
+                type="button"
+                onClick={addDestinationLink}
+                disabled={form.destination_links.length >= 10}
+                className="mb-1.5 inline-flex items-center gap-1 text-xs font-bold text-primary-dark transition hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Plus size={14} /> Add link
+              </button>
+            </div>
+            <div className="space-y-3">
+              {form.destination_links.map((link, index) => (
+                <div key={index} className="grid grid-cols-1 gap-2 rounded-xl border border-gray-100 bg-gray-50 p-3 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto]">
+                  <input
+                    value={link.label}
+                    onChange={(event) => setDestinationLink(index, "label", event.target.value)}
+                    placeholder="Button label, e.g. Shop now"
+                    aria-label={`Destination ${index + 1} button label`}
+                    maxLength={60}
+                    className={inputClassName}
+                  />
+                  <span className="relative block">
+                    <LinkIcon size={16} aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      value={link.url}
+                      onChange={(event) => setDestinationLink(index, "url", event.target.value)}
+                      placeholder="e.g. /shop or https://..."
+                      aria-label={`Destination ${index + 1} URL`}
+                      maxLength={2048}
+                      className={`${inputClassName} pl-11`}
+                    />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeDestinationLink(index)}
+                    aria-label={`Remove destination ${index + 1}`}
+                    className="mt-1.5 inline-flex h-10 items-center justify-center rounded-lg px-3 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+              {!form.destination_links.length && (
+                <p className="rounded-xl border border-dashed border-gray-200 px-4 py-3 text-xs text-gray-400">
+                  No destination buttons added.
+                </p>
+              )}
+            </div>
+          </section>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <fieldset>
@@ -447,7 +522,8 @@ function Banners() {
         subtitle: formData.get("subtitle"),
         description: formData.get("description"),
         offer: formData.get("offer") || "",
-        destination_link: formData.get("destination_link"),
+        destination_links: JSON.parse(formData.get("destination_links") || "[]"),
+        destination_link: formData.get("destination_link") || "",
         target_section: formData.get("target_section"),
         is_published: formData.get("is_published"),
         desktop_image: formData.get("desktop_image"),
@@ -749,10 +825,23 @@ function Banners() {
                   <span>Created: {formatDate(banner.created_at)}</span>
                   <span>{banner.mobile_image ? "Desktop + mobile" : "Desktop only"}</span>
                 </div>
+                {!!getDestinationLinks(banner).length && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {getDestinationLinks(banner).map((link, index) => (
+                      <a
+                        key={`${link.url}-${index}`}
+                        href={link.url}
+                        target={/^https?:\/\//i.test(link.url) ? "_blank" : undefined}
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-primary-dark transition hover:bg-orange-100"
+                      >
+                        {link.label} <ArrowUpRight size={13} />
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <div className="mt-auto flex items-center gap-2 border-t border-gray-50 pt-4">
-                  {banner.destination_link
-                    ? <a href={banner.destination_link} target={/^https?:\/\//i.test(banner.destination_link) ? "_blank" : undefined} rel="noreferrer" className="mr-auto flex items-center gap-1 text-xs font-semibold text-primary-dark hover:underline">Destination <ArrowUpRight size={14} /></a>
-                    : <span className="mr-auto" />}
+                  <span className="mr-auto" />
                   <button type="button" onClick={() => openEditModal(banner)} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-orange-200 py-1.5 text-xs font-bold text-primary-dark transition-colors hover:bg-orange-50">
                     <Pencil size={12} /> Edit
                   </button>

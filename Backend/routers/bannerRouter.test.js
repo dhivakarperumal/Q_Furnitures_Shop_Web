@@ -14,6 +14,7 @@ test("normalizes banner content and applies defaults", () => {
     description: "",
     offer: "",
     destination_link: "",
+    destination_links: [],
     target_section: "hero",
     is_published: 1,
     desktop_image: "/uploads/banners/spring.webp",
@@ -39,6 +40,25 @@ test("normalizes bare destinations to internal paths", () => {
     ...validBanner,
     destination_link: "wetwtw",
   }).destination_link, "/wetwtw");
+});
+
+test("normalizes and validates multiple labeled destinations", () => {
+  const banner = normalizeBanner({
+    ...validBanner,
+    destination_links: [
+      { label: " Shop now ", url: "shop" },
+      { label: "Read more", url: "https://example.com/collection" },
+    ],
+  });
+  assert.deepEqual(banner.destination_links, [
+    { label: "Shop now", url: "/shop" },
+    { label: "Read more", url: "https://example.com/collection" },
+  ]);
+  assert.equal(banner.destination_link, "/shop");
+  assert.throws(() => normalizeBanner({
+    ...validBanner,
+    destination_links: [{ label: "Shop", url: "javascript:alert(1)" }],
+  }), { status: 400 });
 });
 
 test("preserves typed banner offers and rejects values that are too long", () => {

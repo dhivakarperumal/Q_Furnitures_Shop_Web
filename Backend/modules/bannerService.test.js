@@ -25,3 +25,38 @@ test("updating an unchanged banner still returns the stored record", async () =>
 
   assert.deepEqual(await service.update(banner.id, banner), banner);
 });
+
+test("stores multiple destination buttons and mirrors the first legacy link", async () => {
+  const destinationLinks = [
+    { label: "Shop now", url: "/shop" },
+    { label: "View collection", url: "/collections/new" },
+  ];
+  const banner = {
+    id: 8,
+    title: "New collection",
+    subtitle: "",
+    description: "",
+    offer: "",
+    destination_link: "/shop",
+    destination_links: destinationLinks,
+    target_section: "hero",
+    is_published: 1,
+    desktop_image: "/uploads/banners/new.webp",
+    mobile_image: null,
+  };
+  let insertParams;
+  const pool = {
+    async execute(sql, params) {
+      if (sql.startsWith("INSERT INTO banners")) {
+        insertParams = params;
+        return [{ insertId: banner.id }];
+      }
+      return [[banner]];
+    },
+  };
+  const service = createBannerService(pool);
+
+  assert.deepEqual(await service.create(banner), banner);
+  assert.equal(insertParams[4], "/shop");
+  assert.deepEqual(JSON.parse(insertParams[5]), destinationLinks);
+});

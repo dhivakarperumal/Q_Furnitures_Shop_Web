@@ -29,9 +29,12 @@ function normalizeBanner(body, existing = {}) {
   const description = typeof input.description === "string" ? input.description.trim() : "";
   const rawOffer = input.offer == null ? "" : input.offer;
   const offer = typeof rawOffer === "string" ? rawOffer.trim() : null;
-  let destinationLink = typeof input.destination_link === "string"
+  const legacyDestinationLink = typeof input.destination_link === "string"
     ? input.destination_link.trim()
     : "";
+  const rawDestinationLinks = input.destination_links == null
+    ? (legacyDestinationLink ? [{ label: "Shop now", url: legacyDestinationLink }] : [])
+    : input.destination_links;
   const targetSection = input.target_section || "hero";
   const rawPublished = input.is_published === undefined ? true : input.is_published;
   const isPublished = rawPublished === true || rawPublished === 1 ||
@@ -51,25 +54,38 @@ function normalizeBanner(body, existing = {}) {
   if (offer === null || offer.length > 80) {
     throw badRequest("Offer must be 80 characters or fewer.");
   }
-  if (destinationLink) {
-    if (/^https?:\/\//i.test(destinationLink)) {
+  if (!Array.isArray(rawDestinationLinks) || rawDestinationLinks.length > 10) {
+    throw badRequest("Add no more than 10 destination links.");
+  }
+  const destinationLinks = rawDestinationLinks.map((link) => {
+    if (!link || typeof link !== "object" || Array.isArray(link)) {
+      throw badRequest("Each destination link must include a label and URL.");
+    }
+    const label = typeof link.label === "string" ? link.label.trim() : "";
+    let url = typeof link.url === "string" ? link.url.trim() : "";
+    if (!label || label.length > 60 || !url) {
+      throw badRequest("Each destination link needs a label (up to 60 characters) and URL.");
+    }
+    if (/^https?:\/\//i.test(url)) {
       try {
-        const url = new URL(destinationLink);
-        if (!url.hostname) throw new Error("Missing hostname");
+        const parsedUrl = new URL(url);
+        if (!parsedUrl.hostname) throw new Error("Missing hostname");
       } catch {
         throw badRequest("Destination must be a valid http(s) URL.");
       }
     } else {
-      if (/^[a-z][a-z\d+.-]*:/i.test(destinationLink) ||
-          destinationLink.startsWith("//") || destinationLink.includes("\\")) {
+      if (/^[a-z][a-z\d+.-]*:/i.test(url) ||
+          url.startsWith("//") || url.includes("\\")) {
         throw badRequest("Destination must be a relative path or an http(s) URL.");
       }
-      if (!destinationLink.startsWith("/")) destinationLink = `/${destinationLink}`;
+      if (!url.startsWith("/")) url = `/${url}`;
     }
-  }
-  if (destinationLink.length > 2048) {
-    throw badRequest("Destination link must be 2,048 characters or fewer.");
-  }
+    if (url.length > 2048) {
+      throw badRequest("Destination link must be 2,048 characters or fewer.");
+    }
+    return { label, url };
+  });
+  const destinationLink = destinationLinks[0]?.url || "";
   if (!["hero", "offers"].includes(targetSection)) {
     throw badRequest("Target section must be hero or offers.");
   }
@@ -95,6 +111,7 @@ function normalizeBanner(body, existing = {}) {
     description,
     offer,
     destination_link: destinationLink,
+    destination_links: destinationLinks,
     target_section: targetSection,
     is_published: isPublished ? 1 : 0,
     desktop_image: desktopImage,

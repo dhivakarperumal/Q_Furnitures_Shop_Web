@@ -220,6 +220,7 @@ async function initializeDatabase(pool) {
       description TEXT NULL,
       offer VARCHAR(80) NOT NULL DEFAULT '',
       destination_link VARCHAR(2048) NOT NULL DEFAULT '',
+      destination_links JSON NULL,
       target_section ENUM('hero', 'offers') NOT NULL DEFAULT 'hero',
       is_published TINYINT(1) NOT NULL DEFAULT 1,
       desktop_image VARCHAR(512) NOT NULL,
@@ -244,6 +245,7 @@ async function initializeDatabase(pool) {
     ["description", "ALTER TABLE banners ADD COLUMN description TEXT NULL"],
     ["offer", "ALTER TABLE banners ADD COLUMN offer VARCHAR(80) NOT NULL DEFAULT ''"],
     ["destination_link", "ALTER TABLE banners ADD COLUMN destination_link VARCHAR(2048) NOT NULL DEFAULT ''"],
+    ["destination_links", "ALTER TABLE banners ADD COLUMN destination_links JSON NULL"],
     ["target_section", "ALTER TABLE banners ADD COLUMN target_section ENUM('hero', 'offers') NOT NULL DEFAULT 'hero'"],
     ["is_published", "ALTER TABLE banners ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 1"],
     ["desktop_image", "ALTER TABLE banners ADD COLUMN desktop_image VARCHAR(512) NULL"],
@@ -275,6 +277,11 @@ async function initializeDatabase(pool) {
     `UPDATE banners
      SET destination_link = COALESCE(link_url, '')
      WHERE destination_link = '' AND link_url IS NOT NULL AND link_url <> ''`,
+  );
+  await pool.query(
+    `UPDATE banners
+     SET destination_links = JSON_ARRAY(JSON_OBJECT('label', 'Shop now', 'url', destination_link))
+     WHERE destination_links IS NULL AND destination_link <> ''`,
   );
   await pool.query(
     `UPDATE banners
