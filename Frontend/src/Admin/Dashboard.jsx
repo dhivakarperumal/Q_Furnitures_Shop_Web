@@ -13,11 +13,10 @@ import {
     FiAlertTriangle,
     FiMapPin,
     FiTrendingUp,
-    FiTrendingDown,
     FiEye,
     FiTag
 } from "react-icons/fi";
-import { FaRupeeSign, FaTshirt, FaTruck } from "react-icons/fa";
+import { FaRupeeSign, FaTruck } from "react-icons/fa";
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -106,17 +105,17 @@ const Dashboard = () => {
         }
     };
 
-    const getStatIcon = (iconStr) => {
+    const getStatIcon = (iconStr, className = "text-white", size = 22) => {
         switch (iconStr) {
-            case "saree": return <FaTshirt className="text-white" size={22} />;
-            case "bag": return <FiShoppingBag className="text-white" size={22} />;
-            case "rupee": return <FaRupeeSign className="text-white" size={22} />;
-            case "pending": return <FiClock className="text-white" size={22} />;
-            case "truck": return <FaTruck className="text-white" size={22} />;
-            case "users": return <FiUsers className="text-white" size={22} />;
-            case "lowstock": return <FiBox className="text-white" size={22} />;
-            case "offer": return <FiTag className="text-white" size={22} />;
-            default: return <FiBox className="text-white" size={22} />;
+            case "product": return <FiBox className={className} size={size} />;
+            case "bag": return <FiShoppingBag className={className} size={size} />;
+            case "rupee": return <FaRupeeSign className={className} size={size} />;
+            case "pending": return <FiClock className={className} size={size} />;
+            case "truck": return <FaTruck className={className} size={size} />;
+            case "users": return <FiUsers className={className} size={size} />;
+            case "lowstock": return <FiBox className={className} size={size} />;
+            case "offer": return <FiTag className={className} size={size} />;
+            default: return <FiBox className={className} size={size} />;
         }
     };
 
@@ -230,18 +229,18 @@ const Dashboard = () => {
     }));
 
     const cardStyles = [
-        { gradient: "from-[#6C3DE8] to-[#A855F7]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#2563EB] to-[#0EA5E9]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#059669] to-[#10B981]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#F59E0B] to-[#FBBF24]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#EF4444] to-[#F97316]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#0891B2] to-[#06B6D4]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#DB2777] to-[#EC4899]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#7C3AED] to-[#6D28D9]", icon_bg: "bg-white/20" },
+        { border: "border-orange-100/80 hover:border-orange-200", accent: "from-primary-light to-primary-dark", icon: "from-primary to-primary-dark", iconShadow: "shadow-orange-200/70", watermark: "text-orange-300/20" },
+        { border: "border-emerald-100/80 hover:border-emerald-200", accent: "from-emerald-400 to-emerald-600", icon: "from-emerald-400 to-emerald-600", iconShadow: "shadow-emerald-200/70", watermark: "text-emerald-300/20" },
+        { border: "border-amber-100/80 hover:border-amber-200", accent: "from-amber-400 to-amber-600", icon: "from-amber-400 to-amber-600", iconShadow: "shadow-amber-200/70", watermark: "text-amber-300/20" },
+        { border: "border-rose-100/80 hover:border-rose-200", accent: "from-rose-400 to-pink-500", icon: "from-rose-400 to-pink-500", iconShadow: "shadow-rose-200/70", watermark: "text-rose-300/20" },
+        { border: "border-blue-100/80 hover:border-blue-200", accent: "from-blue-400 to-blue-600", icon: "from-blue-400 to-blue-600", iconShadow: "shadow-blue-200/70", watermark: "text-blue-300/20" },
+        { border: "border-cyan-100/80 hover:border-cyan-200", accent: "from-cyan-400 to-cyan-600", icon: "from-cyan-400 to-cyan-600", iconShadow: "shadow-cyan-200/70", watermark: "text-cyan-300/20" },
+        { border: "border-purple-100/80 hover:border-purple-200", accent: "from-purple-400 to-purple-600", icon: "from-purple-400 to-purple-600", iconShadow: "shadow-purple-200/70", watermark: "text-purple-300/20" },
+        { border: "border-orange-100/80 hover:border-orange-200", accent: "from-primary-light to-primary-dark", icon: "from-primary to-primary-dark", iconShadow: "shadow-orange-200/70", watermark: "text-orange-300/20" },
     ];
 
     return (
-        <div className="space-y-6 pb-12 bg-slate-50 min-h-screen">
+        <div className="space-y-6 pb-12 min-h-screen">
             <Toaster position="top-right" />
 
             {/* Top Stats Grid */}
@@ -249,34 +248,17 @@ const Dashboard = () => {
                 {stats.map((stat, i) => {
                     const style = cardStyles[i % cardStyles.length];
                     return (
-                        <div key={i} className={`relative bg-gradient-to-br ${style.gradient} rounded-2xl p-4 overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer`}>
-                            {/* Decorative circle background */}
-                            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
-                            <div className="absolute -bottom-8 -right-2 w-24 h-24 bg-white/5 rounded-full" />
-
-                            {/* Top row: icon + trend */}
-                            <div className="flex items-center justify-between mb-3 relative z-10">
-                                <div className={`w-11 h-11 ${style.icon_bg} backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30`}>
-                                    {getStatIcon(stat.icon)}
-                                </div>
-                                <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                                    {stat.trendUp ? <FiTrendingUp size={10} /> : <FiTrendingDown size={10} />}
-                                    {stat.trend.replace('+', '').replace('↓', '').trim()}
-                                </span>
+                        <div key={i} className={`group relative flex min-h-36 items-center gap-4 overflow-hidden rounded-xl border bg-gradient-to-br from-white via-orange-50/50 to-amber-100/40 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)] ${style.border}`}>
+                            <div className={`absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b ${style.accent}`} />
+                            <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${style.icon} text-white shadow-lg ${style.iconShadow} transition-transform duration-200 group-hover:scale-105`}>
+                                {getStatIcon(stat.icon)}
                             </div>
-
-                            {/* Value */}
-                            <div className="relative z-10">
-                                <h3 className="text-3xl font-black text-white leading-none">{stat.value}</h3>
-                                <p className="text-white/70 text-xs font-semibold mt-1">{stat.label}</p>
+                            <div className="relative z-10 min-w-0">
+                                <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">{stat.label}</p>
+                                <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">{stat.value}</h3>
+                                <p className="text-[10px] font-medium text-stone-500">{stat.description || "Current total"}</p>
                             </div>
-
-                            {/* Bottom divider */}
-                            <div className="mt-3 pt-3 border-t border-white/20 relative z-10">
-                                <p className="text-white/60 text-[10px] font-medium">
-                                    {stat.trendUp ? '▲' : '▼'} {stat.trend.replace('+', '').replace('↓', '').trim()} vs last month
-                                </p>
-                            </div>
+                            {getStatIcon(stat.icon, `pointer-events-none absolute -right-1 bottom-1 ${style.watermark}`, 60)}
                         </div>
                     );
                 })}
@@ -301,7 +283,7 @@ const Dashboard = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     {[
                         { label: "Add Product",    icon: <FiBox size={20} />,          color: "from-[#6C3DE8] to-[#A855F7]", path: "/admin/products/add" },
-                        { label: "New Order",      icon: <FiShoppingBag size={20} />,  color: "from-[#2563EB] to-[#0EA5E9]", path: "/admin/orders/create" },
+                        { label: "New Order",      icon: <FiShoppingBag size={20} />,  color: "from-[#2563EB] to-[#0EA5E9]", path: "/admin/orders/shop-create" },
                         { label: "All Orders",     icon: <FaTruck size={20} />,         color: "from-[#059669] to-[#10B981]", path: "/admin/orders/all" },
                         { label: "Customers",      icon: <FiUsers size={20} />,        color: "from-[#F59E0B] to-[#FBBF24]", path: "/admin/users/all" },
                         { label: "Stock Details",  icon: <FiAlertTriangle size={20} />,color: "from-[#EF4444] to-[#F97316]", path: "/admin/products/stock" },
@@ -464,10 +446,10 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Top Selling Sarees */}
+                {/* Top Selling Products */}
                 <div className="lg:col-span-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                     <div className="flex justify-between items-center mb-5">
-                        <h3 className="text-base font-black text-slate-800">Top Selling Sarees</h3>
+                        <h3 className="text-base font-black text-slate-800">Top Selling Products</h3>
                         <button onClick={() => navigate('/admin/products/all')} className="text-xs font-bold text-purple-600 hover:underline">View All →</button>
                     </div>
                     <div className="space-y-3">
