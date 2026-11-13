@@ -30,9 +30,9 @@ function getFileExtension(buffer, allowPdf) {
   return null;
 }
 
-function createUploadHandler({ field, maxCount, category, allowPdf = false, onUploaded }) {
-  const maxFileSize = allowPdf ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
-  const parseFiles = createMulter(maxFileSize, allowPdf).array(field, maxCount);
+function createUploadHandler({ field, maxCount, category, allowPdf = false, onUploaded, maxFileSize }) {
+  const fileSizeLimit = maxFileSize || (allowPdf ? 10 * 1024 * 1024 : 5 * 1024 * 1024);
+  const parseFiles = createMulter(fileSizeLimit, allowPdf).array(field, maxCount);
 
   return (request, response, next) => {
     parseFiles(request, response, async (parseError) => {
@@ -98,6 +98,17 @@ function createUploadRouter(authService) {
 
   router.post("/products/upload", requireAuthentication, requireAdmin, createUploadHandler({ field: "images", maxCount: 5, category: "products" }));
   router.post("/reviews/upload", requireAuthentication, createUploadHandler({ field: "image", maxCount: 1, category: "reviews" }));
+  router.post(
+    "/uploads/banners",
+    requireAuthentication,
+    requireAdmin,
+    createUploadHandler({
+      field: "image",
+      maxCount: 1,
+      category: "banners",
+      maxFileSize: 8 * 1024 * 1024,
+    }),
+  );
   router.post("/uploads/categories", requireAuthentication, requireAdmin, createUploadHandler({ field: "images", maxCount: 10, category: "categories" }));
   router.post(
     "/uploads/profile-image",
@@ -124,4 +135,4 @@ function createUploadRouter(authService) {
   return router;
 }
 
-module.exports = { createUploadRouter, uploadsDirectory };
+module.exports = { createUploadHandler, createUploadRouter, uploadsDirectory };
