@@ -652,7 +652,7 @@ function YoutubeVideos() {
 
       {isAddModalOpen && createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-md sm:items-center"
+          className="fixed inset-0 z-[9999] flex items-start justify-center overflow-hidden bg-slate-900/60 p-0 backdrop-blur-md sm:items-center"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && !saving && !uploadingThumbnail && !uploadingVideo && !uploadingDocuments) {
               setIsAddModalOpen(false);
@@ -663,7 +663,7 @@ function YoutubeVideos() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="youtube-form-title"
-            className="my-auto flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl animate-in zoom-in-95 duration-200"
+            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-3xl flex-col overflow-hidden rounded-none bg-white shadow-2xl sm:rounded-[24px]"
           >
             <header className="flex shrink-0 items-center justify-between border-b border-gray-100 p-6">
               <div>
