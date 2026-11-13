@@ -213,6 +213,64 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS banners (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(160) NOT NULL,
+      subtitle VARCHAR(240) NOT NULL DEFAULT '',
+      description TEXT NULL,
+      destination_link VARCHAR(2048) NOT NULL DEFAULT '',
+      target_section ENUM('hero', 'offers') NOT NULL DEFAULT 'hero',
+      is_published TINYINT(1) NOT NULL DEFAULT 1,
+      desktop_image VARCHAR(512) NOT NULL,
+      mobile_image VARCHAR(512) NULL,
+      image_url VARCHAR(512) NOT NULL DEFAULT '',
+      link_url VARCHAR(2048) NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'Active',
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY banners_published_target_idx (is_published, target_section)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  const [bannerColumnRows] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'banners'`,
+  );
+  const existingBannerColumns = new Set(bannerColumnRows.map((column) => column.COLUMN_NAME));
+  const bannerMigrations = [
+    ["subtitle", "ALTER TABLE banners ADD COLUMN subtitle VARCHAR(240) NOT NULL DEFAULT ''"],
+    ["description", "ALTER TABLE banners ADD COLUMN description TEXT NULL"],
+    ["destination_link", "ALTER TABLE banners ADD COLUMN destination_link VARCHAR(2048) NOT NULL DEFAULT ''"],
+    ["target_section", "ALTER TABLE banners ADD COLUMN target_section ENUM('hero', 'offers') NOT NULL DEFAULT 'hero'"],
+    ["is_published", "ALTER TABLE banners ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 1"],
+    ["desktop_image", "ALTER TABLE banners ADD COLUMN desktop_image VARCHAR(512) NULL"],
+    ["mobile_image", "ALTER TABLE banners ADD COLUMN mobile_image VARCHAR(512) NULL"],
+    ["image_url", "ALTER TABLE banners ADD COLUMN image_url VARCHAR(512) NOT NULL DEFAULT ''"],
+    ["link_url", "ALTER TABLE banners ADD COLUMN link_url VARCHAR(2048) NULL"],
+    ["status", "ALTER TABLE banners ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'Active'"],
+    ["sort_order", "ALTER TABLE banners ADD COLUMN sort_order INT NOT NULL DEFAULT 0"],
+  ];
+  for (const [column, statement] of bannerMigrations) {
+    if (!existingBannerColumns.has(column)) {
+      await pool.query(statement);
+    }
+  }
+  await pool.query(
+    `UPDATE banners
+     SET desktop_image = image_url
+     WHERE (desktop_image IS NULL OR desktop_image = '') AND image_url <> ''`,
+  );
+  await pool.query(
+    `UPDATE banners
+     SET destination_link = COALESCE(link_url, '')
+     WHERE destination_link = '' AND link_url IS NOT NULL AND link_url <> ''`,
+  );
+  await pool.query(
+    `UPDATE banners
+     SET is_published = CASE WHEN status = 'Inactive' THEN 0 ELSE 1 END`,
+  );
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS products (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       product_code VARCHAR(128) NULL,
