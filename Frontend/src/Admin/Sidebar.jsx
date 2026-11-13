@@ -72,11 +72,11 @@ const navItems = [
     label: "Marketing",
     icon: Handshake,
     children: [
-      { path: "/admin/offers", label: "Top Header Offers", icon: Tag },
+      { path: "/admin/offers", label: "Top Header Offers Tags", icon: Tag },
       { path: "/admin/coupons", label: "Coupons", icon: Tag },
       { path: "/admin/banners", label: "Promotion Banners", icon: Image },
       { path: "/admin/videos", label: "Showcase Videos", icon: Video },
-      { path: "/admin/reviews", label: "Customer Reviews", icon: MessageSquare },
+      { path: "/admin/reviews", label: "Reviews", icon: MessageSquare },
     ],
   },
 
