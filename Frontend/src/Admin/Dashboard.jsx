@@ -468,27 +468,30 @@ const Dashboard = () => {
                 <div className="lg:col-span-8 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                     <div className="flex justify-between items-center mb-5">
                         <h3 className="text-base font-black text-slate-800">Recent Orders</h3>
-                        <button onClick={() => navigate('/admin/orders/all')} className="text-xs font-bold text-purple-600 hover:underline">View All →</button>
+                        <button onClick={() => navigate('/admin/orders/all')} className="text-xs font-bold text-[#9900ff] hover:underline">View All →</button>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full border-separate border-spacing-0 text-left text-sm">
                             <thead>
-                                <tr className="text-[11px] text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                                    <th className="pb-3 font-bold">Order ID</th>
-                                    <th className="pb-3 font-bold">Customer</th>
-                                    <th className="pb-3 font-bold">Date</th>
-                                    <th className="pb-3 font-bold">Amount</th>
-                                    <th className="pb-3 font-bold">Status</th>
-                                    <th className="pb-3 font-bold text-center">Action</th>
+                                <tr
+                                    className="bg-gradient-to-r from-secondary-dark to-secondary-light border-b border-secondary-dark"
+                                    style={{ clipPath: 'inset(0 round 12px 12px 0 0)' }}
+                                >
+                                    <th className="rounded-tl-xl px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Order ID</th>
+                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Customer</th>
+                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Date</th>
+                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Amount</th>
+                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Status</th>
+                                    <th className="rounded-tr-xl px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {recentOrders && recentOrders.length > 0 ? recentOrders.map((order, i) => (
                                     <tr key={i} className="hover:bg-slate-50/60 transition-colors group">
-                                        <td className="py-3 font-bold text-purple-600 text-xs">{order.id}</td>
+                                        <td className="py-3 font-bold text-[#9900ff] text-xs">{order.id}</td>
                                         <td className="py-3">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-black shrink-0">
+                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#a855f7] to-[#9900ff] flex items-center justify-center text-white text-[10px] font-black shrink-0">
                                                     {(order.customer || 'G').charAt(0).toUpperCase()}
                                                 </div>
                                                 <span className="font-semibold text-slate-800 text-xs truncate max-w-[100px]">{order.customer}</span>
@@ -504,9 +507,9 @@ const Dashboard = () => {
                                         <td className="py-3 text-center">
                                             <button
                                                 onClick={() => navigate(`/admin/orders/${order.numericId ?? order.id.replace('#ORD-0', '')}`)}
-                                                className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mx-auto hover:bg-purple-600 hover:text-white transition-all"
+                                                className="group mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-[#9900ff] transition-all hover:bg-purple-700 hover:text-white"
                                             >
-                                                <FiEye size={13} />
+                                                <FiEye className="text-[#9900ff] transition-colors group-hover:text-white" size={13} />
                                             </button>
                                         </td>
                                     </tr>
@@ -524,7 +527,7 @@ const Dashboard = () => {
                 <div className="lg:col-span-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                     <div className="flex justify-between items-center mb-5">
                         <h3 className="text-base font-black text-slate-800">Top Selling Sarees</h3>
-                        <button onClick={() => navigate('/admin/products/all')} className="text-xs font-bold text-purple-600 hover:underline">View All →</button>
+                        <button onClick={() => navigate('/admin/products/all')} className="text-xs font-bold text-[#9900ff] hover:underline">View All →</button>
                     </div>
                     <div className="space-y-3">
                         {topProducts && topProducts.length > 0 ? topProducts.map((item, i) => (
@@ -539,7 +542,7 @@ const Dashboard = () => {
                                             event.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=EDE9FE&color=7C3AED`;
                                         }}
                                     />
-                                    <span className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white text-[9px] font-black flex items-center justify-center shadow">
+                                    <span className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-gradient-to-br from-[#a855f7] to-[#9900ff] text-white text-[9px] font-black flex items-center justify-center shadow">
                                         {i + 1}
                                     </span>
                                 </div>
@@ -548,7 +551,7 @@ const Dashboard = () => {
                                     <p className="text-[10px] text-gray-400 font-medium">{item.cat}</p>
                                 </div>
                                 <div className="text-right shrink-0">
-                                    <p className="text-sm font-black text-purple-600">{item.sales}</p>
+                                    <p className="text-sm font-black text-[#9900ff]">{item.sales}</p>
                                     <p className="text-[10px] text-gray-400">sold</p>
                                 </div>
                             </div>
