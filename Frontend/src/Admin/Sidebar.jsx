@@ -176,7 +176,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
       {/* ========== SIDEBAR ========== */}
       <aside
         className={`
-        fixed top-0 left-0 z-50 h-full
+        fixed top-0 left-0 z-50 isolate h-full
         border-r border-white/5
         font-sans
         
@@ -194,7 +194,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
           src="/images/sidebottom.png"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-[-30px] left-0 z-0 h-[43%] w-full object-cover object-bottom"
+          className="pointer-events-none absolute bottom-[-30px] left-0 z-0 h-[35%] w-full object-contain object-bottom opacity-20"
         />
 
         {/* ========== LOGO ========== */}
@@ -216,7 +216,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
         </div>
 
         {/* ========== NAVIGATION ========== */}
-        <nav className="relative z-10 flex-1 px-3 py-6 space-y-1 overflow-y-auto hide-scrollbar">
+        <nav className="relative z-20 flex-1 px-3 py-6 space-y-1 overflow-y-auto hide-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
 
@@ -260,8 +260,8 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
                   {/* ===== SUB MENU ===== */}
                   {!collapsed && (
                     <div
-                      className={`ml-4 pl-4  border-white/5 space-y-1 overflow-y-auto hide-scrollbar transition-all duration-300
-                      ${isMenuOpen ? "max-h-60 opacity-100 py-1" : "max-h-0 opacity-0"}`}
+                      className={`relative ml-4 pl-4 border-white/5 space-y-1 overflow-y-auto hide-scrollbar transition-all duration-300
+                      ${isMenuOpen ? "z-30 max-h-60 opacity-100 py-1" : "z-0 max-h-0 opacity-0"}`}
                     >
                       {item.children.map((sub) => {
                         const SubIcon = sub.icon;
