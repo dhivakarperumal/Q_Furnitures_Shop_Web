@@ -135,4 +135,4 @@ function createUploadRouter(authService) {
   return router;
 }
 
-module.exports = { createUploadRouter, uploadsDirectory };
+module.exports = { createUploadHandler, createUploadRouter, uploadsDirectory };
