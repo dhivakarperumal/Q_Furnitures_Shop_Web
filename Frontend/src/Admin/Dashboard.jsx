@@ -259,7 +259,7 @@ const Dashboard = () => {
         { label: "Categories", description: "Manage product categories", icon: <FiGrid size={19} />, color: "from-emerald-400 to-emerald-600", border: "hover:border-emerald-200", path: "/admin/products/category" },
         { label: "Customers", description: "View customer accounts", icon: <FiUsers size={19} />, color: "from-violet-500 to-violet-700", border: "hover:border-violet-200", path: "/admin/users/all" },
         { label: "Stock Details", description: "Review available inventory", icon: <FiAlertTriangle size={19} />, color: "from-amber-400 to-amber-600", border: "hover:border-amber-200", path: "/admin/products/stock" },
-        { label: "Offers", description: "Manage active promotions", icon: <FiTag size={19} />, color: "from-rose-500 to-rose-700", border: "hover:border-rose-200", path: "/admin/offers" },
+        { label: "Top Header Offers", description: "Manage active promotions", icon: <FiTag size={19} />, color: "from-rose-500 to-rose-700", border: "hover:border-rose-200", path: "/admin/offers" },
         { label: "New Billing", description: "Open billing and create orders", icon: <FiCreditCard size={19} />, color: "from-cyan-500 to-cyan-700", border: "hover:border-cyan-200", path: "/admin/orders/billing" },
         { label: "Banners", description: "Manage promotional banners", icon: <FiImage size={19} />, color: "from-indigo-500 to-indigo-700", border: "hover:border-indigo-200", path: "/admin/banners" },
         { label: "Add Dealer", description: "Create or manage dealer accounts", icon: <FiBriefcase size={19} />, color: "from-teal-500 to-teal-700", border: "hover:border-teal-200", path: "/admin/dealers" },
@@ -302,38 +302,7 @@ const Dashboard = () => {
                 </button>
             )}
 
-            {/* Quick Actions */}
-            <div className="rounded-2xl border border-orange-100/70 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.06)]">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                    <div>
-                        <h3 className="text-base font-black text-slate-800">Quick Actions</h3>
-                        <p className="mt-0.5 text-xs text-stone-500">Jump to common admin tasks</p>
-                    </div>
-                    <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-700">
-                        {quickActions.length} shortcuts
-                    </span>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
-                    {quickActions.map((action) => (
-                        <button
-                            key={action.label}
-                            type="button"
-                            onClick={() => navigate(action.path)}
-                            className={`group relative flex min-h-20 items-center gap-2 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-2.5 py-3 text-left shadow-[0_8px_24px_rgba(74,46,25,0.06)] transition-all duration-200 hover:-translate-y-0.5 ${action.border} hover:shadow-[0_14px_30px_rgba(74,46,25,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/40`}
-                        >
-                            <span className={`absolute inset-y-3 left-0 w-1 rounded-r-full bg-gradient-to-b ${action.color}`} />
-                            <div className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-lg transition-transform duration-200 group-hover:scale-105 ${action.color}`}>
-                                {action.icon}
-                            </div>
-                            <span className="relative z-10 min-w-0 flex-1">
-                                <span className="block truncate text-xs font-bold text-slate-800 xl:text-sm">{action.label}</span>
-                                <span className="mt-0.5 hidden truncate text-[11px] text-stone-500 xl:block">{action.description}</span>
-                            </span>
-                            <FiArrowUpRight className="relative z-10 hidden shrink-0 text-stone-400 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-orange-600 xl:block" size={16} />
-                        </button>
-                    ))}
-                </div>
-            </div>
+            
 
             {/* Middle Section: Charts & Low Stock */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -417,6 +386,38 @@ const Dashboard = () => {
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+            {/* Quick Actions */}
+            <div className="rounded-2xl border border-orange-100/70 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.06)]">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                        <h3 className="text-base font-black text-slate-800">Quick Actions</h3>
+                        <p className="mt-0.5 text-xs text-stone-500">Jump to common admin tasks</p>
+                    </div>
+                    <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-700">
+                        {quickActions.length} shortcuts
+                    </span>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
+                    {quickActions.map((action) => (
+                        <button
+                            key={action.label}
+                            type="button"
+                            onClick={() => navigate(action.path)}
+                            className={`group relative flex min-h-20 items-center gap-2 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-2.5 py-3 text-left shadow-[0_8px_24px_rgba(74,46,25,0.06)] transition-all duration-200 hover:-translate-y-0.5 ${action.border} hover:shadow-[0_14px_30px_rgba(74,46,25,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/40`}
+                        >
+                            <span className={`absolute inset-y-3 left-0 w-1 rounded-r-full bg-gradient-to-b ${action.color}`} />
+                            <div className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-lg transition-transform duration-200 group-hover:scale-105 ${action.color}`}>
+                                {action.icon}
+                            </div>
+                            <span className="relative z-10 min-w-0 flex-1">
+                                <span className="block truncate text-xs font-bold text-slate-800 xl:text-sm">{action.label}</span>
+                                <span className="mt-0.5 hidden truncate text-[11px] text-stone-500 xl:block">{action.description}</span>
+                            </span>
+                            <FiArrowUpRight className="relative z-10 hidden shrink-0 text-stone-400 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-orange-600 xl:block" size={16} />
+                        </button>
+                    ))}
                 </div>
             </div>
 
