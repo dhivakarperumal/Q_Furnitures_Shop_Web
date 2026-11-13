@@ -27,6 +27,7 @@ const ProductDetail = React.lazy(() => import("./Admin/Products/ProductDetail.js
 const Users = React.lazy(() => import("./Admin/Customers/Users.jsx"));
 const Billing = React.lazy(() => import("./Admin/Billings/Billing.jsx"));
 const CreateOrder = React.lazy(() => import("./Admin/Billings/CreateOrder.jsx"));
+const Orders = React.lazy(() => import("./Admin/Orders/Orders.jsx"));
 const OrderDetail = React.lazy(() => import("./Admin/Orders/OrderDetail.jsx"));
 const Banners = React.lazy(() => import("./Admin/Banners/Banners.jsx"));
 const Reviews = React.lazy(() => import("./Admin/Reviews/Reviews.jsx"));
@@ -84,6 +85,10 @@ const router = createBrowserRouter([
       { path: "offers", element: <Offers /> },
       { path: "orders/billing", element: <Billing /> },
       { path: "orders/shop-create", element: <CreateOrder /> },
+      { path: "orders/new", element: <Orders statusFilter="Order Placed" /> },
+      { path: "orders/all", element: <Orders /> },
+      { path: "orders/delivery", element: <Orders statusFilter="Delivered" /> },
+      { path: "orders/cancelled", element: <Orders statusFilter="Cancelled" /> },
       { path: "orders/:id", element: <OrderDetail /> },
       { path: "dealers", element: <Dealers /> },
       { path: "invoices/add", element: <AddInvoice /> },
