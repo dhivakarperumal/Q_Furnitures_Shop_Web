@@ -27,6 +27,8 @@ function normalizeBanner(body, existing = {}) {
   const title = typeof input.title === "string" ? input.title.trim() : "";
   const subtitle = typeof input.subtitle === "string" ? input.subtitle.trim() : "";
   const description = typeof input.description === "string" ? input.description.trim() : "";
+  const rawOffer = input.offer == null ? "" : input.offer;
+  const offer = typeof rawOffer === "string" ? rawOffer.trim() : null;
   let destinationLink = typeof input.destination_link === "string"
     ? input.destination_link.trim()
     : "";
@@ -45,6 +47,9 @@ function normalizeBanner(body, existing = {}) {
   }
   if (description.length > 5000) {
     throw badRequest("Description must be 5,000 characters or fewer.");
+  }
+  if (offer === null || offer.length > 80) {
+    throw badRequest("Offer must be 80 characters or fewer.");
   }
   if (destinationLink) {
     if (/^https?:\/\//i.test(destinationLink)) {
@@ -88,6 +93,7 @@ function normalizeBanner(body, existing = {}) {
     title,
     subtitle,
     description,
+    offer,
     destination_link: destinationLink,
     target_section: targetSection,
     is_published: isPublished ? 1 : 0,

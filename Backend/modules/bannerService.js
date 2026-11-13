@@ -3,6 +3,7 @@ const BANNER_COLUMNS = [
   "title",
   "subtitle",
   "description",
+  "offer",
   "destination_link",
   "target_section",
   "is_published",
@@ -34,13 +35,14 @@ function createBannerService(pool) {
     async create(banner) {
       const [result] = await pool.execute(
         `INSERT INTO banners
-         (title, subtitle, description, destination_link, target_section, is_published,
+         (title, subtitle, description, offer, destination_link, target_section, is_published,
           desktop_image, mobile_image, image_url, link_url, status, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           banner.title,
           banner.subtitle,
           banner.description,
+          banner.offer,
           banner.destination_link,
           banner.target_section,
           banner.is_published,
@@ -58,7 +60,7 @@ function createBannerService(pool) {
     async update(id, banner) {
       await pool.execute(
         `UPDATE banners
-         SET title = ?, subtitle = ?, description = ?, destination_link = ?,
+         SET title = ?, subtitle = ?, description = ?, offer = ?, destination_link = ?,
              target_section = ?, is_published = ?, desktop_image = ?, mobile_image = ?,
              image_url = ?, link_url = ?, status = ?
          WHERE id = ?`,
@@ -66,6 +68,7 @@ function createBannerService(pool) {
           banner.title,
           banner.subtitle,
           banner.description,
+          banner.offer,
           banner.destination_link,
           banner.target_section,
           banner.is_published,

@@ -30,6 +30,7 @@ const emptyForm = {
   title: "",
   subtitle: "",
   description: "",
+  offer: "",
   destination_link: "",
   target_section: "hero",
   is_published: true,
@@ -127,6 +128,7 @@ function BannerModal({ banner, saving, onClose, onSubmit }) {
       title: banner.title || "",
       subtitle: banner.subtitle || "",
       description: banner.description || "",
+      offer: banner.offer || "",
       destination_link: banner.destination_link || "",
       target_section: banner.target_section || "hero",
       is_published: getPublishedValue(banner.is_published),
@@ -167,6 +169,7 @@ function BannerModal({ banner, saving, onClose, onSubmit }) {
     data.append("title", form.title.trim());
     data.append("subtitle", form.subtitle.trim());
     data.append("description", form.description.trim());
+    data.append("offer", form.offer);
     data.append("destination_link", form.destination_link.trim());
     data.append("target_section", form.target_section);
     data.append("is_published", String(form.is_published));
@@ -263,6 +266,18 @@ function BannerModal({ banner, saving, onClose, onSubmit }) {
               maxLength={5000}
               rows={3}
               className={`${inputClassName} resize-y`}
+            />
+          </label>
+
+          <label className="block">
+            <span className={labelClassName}>Offer (optional)</span>
+            <input
+              type="text"
+              value={form.offer}
+              onChange={(event) => setField("offer", event.target.value)}
+              placeholder="Type an offer, e.g. 10% OFF"
+              maxLength={80}
+              className={inputClassName}
             />
           </label>
 
@@ -429,6 +444,7 @@ function Banners() {
         title: formData.get("title"),
         subtitle: formData.get("subtitle"),
         description: formData.get("description"),
+        offer: formData.get("offer") || "",
         destination_link: formData.get("destination_link"),
         target_section: formData.get("target_section"),
         is_published: formData.get("is_published"),
@@ -481,6 +497,7 @@ function Banners() {
       banner.title,
       banner.subtitle,
       banner.description,
+      banner.offer,
       banner.target_section,
       String(banner.id),
     ].some((value) => String(value || "").toLowerCase().includes(query));
@@ -650,6 +667,7 @@ function Banners() {
                   <th className="w-12 px-4 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">S.No.</th>
                   <th className="px-4 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Banner</th>
                   <th className="px-4 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Description</th>
+                  <th className="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Offer</th>
                   <th className="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Target section</th>
                   <th className="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Status</th>
                   <th className="px-4 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Updated</th>
@@ -671,6 +689,11 @@ function Banners() {
                       </div>
                     </td>
                     <td className="max-w-[220px] truncate px-4 py-4 text-sm font-medium text-gray-500">{banner.description || "No description"}</td>
+                    <td className="px-4 py-4 text-center">
+                      {banner.offer
+                        ? <span className="inline-block rounded-lg border border-orange-100 bg-orange-50 px-3 py-1 text-[11px] font-bold text-primary-dark">{banner.offer}</span>
+                        : <span className="text-sm font-medium text-gray-400">—</span>}
+                    </td>
                     <td className="px-4 py-4 text-center">
                       <span className="inline-block rounded-lg border border-orange-100 bg-orange-50 px-3 py-1 text-[11px] font-bold text-primary-dark">{banner.target_section === "offers" ? "Offers" : "Hero section"}</span>
                     </td>
@@ -702,6 +725,12 @@ function Banners() {
                   {banner.subtitle && <p className="mb-2 line-clamp-1 text-xs font-semibold text-primary-dark">{banner.subtitle}</p>}
                   <p className="mb-4 line-clamp-2 text-xs text-gray-500">{banner.description || "No description provided."}</p>
                   <div className="mb-4 flex flex-wrap items-center gap-4">
+                    {banner.offer && (
+                      <div>
+                        <p className="text-[10px] font-medium text-gray-400">Offer</p>
+                        <span className="mt-0.5 inline-block rounded border border-orange-100 bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-dark">{banner.offer}</span>
+                      </div>
+                    )}
                     <div>
                       <p className="text-[10px] font-medium text-gray-400">Target section</p>
                       <span className="mt-0.5 inline-block rounded border border-orange-100 bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-dark">{banner.target_section === "offers" ? "Offers" : "Hero"}</span>

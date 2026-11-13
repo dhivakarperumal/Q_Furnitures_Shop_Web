@@ -12,6 +12,7 @@ test("normalizes banner content and applies defaults", () => {
     title: "Spring Sale",
     subtitle: "",
     description: "",
+    offer: "",
     destination_link: "",
     target_section: "hero",
     is_published: 1,
@@ -38,6 +39,12 @@ test("normalizes bare destinations to internal paths", () => {
     ...validBanner,
     destination_link: "wetwtw",
   }).destination_link, "/wetwtw");
+});
+
+test("preserves typed banner offers and rejects values that are too long", () => {
+  assert.equal(normalizeBanner({ ...validBanner, offer: "10% OFF" }).offer, "10% OFF");
+  assert.equal(normalizeBanner({ ...validBanner, offer: "  Weekend deal  " }).offer, "Weekend deal");
+  assert.throws(() => normalizeBanner({ ...validBanner, offer: "x".repeat(81) }), { status: 400 });
 });
 
 test("rejects unsafe links and invalid banner fields", () => {

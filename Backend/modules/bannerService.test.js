@@ -8,6 +8,7 @@ test("updating an unchanged banner still returns the stored record", async () =>
     title: "Spring sale",
     subtitle: "",
     description: "",
+    offer: "",
     destination_link: "",
     target_section: "hero",
     is_published: 1,

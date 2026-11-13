@@ -218,6 +218,7 @@ async function initializeDatabase(pool) {
       title VARCHAR(160) NOT NULL,
       subtitle VARCHAR(240) NOT NULL DEFAULT '',
       description TEXT NULL,
+      offer VARCHAR(80) NOT NULL DEFAULT '',
       destination_link VARCHAR(2048) NOT NULL DEFAULT '',
       target_section ENUM('hero', 'offers') NOT NULL DEFAULT 'hero',
       is_published TINYINT(1) NOT NULL DEFAULT 1,
@@ -241,6 +242,7 @@ async function initializeDatabase(pool) {
   const bannerMigrations = [
     ["subtitle", "ALTER TABLE banners ADD COLUMN subtitle VARCHAR(240) NOT NULL DEFAULT ''"],
     ["description", "ALTER TABLE banners ADD COLUMN description TEXT NULL"],
+    ["offer", "ALTER TABLE banners ADD COLUMN offer VARCHAR(80) NOT NULL DEFAULT ''"],
     ["destination_link", "ALTER TABLE banners ADD COLUMN destination_link VARCHAR(2048) NOT NULL DEFAULT ''"],
     ["target_section", "ALTER TABLE banners ADD COLUMN target_section ENUM('hero', 'offers') NOT NULL DEFAULT 'hero'"],
     ["is_published", "ALTER TABLE banners ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 1"],
@@ -255,6 +257,14 @@ async function initializeDatabase(pool) {
     if (!existingBannerColumns.has(column)) {
       await pool.query(statement);
     }
+  }
+  const [offerColumnRows] = await pool.execute(
+    `SELECT CHARACTER_MAXIMUM_LENGTH
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'banners' AND COLUMN_NAME = 'offer'`,
+  );
+  if (Number(offerColumnRows[0]?.CHARACTER_MAXIMUM_LENGTH) < 80) {
+    await pool.query("ALTER TABLE banners MODIFY COLUMN offer VARCHAR(80) NOT NULL DEFAULT ''");
   }
   await pool.query(
     `UPDATE banners
