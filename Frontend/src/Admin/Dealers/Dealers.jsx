@@ -203,17 +203,7 @@ export default function Dealers() {
 
     return (
         <div className="space-y-6 pb-10">
-            <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-primary">Business partners</p>
-                    <h1 className="text-3xl font-black text-slate-800">Dealers</h1>
-                    <p className="mt-1 text-sm text-gray-500">Manage dealer accounts, invoices, balances, and transaction history.</p>
-                </div>
-                <div className="flex gap-2">
-                    <button type="button" onClick={exportCsv} disabled={!dealers.length || exporting} className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-600 shadow-sm transition-all hover:bg-orange-50 hover:text-primary-dark disabled:opacity-50"><FiDownload /> {exporting ? "Exporting..." : "Export CSV"}</button>
-                    <button type="button" onClick={() => { setEditingDealer(null); setModalOpen(true); }} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95"><FiPlus /> Add dealer</button>
-                </div>
-            </header>
+          
 
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard label="Total dealers" value={summary.total} icon={<FiTruck />} tone="orange" />
@@ -222,33 +212,43 @@ export default function Dealers() {
                 <StatCard label="Invoices issued" value={summary.invoices} icon={<FiFileText />} tone="brown" />
             </section>
 
-            <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <label className="relative flex-1">
-                        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-gray-400" />
-                        <input value={search} onChange={(event) => { setLoading(true); setSearch(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} placeholder="Search name, phone, GSTIN, or dealer code" className="w-full rounded-xl border border-gray-100 bg-gray-50 py-2.5 pl-11 pr-4 text-sm font-medium text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-orange-100" />
-                    </label>
-                    <div className="flex items-center gap-3">
-                        <select value={status} onChange={(event) => { setLoading(true); setStatus(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} className="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-600 outline-none focus:border-primary">
-                            <option value="All">Select Status</option><option value="Active">Active</option><option value="Inactive">Inactive</option>
-                        </select>
-                        <div className="flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
-                            <button type="button" onClick={() => setViewMode("table")} aria-label="Table view" className={`rounded-lg p-2 transition-all ${viewMode === "table" ? "bg-orange-100 text-primary-dark" : "text-gray-400 hover:text-slate-600"}`}><FiList size={18} /></button>
-                            <button type="button" onClick={() => setViewMode("grid")} aria-label="Grid view" className={`rounded-lg p-2 transition-all ${viewMode === "grid" ? "bg-orange-100 text-primary-dark" : "text-gray-400 hover:text-slate-600"}`}><FiGrid size={18} /></button>
-                        </div>
+            <section aria-label="Dealer filters" className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <label className="relative w-full sm:max-w-lg">
+                    <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-gray-400" />
+                    <input value={search} onChange={(event) => { setLoading(true); setSearch(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} placeholder="Search name, phone, GSTIN, or dealer code" className="w-full rounded-xl border border-gray-100 bg-gray-50 py-2.5 pl-11 pr-4 text-sm font-medium text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-orange-100" />
+                </label>
+
+
+                <div className="flex items-center gap-3">
+                    
+                    <select value={status} onChange={(event) => { setLoading(true); setStatus(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} className="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-600 outline-none focus:border-primary">
+                        <option value="All">Select Status</option><option value="Active">Active</option><option value="Inactive">Inactive</option>
+                    </select>
+                    <div className="flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+                        <button type="button" onClick={() => setViewMode("table")} aria-label="Table view" className={`rounded-lg p-2 transition-all ${viewMode === "table" ? "bg-orange-100 text-primary-dark" : "text-gray-400 hover:text-slate-600"}`}><FiList size={18} /></button>
+                        <button type="button" onClick={() => setViewMode("grid")} aria-label="Grid view" className={`rounded-lg p-2 transition-all ${viewMode === "grid" ? "bg-orange-100 text-primary-dark" : "text-gray-400 hover:text-slate-600"}`}><FiGrid size={18} /></button>
                     </div>
+
+                     <div className="flex gap-2">
+                    <button type="button" onClick={exportCsv} disabled={!dealers.length || exporting} className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-600 shadow-sm transition-all hover:bg-orange-50 hover:text-primary-dark disabled:opacity-50"><FiDownload /> {exporting ? "Exporting..." : "Export CSV"}</button>
+                    <button type="button" onClick={() => { setEditingDealer(null); setModalOpen(true); }} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95"><FiPlus /> Add dealer</button>
                 </div>
+                </div>
+            </section>
+
+            <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 {viewMode === "table" ? (
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[940px] text-left text-sm">
                         <thead className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light text-[10px] uppercase tracking-wider text-[#FCD34D]">
-                            <tr><th className="rounded-tl-2xl p-4 font-bold">Dealer</th><th className="p-4 font-bold">Contact</th><th className="p-4 font-bold">GSTIN</th><th className="p-4 font-bold">Invoices</th><th className="p-4 font-bold">Outstanding</th><th className="p-4 font-bold">Status</th><th className="rounded-tr-2xl p-4 text-right font-bold">Actions</th></tr>
+                            <tr><th className="w-16 rounded-tl-2xl p-4 text-center font-bold">S No</th><th className="p-4 font-bold">Dealer</th><th className="p-4 font-bold">Contact</th><th className="p-4 font-bold">GSTIN</th><th className="p-4 font-bold">Invoices</th><th className="p-4 font-bold">Outstanding</th><th className="p-4 font-bold">Status</th><th className="rounded-tr-2xl p-4 text-right font-bold">Actions</th></tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {loading ? <tr><td colSpan="7" className="p-10 text-center text-gray-500">Loading dealers...</td></tr>
-                                : dealers.length === 0 ? <tr><td colSpan="7" className="p-10 text-center text-gray-500">No dealers found.</td></tr>
-                                    : dealers.map((dealer) => (
+                            {loading ? <tr><td colSpan="8" className="p-10 text-center text-gray-500">Loading dealers...</td></tr>
+                                : dealers.length === 0 ? <tr><td colSpan="8" className="p-10 text-center text-gray-500">No dealers found.</td></tr>
+                                    : dealers.map((dealer, index) => (
                                         <tr key={dealer.id} className="group transition-colors hover:bg-gray-50/60">
+                                            <td className="p-4 text-center text-gray-500">{(pagination.page - 1) * 25 + index + 1}</td>
                                             <td className="p-4"><p className="font-bold text-slate-800">{dealer.name}</p><p className="text-xs text-gray-500">{dealer.dealer_code || "—"} · {dealer.company_name}</p></td>
                                             <td className="p-4"><p>{dealer.mobile}</p><p className="text-xs text-gray-500">{dealer.email || "—"}</p></td>
                                             <td className="p-4">{dealer.gstin || "—"}</td>
