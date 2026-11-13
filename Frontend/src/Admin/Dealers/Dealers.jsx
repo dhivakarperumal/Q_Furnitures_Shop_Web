@@ -1,430 +1,400 @@
-import React, { useState, useEffect } from "react";
-import api from "../../api";
-import {
-    FiTruck,
-    FiPlus,
-    FiSearch,
-    FiPhone,
-    FiMail,
-    FiMapPin,
-    FiStar,
-    FiMoreVertical,
-    FiPackage,
-    FiCheck,
-    FiUpload,
-    FiDownload,
-    FiFilter,
-    FiGrid,
-    FiList,
-    FiX
-} from "react-icons/fi";
-import { toast, Toaster } from "react-hot-toast";
+import { useEffect, useState } from "react";
+import { FiDownload, FiEdit2, FiFileText, FiPlus, FiSearch, FiTrash2, FiTruck, FiX } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import api from "../../api";
 import AddDealerModal from "./AddDealerModal";
-import { resolveMediaUrl } from "../../utils/media";
 
-const Dealers = () => {
+const currency = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const initialSummary = { total: 0, active: 0, inactive: 0, invoices: 0 };
+
+export default function Dealers() {
     const navigate = useNavigate();
     const [dealers, setDealers] = useState([]);
+    const [summary, setSummary] = useState(initialSummary);
+    const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+    const [search, setSearch] = useState("");
+    const [status, setStatus] = useState("All");
     const [loading, setLoading] = useState(true);
-    const [selectedDealer, setSelectedDealer] = useState(null);
-    const [showHistory, setShowHistory] = useState(false);
-    const [showAddDealer, setShowAddDealer] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
-    const [viewMode, setViewMode] = useState("table");
-
-    // Mock history data
-    const mockHistory = [
-        { id: "#INV-2024-001", date: "2024-03-01", items: "Wedding Silk Saree x 5", amount: "₹45,000", status: "Paid" },
-        { id: "#INV-2024-042", date: "2024-02-15", items: "Cotton Saree x 12", amount: "₹18,000", status: "Paid" },
-        { id: "#INV-2023-118", date: "2024-01-20", items: "Linen Saree x 2", amount: "₹4,200", status: "Pending" },
-    ];
+    const [exporting, setExporting] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editingDealer, setEditingDealer] = useState(null);
+    const [profile, setProfile] = useState(null);
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [paymentInvoice, setPaymentInvoice] = useState(null);
+    const [creditInvoice, setCreditInvoice] = useState(null);
+    const [paymentSaving, setPaymentSaving] = useState(false);
+    const [creditSaving, setCreditSaving] = useState(false);
+    const [paymentForm, setPaymentForm] = useState(() => ({ paid_at: new Date().toISOString().slice(0, 10), amount: "", payment_method: "Cash", transaction_id: "", reference_number: "", notes: "" }));
+    const [creditForm, setCreditForm] = useState(() => ({ credit_date: new Date().toISOString().slice(0, 10), reason: "", notes: "", quantities: {} }));
 
     useEffect(() => {
-        fetchDealers();
-    }, []);
+        let current = true;
+        api.get("/dealers", { params: { page: pagination.page, limit: 25, search, status } })
+            .then((response) => {
+                if (!current) return;
+                setDealers(response.data.dealers || []);
+                setSummary(response.data.summary || initialSummary);
+                setPagination(response.data.pagination || { page: 1, totalPages: 1, total: 0 });
+            })
+            .catch((error) => {
+                if (!current) return;
+                console.error("Dealer list request failed:", error);
+                toast.error(error.response?.data?.message || "Could not load dealers.");
+            })
+            .finally(() => { if (current) setLoading(false); });
+        return () => { current = false; };
+    }, [pagination.page, search, status]);
 
-    const fetchDealers = async () => {
+    const reloadDealers = async () => {
         setLoading(true);
         try {
-            const res = await api.get("/dealers");
-            setDealers(res.data);
+            const response = await api.get("/dealers", {
+                params: { page: pagination.page, limit: 25, search, status },
+            });
+            setDealers(response.data.dealers || []);
+            setSummary(response.data.summary || initialSummary);
+            setPagination(response.data.pagination || { page: 1, totalPages: 1, total: 0 });
         } catch (error) {
-            console.error("Fetch Dealers Error:", error);
-            toast.error("Failed to load dealers");
+            console.error("Dealer list request failed:", error);
+            toast.error(error.response?.data?.message || "Could not load dealers.");
         } finally {
             setLoading(false);
         }
     };
 
-    const filteredDealers = dealers.filter(dealer => {
-        const search = searchTerm.toLowerCase();
-        const matchesSearch = dealer.name?.toLowerCase().includes(search) ||
-            dealer.contact?.toLowerCase().includes(search) ||
-            dealer.location?.toLowerCase().includes(search) ||
-            dealer.email?.toLowerCase().includes(search);
-        const matchesStatus = statusFilter === "All" || dealer.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
-
-    const totalDealers = dealers.length;
-    const activeDealers = dealers.filter(dealer => String(dealer.status || "Active").toLowerCase() === "active").length;
-    const inactiveDealers = dealers.filter(dealer => String(dealer.status || "Active").toLowerCase() === "inactive").length;
-    const totalOrders = dealers.reduce((total, dealer) => total + (Number(dealer.orders) || 0), 0);
-
-    const handleContact = (dealer) => {
-        toast.promise(
-            new Promise((resolve) => setTimeout(resolve, 800)),
-            {
-                loading: `Opening secure chat with ${dealer.name}...`,
-                success: `Connected to ${dealer.contact}!`,
-                error: 'Connection failed',
-            }
-        );
+    const openProfile = async (dealer) => {
+        setProfileLoading(true);
+        setProfile({ ...dealer, invoices: [], ledger: [] });
+        try {
+            const response = await api.get(`/dealers/${dealer.id}`);
+            setProfile(response.data.dealer);
+        } catch (error) {
+            console.error("Dealer profile request failed:", error);
+            toast.error(error.response?.data?.message || "Could not load dealer history.");
+        } finally {
+            setProfileLoading(false);
+        }
     };
 
-    const handleViewHistory = (dealer) => {
-        setSelectedDealer(dealer);
-        setShowHistory(true);
+    const removeDealer = async (dealer) => {
+        if (!window.confirm(`Delete ${dealer.name}? This action cannot be undone.`)) return;
+        try {
+            await api.delete(`/dealers/${dealer.id}`);
+            toast.success("Dealer deleted.");
+            await reloadDealers();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Dealer could not be deleted.");
+        }
     };
 
-    const handleImportExcel = () => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.xlsx, .xls, .csv';
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                toast.loading(`Importing ${file.name}...`);
-                setTimeout(() => {
-                    toast.dismiss();
-                    toast.success("All partners imported successfully!");
-                }, 1500);
-            }
-        };
-        input.click();
+    const exportCsv = async () => {
+        const columns = ["dealer_code", "name", "company_name", "contact_person", "mobile", "email", "gstin", "dealer_type", "city", "state", "status", "total_invoices", "total_purchases", "outstanding_balance"];
+        const quote = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+        setExporting(true);
+        try {
+            const first = await api.get("/dealers", { params: { page: 1, limit: 100, search, status } });
+            const pageCount = Math.max(1, Number(first.data.pagination?.totalPages) || 1);
+            const remaining = await Promise.all(Array.from({ length: pageCount - 1 }, (_, index) =>
+                api.get("/dealers", { params: { page: index + 2, limit: 100, search, status } })));
+            const rows = [first.data, ...remaining.map((response) => response.data)].flatMap((page) => page.dealers || []);
+            const csv = [columns.join(","), ...rows.map((dealer) => columns.map((column) => quote(dealer[column])).join(","))].join("\r\n");
+            const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "dealers.csv";
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Dealer export failed:", error);
+            toast.error(error.response?.data?.message || "Dealer export failed.");
+        } finally {
+            setExporting(false);
+        }
     };
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case "Premium": return "bg-amber-100 text-amber-700 border-amber-200";
-            case "Verified": return "bg-emerald-100 text-emerald-700 border-emerald-200";
-            case "Pending": return "bg-gray-100 text-gray-700 border-gray-200";
-            default: return "bg-gray-100 text-gray-500 border-gray-100";
+    const savePayment = async (event) => {
+        event.preventDefault();
+        if (!paymentInvoice) return;
+        const amount = Number(paymentForm.amount);
+        if (!Number.isFinite(amount) || amount <= 0 || amount > Number(paymentInvoice.balance_due)) {
+            toast.error("Enter a payment amount within the remaining balance.");
+            return;
+        }
+        setPaymentSaving(true);
+        try {
+            await api.post(`/invoices/${paymentInvoice.id}/payments`, { ...paymentForm, amount });
+            toast.success("Payment recorded.");
+            setPaymentInvoice(null);
+            setPaymentForm({ paid_at: new Date().toISOString().slice(0, 10), amount: "", payment_method: "Cash", transaction_id: "", reference_number: "", notes: "" });
+            await openProfile(profile);
+            await reloadDealers();
+        } catch (error) {
+            console.error("Payment recording failed:", error);
+            toast.error(error.response?.data?.message || "Payment could not be recorded.");
+        } finally {
+            setPaymentSaving(false);
+        }
+    };
+
+    const openCreditNote = async (invoice) => {
+        try {
+            const response = await api.get(`/invoices/${invoice.id}`);
+            setCreditInvoice(response.data.invoice);
+            setCreditForm({ credit_date: new Date().toISOString().slice(0, 10), reason: "", notes: "", quantities: {} });
+        } catch (error) {
+            console.error("Invoice items could not be loaded for return:", error);
+            toast.error(error.response?.data?.message || "Invoice items could not be loaded.");
+        }
+    };
+
+    const saveCreditNote = async (event) => {
+        event.preventDefault();
+        if (!creditInvoice) return;
+        const items = Object.entries(creditForm.quantities)
+            .filter(([, quantity]) => Number(quantity) > 0)
+            .map(([invoice_item_id, quantity]) => ({ invoice_item_id: Number(invoice_item_id), quantity: Number(quantity) }));
+        if (!items.length) {
+            toast.error("Choose at least one product quantity to return.");
+            return;
+        }
+        setCreditSaving(true);
+        try {
+            await api.post(`/invoices/${creditInvoice.id}/credit-notes`, {
+                credit_date: creditForm.credit_date,
+                reason: creditForm.reason,
+                notes: creditForm.notes,
+                items,
+            });
+            toast.success("Credit note issued and dealer balance updated.");
+            setCreditInvoice(null);
+            await openProfile(profile);
+            await reloadDealers();
+        } catch (error) {
+            console.error("Credit note creation failed:", error);
+            toast.error(error.response?.data?.message || "Credit note could not be issued.");
+        } finally {
+            setCreditSaving(false);
+        }
+    };
+
+    const printInvoice = async (invoice) => {
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) {
+            toast.error("Allow pop-ups to print this invoice.");
+            return;
+        }
+        try {
+            const response = await api.get(`/invoices/${invoice.id}`);
+            const data = response.data.invoice;
+            const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+            })[character]);
+            const items = data.items.map((item) => `<tr><td>${escape(item.product_name)}</td><td>${escape(item.hsn_code)}</td><td>${escape(item.quantity)} ${escape(item.unit)}</td><td>₹${Number(item.unit_price).toFixed(2)}</td><td>₹${Number(item.taxable_amount).toFixed(2)}</td><td>₹${Number(item.gst_amount).toFixed(2)}</td><td>₹${Number(item.line_total).toFixed(2)}</td></tr>`).join("");
+            printWindow.document.write(`<!doctype html><html><head><title>${escape(data.invoice_number)}</title><style>body{font:14px Arial,sans-serif;color:#172033;margin:32px}h1{margin:0 0 8px}header,.row{display:flex;justify-content:space-between;gap:24px}.card{border:1px solid #ddd;padding:16px;margin:18px 0}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f4f4}.totals{margin-left:auto;width:300px}.totals p{display:flex;justify-content:space-between;margin:8px 0}@media print{body{margin:12mm}}</style></head><body><header><div><h1>Tax Invoice</h1><p>${escape(data.invoice_number)}</p></div><div><b>Invoice date</b><br>${escape(String(data.invoice_date).slice(0, 10))}<br><b>Due date</b><br>${escape(String(data.due_date || "—").slice(0, 10))}</div></header><section class="card"><b>${escape(data.customer_name)}</b><p>${escape(data.billing_address)}</p><p>Mobile: ${escape(data.mobile)} · GSTIN: ${escape(data.gstin)}</p><p>Place of supply: ${escape(data.place_of_supply)}</p></section><table><thead><tr><th>Product</th><th>HSN/SAC</th><th>Qty</th><th>Price</th><th>Taxable</th><th>GST</th><th>Total</th></tr></thead><tbody>${items}</tbody></table><section class="totals"><p><span>Subtotal</span><b>₹${Number(data.subtotal).toFixed(2)}</b></p><p><span>Discount</span><b>₹${(Number(data.item_discount) + Number(data.additional_discount)).toFixed(2)}</b></p><p><span>Taxable amount</span><b>₹${Number(data.taxable_amount).toFixed(2)}</b></p><p><span>CGST / SGST / IGST</span><b>₹${(Number(data.cgst_amount) + Number(data.sgst_amount) + Number(data.igst_amount)).toFixed(2)}</b></p><p><span>Delivery & installation</span><b>₹${(Number(data.delivery_charges) + Number(data.installation_charges)).toFixed(2)}</b></p><p><span>Grand total</span><b>₹${Number(data.grand_total).toFixed(2)}</b></p><p><span>Paid / Credited / Balance</span><b>₹${Number(data.amount_paid).toFixed(2)} / ₹${Number(data.credited_amount || 0).toFixed(2)} / ₹${Number(data.balance_due).toFixed(2)}</b></p></section><p>${escape(data.notes)}</p><script>window.onload=()=>window.print()</script></body></html>`);
+            printWindow.document.close();
+        } catch (error) {
+            printWindow.close();
+            console.error("Invoice print failed:", error);
+            toast.error(error.response?.data?.message || "Invoice could not be loaded for printing.");
         }
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <Toaster position="top-right" />
-            {/* Dealer Analytics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shrink-0"><FiTruck size={22} /></div>
-                    <div><p className="text-xs text-gray-400 font-medium">Total Dealers</p><h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{totalDealers.toLocaleString()}</h3><p className="text-[10px] text-gray-400">All registered partners</p></div>
+        <div className="space-y-6 pb-10">
+            <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary">Business partners</p>
+                    <h1 className="text-3xl font-black text-slate-800">Dealers</h1>
+                    <p className="mt-1 text-sm text-gray-500">Manage dealer accounts, invoices, balances, and transaction history.</p>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-lg shrink-0"><FiCheck size={22} /></div>
-                    <div><p className="text-xs text-gray-400 font-medium">Active Dealers</p><h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{activeDealers.toLocaleString()}</h3><p className="text-[10px] text-gray-400">Currently active</p></div>
+                <div className="flex gap-2">
+                    <button type="button" onClick={exportCsv} disabled={!dealers.length || exporting} className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50"><FiDownload /> {exporting ? "Exporting..." : "Export CSV"}</button>
+                    <button type="button" onClick={() => { setEditingDealer(null); setModalOpen(true); }} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white"><FiPlus /> Add dealer</button>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white shadow-lg shrink-0"><FiX size={22} /></div>
-                    <div><p className="text-xs text-gray-400 font-medium">Inactive Dealers</p><h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{inactiveDealers.toLocaleString()}</h3><p className="text-[10px] text-gray-400">Needs follow-up</p></div>
+            </header>
+
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatCard label="Total dealers" value={summary.total} icon={<FiTruck />} />
+                <StatCard label="Active dealers" value={summary.active} />
+                <StatCard label="Inactive dealers" value={summary.inactive} />
+                <StatCard label="Invoices issued" value={summary.invoices} icon={<FiFileText />} />
+            </section>
+
+            <section className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+                <div className="flex flex-col gap-3 border-b p-4 sm:flex-row">
+                    <label className="relative flex-1">
+                        <FiSearch className="absolute left-3 top-3.5 text-gray-400" />
+                        <input value={search} onChange={(event) => { setLoading(true); setSearch(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} placeholder="Search name, phone, GSTIN, or dealer code" className="w-full rounded-lg border py-3 pl-10 pr-3 text-sm outline-none focus:border-primary" />
+                    </label>
+                    <select value={status} onChange={(event) => { setLoading(true); setStatus(event.target.value); setPagination((current) => ({ ...current, page: 1 })); }} className="rounded-lg border px-3 py-2 text-sm">
+                        <option value="All">All statuses</option><option value="Active">Active</option><option value="Inactive">Inactive</option>
+                    </select>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white shadow-lg shrink-0"><FiPackage size={22} /></div>
-                    <div><p className="text-xs text-gray-400 font-medium">Total Orders</p><h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{totalOrders.toLocaleString()}</h3><p className="text-[10px] text-gray-400">Across all dealers</p></div>
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[940px] text-left text-sm">
+                        <thead className="bg-slate-900 text-xs uppercase tracking-wide text-white">
+                            <tr><th className="p-4">Dealer</th><th className="p-4">Contact</th><th className="p-4">GSTIN</th><th className="p-4">Invoices</th><th className="p-4">Outstanding</th><th className="p-4">Status</th><th className="p-4 text-right">Actions</th></tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {loading ? <tr><td colSpan="7" className="p-10 text-center text-gray-500">Loading dealers...</td></tr>
+                                : dealers.length === 0 ? <tr><td colSpan="7" className="p-10 text-center text-gray-500">No dealers found.</td></tr>
+                                    : dealers.map((dealer) => (
+                                        <tr key={dealer.id} className="hover:bg-orange-50/40">
+                                            <td className="p-4"><p className="font-bold text-slate-800">{dealer.name}</p><p className="text-xs text-gray-500">{dealer.dealer_code || "—"} · {dealer.company_name}</p></td>
+                                            <td className="p-4"><p>{dealer.mobile}</p><p className="text-xs text-gray-500">{dealer.email || "—"}</p></td>
+                                            <td className="p-4">{dealer.gstin || "—"}</td>
+                                            <td className="p-4">{dealer.total_invoices || 0}<p className="text-xs text-gray-500">{currency(dealer.total_purchases)}</p></td>
+                                            <td className="p-4 font-semibold">{currency(dealer.outstanding_balance)}</td>
+                                            <td className="p-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${dealer.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{dealer.status}</span></td>
+                                            <td className="p-4"><div className="flex justify-end gap-2">
+                                                <button type="button" onClick={() => openProfile(dealer)} className="rounded-lg border px-3 py-2 text-xs font-bold hover:bg-gray-50">History</button>
+                                                <button type="button" onClick={() => navigate(`/admin/invoices/add?dealerId=${dealer.id}`)} className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">Invoice</button>
+                                                <button type="button" onClick={() => { setEditingDealer(dealer); setModalOpen(true); }} className="rounded-lg border p-2 text-gray-600 hover:bg-gray-50" aria-label={`Edit ${dealer.name}`}><FiEdit2 /></button>
+                                                <button type="button" onClick={() => removeDealer(dealer)} className="rounded-lg border p-2 text-red-600 hover:bg-red-50" aria-label={`Delete ${dealer.name}`}><FiTrash2 /></button>
+                                            </div></td>
+                                        </tr>
+                                    ))}
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-            {/* Page Header */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
-                    <div className="relative w-full sm:w-72">
-                        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search dealers..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 transition-all text-sm font-medium"
-                        />
+                <footer className="flex items-center justify-between border-t p-4 text-sm text-gray-500">
+                    <span>{pagination.total} dealers</span>
+                    <div className="flex items-center gap-2">
+                        <button type="button" disabled={pagination.page <= 1 || loading} onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page: current.page - 1 })); }} className="rounded-lg border px-3 py-2 disabled:opacity-40">Previous</button>
+                        <span>Page {pagination.page} of {pagination.totalPages}</span>
+                        <button type="button" disabled={pagination.page >= pagination.totalPages || loading} onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page: current.page + 1 })); }} className="rounded-lg border px-3 py-2 disabled:opacity-40">Next</button>
                     </div>
-                    <div className="relative w-full sm:w-40">
-                        <FiFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={15} />
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full appearance-none pl-9 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium outline-none focus:border-blue-500"
-                        >
-                            <option value="All">All Status</option>
-                            <option value="Premium">Premium</option>
-                            <option value="Verified">Verified</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                        </select>
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none">▼</span>
-                    </div>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
-                        <button type="button" onClick={() => setViewMode("table")} className={`p-2 rounded-md transition-colors ${viewMode === "table" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-blue-600"}`} aria-label="Table mode" title="Table mode">
-                            <FiList size={16} />
-                        </button>
-                        <button type="button" onClick={() => setViewMode("card")} className={`p-2 rounded-md transition-colors ${viewMode === "card" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-blue-600"}`} aria-label="Card mode" title="Card mode">
-                            <FiGrid size={16} />
-                        </button>
-                    </div>
-                    <button
-                        onClick={handleImportExcel}
-                        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#4b0b78] border border-[#4b0b78] text-white px-5 py-2.5 rounded-lg font-bold transition-all hover:bg-[#260642] active:scale-95 shadow-sm"
-                    >
-                        <FiUpload /> Import Partners
-                    </button>
+                </footer>
+            </section>
 
-                    <button
-                        onClick={() => setShowAddDealer(true)}
-                        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#4b0b78] hover:bg-[#260642] text-white px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-purple-200 active:scale-95"
-                    >
-                        <FiPlus /> New Partnership
-                    </button>
-                </div>
-            </div>
-
-            {/* Table View */}
-            {viewMode === "table" && (
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse whitespace-nowrap">
-                            <thead>
-                                <tr className="bg-gradient-to-r from-[#260642] to-[#4b0b78] text-[11px] font-black text-[#facc15] uppercase tracking-wider">
-                                    <th className="px-4 py-4 text-center"><input type="checkbox" className="rounded border-white/70 text-[#facc15] focus:ring-[#facc15]" aria-label="Select all dealers" /></th>
-                                    <th className="px-4 py-4 text-center">S No</th>
-                                    <th className="px-6 py-4">Dealer</th>
-                                    <th className="px-6 py-4">Contact</th>
-                                    <th className="px-6 py-4">Location</th>
-                                    <th className="px-6 py-4 text-center">Rating</th>
-                                    <th className="px-6 py-4 text-center">Orders</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr><td colSpan="9" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">Loading dealers...</td></tr>
-                                ) : filteredDealers.length === 0 ? (
-                                    <tr><td colSpan="9" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">No dealers found.</td></tr>
-                                ) : filteredDealers.map((dealer, index) => (
-                                    <tr key={dealer.id} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
-                                        <td className="px-4 py-4 text-center"><input type="checkbox" className="rounded border-gray-300 text-[#4318FF] focus:ring-[#4318FF]" aria-label={`Select ${dealer.name}`} /></td>
-                                        <td className="px-4 py-4 text-center text-sm font-bold text-gray-400">{index + 1}</td>
-                                        <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-blue-50 overflow-hidden flex items-center justify-center text-blue-600 font-black">{dealer.image ? <img src={resolveMediaUrl(dealer.image)} alt={dealer.name} className="w-full h-full object-cover" /> : dealer.name?.charAt(0)}</div><div><p className="font-bold text-slate-800">{dealer.name}</p><p className="text-xs text-gray-400">#{dealer.id}</p></div></div></td>
-                                        <td className="px-6 py-4"><p className="text-sm font-medium text-slate-700">{dealer.phone || dealer.contact || "-"}</p><p className="text-xs text-gray-400">{dealer.email || "-"}</p></td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">{dealer.location || "-"}</td>
-                                        <td className="px-6 py-4 text-center font-bold text-amber-500"><span className="inline-flex items-center gap-1"><FiStar fill="currentColor" />{dealer.rating || "-"}</span></td>
-                                        <td className="px-6 py-4 text-center font-bold text-blue-600">{dealer.orders || 0}</td>
-                                        <td className="px-6 py-4"><span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(dealer.status)}`}>{dealer.status || "Pending"}</span></td>
-                                        <td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => handleContact(dealer)} className="px-3 py-2 rounded-lg bg-[#4b0b78] text-white text-xs font-bold hover:bg-[#260642]">Contact</button><button onClick={() => navigate(`/admin/invoices/add?dealerId=${dealer.id}`)} className="px-3 py-2 rounded-lg bg-[#4b0b78] text-white text-xs font-bold hover:bg-[#260642]">Invoice</button><button onClick={() => handleViewHistory(dealer)} className="px-3 py-2 rounded-lg bg-[#4b0b78] text-white text-xs font-bold hover:bg-[#260642]">History</button></div></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {/* Dealers Grid */}
-            {viewMode === "card" && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                    Array(3).fill(0).map((_, i) => (
-                        <div key={i} className="animate-pulse bg-white rounded-[2rem] border border-gray-100 p-6 h-80 shadow-sm">
-                            <div className="flex gap-4 mb-6">
-                                <div className="w-16 h-16 bg-gray-200 rounded-2xl shrink-0"></div>
-                                <div className="flex-1 space-y-2 py-1">
-                                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                                </div>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="h-10 bg-gray-100 rounded-2xl"></div>
-                                    <div className="h-10 bg-gray-100 rounded-2xl"></div>
-                                </div>
-                                <div className="h-4 bg-gray-100 rounded w-full"></div>
-                                <div className="h-4 bg-gray-100 rounded w-2/3"></div>
-                            </div>
-                        </div>
-                    ))
-                ) : filteredDealers.map((dealer) => (
-                    <div key={dealer.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group p-6">
-                        <div className="flex items-start justify-between mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-2xl bg-gray-50 overflow-hidden border border-gray-100 flex items-center justify-center">
-                                    {dealer.image ? (
-                                        <img src={resolveMediaUrl(dealer.image)} alt={dealer.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                    ) : (
-                                        <span className="text-xl font-black text-blue-600 bg-blue-50 w-full h-full flex items-center justify-center capitalize">{dealer.name?.charAt(0)}</span>
-                                    )}
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{dealer.name}</h3>
-                                    <span className={`mt-1 px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(dealer.status)}`}>
-                                        {dealer.status}
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => toast.error("Quick actions not configured yet.")}
-                                className="p-2 text-gray-400 hover:bg-gray-100 rounded-xl transition-all"
-                            >
-                                <FiMoreVertical />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-3 bg-gray-50/50 rounded-2xl flex flex-col items-center">
-                                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">Rating</p>
-                                    <div className="flex items-center gap-1 text-amber-500 font-bold">
-                                        <FiStar fill="currentColor" /> {dealer.rating}
-                                    </div>
-                                </div>
-                                <div className="p-3 bg-gray-50/50 rounded-2xl flex flex-col items-center">
-                                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">Orders</p>
-                                    <div className="flex items-center gap-1 text-blue-600 font-bold">
-                                        <FiPackage /> {dealer.orders}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2.5 border-t border-gray-50 pt-4">
-                                <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
-                                    <FiMapPin className="text-blue-500" /> {dealer.location}
-                                </div>
-                                <div className="flex items-center gap-3 text-sm text-gray-500 font-medium overflow-hidden">
-                                    <FiMail className="text-blue-500" /> <span className="truncate">{dealer.email}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
-                                    <FiPhone className="text-blue-500" /> {dealer.phone}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex gap-2">
-                            <button
-                                onClick={() => handleContact(dealer)}
-                                className="flex-1 py-2.5 bg-[#4b0b78] hover:bg-[#260642] rounded-xl text-xs font-bold text-white transition-all border border-[#4b0b78]"
-                            >
-                                Contact
-                            </button>
-                            <button
-                                onClick={() => navigate(`/admin/invoices/add?dealerId=${dealer.id}`)}
-                                className="flex-1 py-2.5 bg-[#4b0b78] hover:bg-[#260642] rounded-xl text-xs font-bold text-white transition-all border border-[#4b0b78]"
-                            >
-                                Invoice
-                            </button>
-                            <button
-                                onClick={() => handleViewHistory(dealer)}
-                                className="flex-1 py-2.5 bg-[#4b0b78] hover:bg-[#260642] rounded-xl text-xs font-bold text-white transition-all border border-[#4b0b78]"
-                            >
-                                View History
-                            </button>
-                        </div>
-                    </div>
-                ))}
-
-                {/* Invite Card */}
-                <div className="bg-gradient-to-br from-[#260642] to-[#4b0b78] rounded-[2rem] p-8 flex flex-col items-center justify-center text-center text-white relative overflow-hidden group cursor-pointer shadow-xl shadow-purple-200">
-                    <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
-                    <div className="absolute -left-10 -top-10 w-24 h-24 bg-white/5 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
-
-                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-2xl mb-6 backdrop-blur-md border border-white/20 group-hover:scale-110 transition-transform">
-                        <FiTruck />
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">Expand Your Network</h3>
-                    <p className="text-white/70 text-sm mb-8 px-4">Invite more dealers and manage all collections in one place.</p>
-                    <button
-                        onClick={() => setShowAddDealer(true)}
-                        className="w-full py-3.5 bg-white text-[#4b0b78] rounded-xl font-black text-sm uppercase tracking-widest shadow-lg hover:shadow-2xl active:scale-95 transition-all"
-                    >
-                        Invite Partner
-                    </button>
-                </div>
-            </div>}
-
-            {/* History Modal */}
-            {showHistory && selectedDealer && (
-                <div className="fixed inset-0 z-[99] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
-                        <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-slate-50/50">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                                    <FiPackage size={20} />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-black text-slate-800 italic">{selectedDealer.name}</h2>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Transaction History & Invoices</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setShowHistory(false)}
-                                className="p-3 hover:bg-white rounded-2xl text-gray-400 hover:text-red-500 transition-all border border-transparent hover:border-gray-100 shadow-sm"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-
-                        <div className="p-8 max-h-[60vh] overflow-y-auto">
-                            <div className="space-y-4">
-                                {mockHistory.map((h, i) => (
-                                    <div key={i} className="group p-5 bg-gray-50 hover:bg-white border border-gray-100 hover:border-blue-100 rounded-3xl transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-500 shadow-sm border border-gray-50 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                                <FiDownload size={16} />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-black text-slate-800">{h.id}</p>
-                                                <p className="text-xs text-gray-400 font-bold italic">{h.items}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between sm:justify-end gap-6">
-                                            <div className="text-right">
-                                                <p className="text-sm font-black text-slate-800 italic">{h.amount}</p>
-                                                <p className="text-[10px] text-gray-400 font-bold">{h.date}</p>
-                                            </div>
-                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${h.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                                                {h.status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="p-8 bg-gray-50/50 border-t border-gray-50">
-                            <button
-                                onClick={() => {
-                                    setShowHistory(false);
-                                    navigate(`/admin/invoices/add?dealerId=${selectedDealer.id}`);
-                                }}
-                                className="w-full bg-[#4b0b78] hover:bg-[#260642] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-xl shadow-purple-200"
-                            >
-                                Create New Invoice for Partner
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Add Dealer Modal */}
-            <AddDealerModal 
-                isOpen={showAddDealer} 
-                onClose={() => setShowAddDealer(false)} 
-                onSuccess={fetchDealers} 
-            />
+            {modalOpen && <AddDealerModal key={editingDealer?.id || "new"} isOpen={modalOpen} dealer={editingDealer} onClose={() => setModalOpen(false)} onSuccess={reloadDealers} />}
+            {profile && <DealerProfile profile={profile} loading={profileLoading} onClose={() => setProfile(null)} onCreateInvoice={() => navigate(`/admin/invoices/add?dealerId=${profile.id}`)} onRecordPayment={(invoice) => { setPaymentInvoice(invoice); setPaymentForm((current) => ({ ...current, amount: String(invoice.balance_due) })); }} onCreateCreditNote={openCreditNote} onPrintInvoice={printInvoice} />}
+            {paymentInvoice && <PaymentModal invoice={paymentInvoice} form={paymentForm} setForm={setPaymentForm} saving={paymentSaving} onClose={() => setPaymentInvoice(null)} onSubmit={savePayment} />}
+            {creditInvoice && <CreditNoteModal invoice={creditInvoice} form={creditForm} setForm={setCreditForm} saving={creditSaving} onClose={() => setCreditInvoice(null)} onSubmit={saveCreditNote} />}
         </div>
     );
-};
+}
 
-export default Dealers;
+function StatCard({ label, value, icon }) {
+    return <article className="flex items-center gap-4 rounded-2xl border bg-white p-5 shadow-sm">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-primary">{icon || <FiTruck />}</div>
+        <div><p className="text-xs font-semibold text-gray-500">{label}</p><p className="text-2xl font-black text-slate-800">{Number(value || 0).toLocaleString()}</p></div>
+    </article>;
+}
+
+function DealerProfile({ profile, loading, onClose, onCreateInvoice, onRecordPayment, onCreateCreditNote, onPrintInvoice }) {
+    return <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+        <section className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-2xl bg-white shadow-2xl">
+            <header className="flex items-center justify-between border-b p-5">
+                <div><h2 className="text-xl font-black text-slate-800">{profile.name}</h2><p className="text-sm text-gray-500">{profile.dealer_code} · {profile.mobile} · {profile.gstin || "No GSTIN"}</p></div>
+                <div className="flex gap-2"><button type="button" onClick={onCreateInvoice} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white">New invoice</button><button type="button" onClick={onClose} className="rounded-lg border p-2" aria-label="Close"><FiX /></button></div>
+            </header>
+            {loading ? <p className="p-8 text-center text-gray-500">Loading account history...</p> : <div className="space-y-6 p-5">
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <Summary label="Total purchases" value={currency(profile.total_purchases)} />
+                    <Summary label="Outstanding" value={currency(profile.outstanding_balance)} />
+                    <Summary label="Total paid" value={currency(profile.total_paid)} />
+                </div>
+                <section><h3 className="mb-3 font-bold">Invoices</h3><div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-gray-50"><tr><th className="p-3">Invoice</th><th className="p-3">Date</th><th className="p-3">Total</th><th className="p-3">Paid</th><th className="p-3">Credited</th><th className="p-3">Balance</th><th className="p-3">Status</th><th className="p-3">Actions</th></tr></thead>
+                        <tbody className="divide-y">{profile.invoices?.map((invoice) => <tr key={invoice.id}><td className="p-3 font-semibold">{invoice.invoice_number}</td><td className="p-3">{String(invoice.invoice_date).slice(0, 10)}</td><td className="p-3">{currency(invoice.grand_total)}</td><td className="p-3">{currency(invoice.amount_paid)}</td><td className="p-3">{currency(invoice.credited_amount)}</td><td className="p-3">{currency(invoice.balance_due)}</td><td className="p-3">{invoice.status}</td><td className="p-3"><div className="flex gap-2"><button type="button" onClick={() => onPrintInvoice(invoice)} className="rounded border px-2 py-1 text-xs font-semibold">Print</button>{Number(invoice.balance_due) > 0 && invoice.status !== "Cancelled" && <><button type="button" onClick={() => onRecordPayment(invoice)} className="rounded bg-primary px-2 py-1 text-xs font-semibold text-white">Payment</button><button type="button" onClick={() => onCreateCreditNote(invoice)} className="rounded border border-amber-300 px-2 py-1 text-xs font-semibold text-amber-800">Return</button></>}</div></td></tr>)}
+                            {!profile.invoices?.length && <tr><td colSpan="8" className="p-6 text-center text-gray-500">No invoices recorded.</td></tr>}</tbody></table>
+                </div></section>
+                <section><h3 className="mb-3 font-bold">Dealer ledger</h3><div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-gray-50"><tr><th className="p-3">Date</th><th className="p-3">Type</th><th className="p-3">Reference</th><th className="p-3">Description</th><th className="p-3">Debit</th><th className="p-3">Credit</th><th className="p-3">Balance</th></tr></thead>
+                        <tbody className="divide-y">{profile.ledger?.map((entry) => <tr key={entry.id}><td className="p-3">{String(entry.transaction_date).slice(0, 10)}</td><td className="p-3">{entry.transaction_type}</td><td className="p-3">{entry.reference_number || "—"}</td><td className="p-3">{entry.description}</td><td className="p-3">{currency(entry.debit)}</td><td className="p-3">{currency(entry.credit)}</td><td className="p-3">{currency(entry.balance)}</td></tr>)}
+                            {!profile.ledger?.length && <tr><td colSpan="7" className="p-6 text-center text-gray-500">No ledger activity recorded.</td></tr>}</tbody></table>
+                </div></section>
+                <section><h3 className="mb-3 font-bold">Credit notes / returns</h3><div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full min-w-[600px] text-left text-sm"><thead className="bg-gray-50"><tr><th className="p-3">Credit note</th><th className="p-3">Invoice</th><th className="p-3">Date</th><th className="p-3">Reason</th><th className="p-3">Amount</th></tr></thead>
+                        <tbody className="divide-y">{profile.credit_notes?.map((note) => <tr key={note.id}><td className="p-3 font-semibold">{note.credit_note_number}</td><td className="p-3">{note.invoice_number}</td><td className="p-3">{String(note.credit_date).slice(0, 10)}</td><td className="p-3">{note.reason}</td><td className="p-3">{currency(note.amount)}</td></tr>)}
+                            {!profile.credit_notes?.length && <tr><td colSpan="5" className="p-6 text-center text-gray-500">No credit notes issued.</td></tr>}</tbody></table>
+                </div></section>
+            </div>}
+        </section>
+    </div>;
+}
+
+function Summary({ label, value }) {
+    return <div className="rounded-xl bg-gray-50 p-4"><p className="text-xs text-gray-500">{label}</p><p className="mt-1 font-black text-slate-800">{value}</p></div>;
+}
+
+function PaymentModal({ invoice, form, setForm, saving, onClose, onSubmit }) {
+    const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+    return <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+        <form onSubmit={onSubmit} className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 shadow-2xl">
+            <header><h2 className="text-xl font-black text-slate-800">Record payment</h2><p className="text-sm text-gray-500">{invoice.invoice_number} · Remaining {currency(invoice.balance_due)}</p></header>
+            <label className="block text-sm font-semibold">Amount *
+                <input type="number" min="0.01" max={invoice.balance_due} step="0.01" required value={form.amount} onChange={(event) => update("amount", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm font-semibold">Payment date *
+                    <input type="date" required value={form.paid_at} onChange={(event) => update("paid_at", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                </label>
+                <label className="block text-sm font-semibold">Method *
+                    <select value={form.payment_method} onChange={(event) => update("payment_method", event.target.value)} className="mt-1 w-full rounded-lg border p-3">
+                        {["Cash", "UPI", "Card", "Bank Transfer", "Cheque", "Other"].map((method) => <option key={method}>{method}</option>)}
+                    </select>
+                </label>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm font-semibold">Transaction ID
+                    <input value={form.transaction_id} onChange={(event) => update("transaction_id", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                </label>
+                <label className="block text-sm font-semibold">Reference
+                    <input value={form.reference_number} onChange={(event) => update("reference_number", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                </label>
+            </div>
+            <label className="block text-sm font-semibold">Notes
+                <textarea rows="2" value={form.notes} onChange={(event) => update("notes", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+            </label>
+            <footer className="flex justify-end gap-2 border-t pt-4">
+                <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 font-semibold">Cancel</button>
+                <button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2 font-bold text-white disabled:opacity-60">{saving ? "Saving..." : "Record payment"}</button>
+            </footer>
+        </form>
+    </div>;
+}
+
+function CreditNoteModal({ invoice, form, setForm, saving, onClose, onSubmit }) {
+    const items = invoice.items || [];
+    const estimate = items.reduce((total, item) => {
+        const quantity = Number(form.quantities[item.id] || 0);
+        return total + (Number(item.line_total) / Number(item.quantity)) * quantity;
+    }, 0);
+    const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+    return <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+        <form onSubmit={onSubmit} className="max-h-[90vh] w-full max-w-2xl space-y-4 overflow-auto rounded-2xl bg-white p-6 shadow-2xl">
+            <header><h2 className="text-xl font-black text-slate-800">Create credit note / return</h2><p className="text-sm text-gray-500">{invoice.invoice_number} · Unpaid balance {currency(invoice.balance_due)}</p></header>
+            <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm font-semibold">Credit date *
+                    <input type="date" min={String(invoice.invoice_date).slice(0, 10)} required value={form.credit_date} onChange={(event) => update("credit_date", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+                </label>
+                <label className="block text-sm font-semibold">Reason *
+                    <input required maxLength="191" value={form.reason} onChange={(event) => update("reason", event.target.value)} placeholder="Damaged goods, return..." className="mt-1 w-full rounded-lg border p-3" />
+                </label>
+            </div>
+            <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full min-w-[560px] text-left text-sm">
+                    <thead className="bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="p-3">Invoice item</th><th className="p-3">Sold</th><th className="p-3">Remaining returnable</th><th className="p-3">Return qty</th></tr></thead>
+                    <tbody className="divide-y">{items.map((item) => <tr key={item.id}>
+                        <td className="p-3 font-semibold">{item.product_name}</td><td className="p-3">{item.quantity}</td><td className="p-3">{item.remaining_quantity}</td>
+                        <td className="p-3"><input type="number" min="0" max={item.remaining_quantity} step="1" value={form.quantities[item.id] || ""} onChange={(event) => update("quantities", { ...form.quantities, [item.id]: Math.max(0, Math.min(Number(item.remaining_quantity), Number(event.target.value) || 0)) })} className="w-24 rounded border p-2" /></td>
+                    </tr>)}
+                        {!items.length && <tr><td colSpan="4" className="p-5 text-center text-gray-500">This invoice has no returnable line items.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+            <label className="block text-sm font-semibold">Notes
+                <textarea rows="2" value={form.notes} onChange={(event) => update("notes", event.target.value)} className="mt-1 w-full rounded-lg border p-3" />
+            </label>
+            <div className="flex items-center justify-between rounded-lg bg-amber-50 p-3 text-sm"><span>Estimated credit value</span><b>{currency(estimate)}</b></div>
+            {estimate > Number(invoice.balance_due) && <p className="text-sm font-semibold text-red-600">Return value cannot exceed this invoice’s unpaid balance.</p>}
+            <footer className="flex justify-end gap-2 border-t pt-4">
+                <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 font-semibold">Cancel</button>
+                <button type="submit" disabled={saving || !items.length || estimate <= 0 || estimate > Number(invoice.balance_due)} className="rounded-lg bg-primary px-4 py-2 font-bold text-white disabled:opacity-50">{saving ? "Issuing..." : "Issue credit note"}</button>
+            </footer>
+        </form>
+    </div>;
+}

@@ -8,10 +8,14 @@ const { createAuthService } = require("./modules/authService");
 const { createAuthController } = require("./controllers/authController");
 const { createCategoryService } = require("./modules/categoryService");
 const { createProductService } = require("./modules/productService");
+const { createDealerService } = require("./modules/dealerService");
+const { createInvoiceService } = require("./modules/invoiceService");
 const createAuthRouter = require("./routers/authRouter");
 const createCategoryRouter = require("./routers/categoryRouter");
 const createProductRouter = require("./routers/productRouter");
 const createUserRouter = require("./routers/userRouter");
+const createDealerRouter = require("./routers/dealerRouter");
+const createInvoiceRouter = require("./routers/invoiceRouter");
 const { createUploadRouter } = require("./routers/uploadRouter");
 
 const port = Number(process.env.PORT || 5000);
@@ -27,6 +31,8 @@ const authService = createAuthService(pool);
 const authController = createAuthController(authService);
 const categoryService = createCategoryService(pool);
 const productService = createProductService(pool);
+const dealerService = createDealerService(pool);
+const invoiceService = createInvoiceService(pool);
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
@@ -43,6 +49,8 @@ app.get("/api/health", async (request, response) => {
 app.use("/api/auth", createAuthRouter(authController));
 app.use("/api/categories", createCategoryRouter(categoryService));
 app.use("/api/products", createProductRouter(productService));
+app.use("/api/dealers", createDealerRouter(dealerService));
+app.use("/api/invoices", createInvoiceRouter(invoiceService));
 app.use("/api/users", createUserRouter(authService));
 app.use("/api/auth/users", createUserRouter(authService));
 app.use("/api", createUploadRouter(authService));

@@ -1,283 +1,131 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
-import { FiArrowLeft, FiSave, FiUser, FiMapPin, FiPhone, FiMail, FiTruck, FiCheckCircle, FiX } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import api from "../../api";
-import imageCompression from "browser-image-compression";
-import { FiStar, FiPackage, FiUploadCloud, FiTrash2 } from "react-icons/fi";
-import { resolveMediaUrl } from "../../utils/media";
 
-const AddDealerModal = ({ isOpen, onClose, onSuccess }) => {
-    const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        name: "",
-        contact: "",
-        email: "",
-        phone: "",
-        location: "",
-        status: "Pending",
-        rating: "4.5",
-        orders: "0",
-        image: ""
-    });
+const emptyDealer = {
+    name: "",
+    company_name: "",
+    contact_person: "",
+    mobile: "",
+    whatsapp: "",
+    email: "",
+    gstin: "",
+    pan: "",
+    dealer_type: "Retail Dealer",
+    dealer_category: "",
+    billing_address: "",
+    shipping_address: "",
+    city: "",
+    district: "",
+    state: "",
+    pincode: "",
+    opening_balance: 0,
+    credit_limit: 0,
+    payment_terms: "",
+    status: "Active",
+    notes: "",
+};
+
+const dealerTypes = ["Retail Dealer", "Wholesale Dealer", "Distributor", "Furniture Reseller", "Corporate Dealer", "Franchise Dealer"];
+
+export default function AddDealerModal({ isOpen, onClose, onSuccess, dealer = null }) {
+    const [form, setForm] = useState(() => dealer ? { ...emptyDealer, ...dealer } : emptyDealer);
+    const [saving, setSaving] = useState(false);
 
     if (!isOpen) return null;
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const options = {
-            maxSizeMB: 0.5,
-            maxWidthOrHeight: 800,
-            useWebWorker: true,
-        };
-
+    const set = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+    const submit = async (event) => {
+        event.preventDefault();
+        setSaving(true);
         try {
-            const compressedFile = await imageCompression(file, options);
-            const uploadData = new FormData();
-            uploadData.append("image", compressedFile, file.name);
-            const response = await api.post("/uploads/image", uploadData);
-            setFormData(prev => ({ ...prev, image: response.data.url }));
-            toast.success("Image uploaded and compressed!");
+            if (dealer) await api.put(`/dealers/${dealer.id}`, form);
+            else await api.post("/dealers", form);
+            toast.success(dealer ? "Dealer details updated." : "Dealer added successfully.");
+            await onSuccess?.();
+            onClose();
         } catch (error) {
-            console.error("Dealer image upload failed:", error);
-            toast.error(error.response?.data?.message || "Failed to upload image");
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-
-        try {
-            await api.post("/dealers", formData);
-            toast.success("New partnership request submitted successfully!");
-            setTimeout(() => {
-                if (onSuccess) onSuccess();
-                onClose();
-            }, 1000);
-        } catch (error) {
-            console.error("Dealer Submission Error:", error);
-            toast.error(error.response?.data?.message || "Failed to submit request");
+            console.error("Dealer save failed:", error);
+            toast.error(error.response?.data?.message || "Dealer could not be saved.");
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
+
+    const inputClass = "w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary";
+    const fields = [
+        ["name", "Dealer name *", true],
+        ["company_name", "Company name", false],
+        ["contact_person", "Contact person", false],
+        ["mobile", "Mobile number *", true],
+        ["whatsapp", "WhatsApp", false],
+        ["email", "Email", false],
+        ["gstin", "GSTIN", false],
+        ["pan", "PAN", false],
+        ["dealer_category", "Dealer category", false],
+        ["city", "City", false],
+        ["district", "District", false],
+        ["state", "State", false],
+        ["pincode", "PIN code", false],
+        ["opening_balance", "Opening balance (₹)", false],
+        ["credit_limit", "Credit limit (₹)", false],
+        ["payment_terms", "Payment terms", false],
+    ];
 
     return createPortal(
-        <div className="fixed inset-0 z-[99] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 relative">
-                {/* Header */}
-                <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 px-8 py-6 border-b border-gray-50 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-black text-slate-800 tracking-tight">Add New Dealer</h1>
-                        <p className="text-sm font-bold text-gray-400">Initialize a new wholesale partnership.</p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+            <section className="max-h-[92vh] w-full max-w-4xl overflow-auto rounded-2xl bg-white shadow-2xl">
+                <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-6 py-4">
+                    <div><h2 className="text-xl font-black text-slate-800">{dealer ? "Edit dealer" : "Add dealer"}</h2><p className="text-sm text-gray-500">Contact, GST, address and credit settings</p></div>
+                    <button type="button" onClick={onClose} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100" aria-label="Close"><FiX size={20} /></button>
+                </header>
+                <form onSubmit={submit} className="space-y-6 p-6">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {fields.map(([name, label, required]) => (
+                            <label key={name} className="space-y-1 text-xs font-bold text-slate-600">
+                                {label}
+                                <input
+                                    type={name === "email" ? "email" : ["opening_balance", "credit_limit"].includes(name) ? "number" : "text"}
+                                    min={["opening_balance", "credit_limit"].includes(name) ? "0" : undefined}
+                                    step={["opening_balance", "credit_limit"].includes(name) ? "0.01" : undefined}
+                                    required={required}
+                                    value={form[name] ?? ""}
+                                    onChange={(event) => set(name, event.target.value)}
+                                    className={inputClass}
+                                />
+                            </label>
+                        ))}
+                        <label className="space-y-1 text-xs font-bold text-slate-600">Dealer type
+                            <select value={form.dealer_type} onChange={(event) => set("dealer_type", event.target.value)} className={inputClass}>
+                                {dealerTypes.map((type) => <option key={type}>{type}</option>)}
+                            </select>
+                        </label>
+                        <label className="space-y-1 text-xs font-bold text-slate-600">Status
+                            <select value={form.status} onChange={(event) => set("status", event.target.value)} className={inputClass}>
+                                <option>Active</option><option>Inactive</option>
+                            </select>
+                        </label>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-3 bg-gray-50 hover:bg-gray-100 rounded-2xl text-gray-400 hover:text-red-500 transition-all shadow-sm active:scale-95"
-                    >
-                        <FiX size={20} />
-                    </button>
-                </div>
-
-                <div className="p-8 sm:p-10">
-                    <form onSubmit={handleSubmit} className="space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Dealer Name */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Company / Dealer Name *</label>
-                                <div className="relative">
-                                    <FiTruck className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500" />
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        required
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Silk Traditions Ltd"
-                                        className="w-full pl-12 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-500/20 transition-all font-bold text-slate-800 shadow-inner"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Contact Person */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Contact Person *</label>
-                                <div className="relative">
-                                    <FiUser className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500" />
-                                    <input
-                                        type="text"
-                                        name="contact"
-                                        required
-                                        value={formData.contact}
-                                        onChange={handleChange}
-                                        placeholder="Manager Name"
-                                        className="w-full pl-12 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-500/20 transition-all font-bold text-slate-800 shadow-inner"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Email */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
-                                <div className="relative">
-                                    <FiMail className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500" />
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        placeholder="dealer@company.com"
-                                        className="w-full pl-12 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-500/20 transition-all font-bold text-slate-800 shadow-inner"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Phone */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number *</label>
-                                <div className="relative">
-                                    <FiPhone className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500" />
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        required
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="+91 00000 00000"
-                                        className="w-full pl-12 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-500/20 transition-all font-bold text-slate-800 shadow-inner"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Location */}
-                            <div className="md:col-span-2 space-y-3">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Business Location *</label>
-                                <div className="relative">
-                                    <FiMapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500" />
-                                    <input
-                                        type="text"
-                                        name="location"
-                                        required
-                                        value={formData.location}
-                                        onChange={handleChange}
-                                        placeholder="City, State"
-                                        className="w-full pl-12 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-500/20 transition-all font-bold text-slate-800 shadow-inner"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Rating */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Initial Rating (1-5)</label>
-                                <div className="relative">
-                                    <FiStar className="absolute left-5 top-1/2 -translate-y-1/2 text-amber-500" />
-                                    <input
-                                        type="number"
-                                        name="rating"
-                                        min="1"
-                                        max="5"
-                                        step="0.1"
-                                        value={formData.rating}
-                                        onChange={handleChange}
-                                        placeholder="4.5"
-                                        className="w-full pl-12 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-500/20 transition-all font-bold text-slate-800 shadow-inner"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Orders */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Total Orders</label>
-                                <div className="relative">
-                                    <FiPackage className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500" />
-                                    <input
-                                        type="number"
-                                        name="orders"
-                                        value={formData.orders}
-                                        onChange={handleChange}
-                                        placeholder="0"
-                                        className="w-full pl-12 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-blue-500/20 transition-all font-bold text-slate-800 shadow-inner"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Image Upload */}
-                            <div className="md:col-span-2 space-y-3">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Dealer Profile Image</label>
-                                <div className="flex items-center gap-6">
-                                    <div className="w-24 h-24 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden relative group">
-                                        {formData.image ? (
-                                            <>
-                                                <img src={resolveMediaUrl(formData.image)} alt="Preview" className="w-full h-full object-cover" />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setFormData(prev => ({ ...prev, image: "" }))}
-                                                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <FiTrash2 className="text-white" size={20} />
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <FiUploadCloud className="text-gray-300" size={24} />
-                                        )}
-                                    </div>
-                                    <div className="flex-1">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageUpload}
-                                            id="dealer-image"
-                                            className="hidden"
-                                        />
-                                        <label
-                                            htmlFor="dealer-image"
-                                            className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-gray-50 cursor-pointer transition-all shadow-sm active:scale-95"
-                                        >
-                                            <FiUploadCloud /> {formData.image ? "Change Image" : "Upload Image"}
-                                        </label>
-                                        <p className="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-tight">PNG, JPG up to 500KB. Automatically compressed.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="pt-6 border-t border-gray-50 flex items-center justify-end gap-4">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="px-8 py-4 text-sm font-black text-gray-400 uppercase tracking-widest hover:text-slate-800 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="flex items-center justify-center gap-3 bg-slate-900 border-4 border-white hover:bg-black disabled:bg-slate-400 text-white py-4 px-10 rounded-2xl text-lg font-black shadow-2xl transition-all active:scale-95"
-                            >
-                                {loading ? (
-                                    <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                                ) : (
-                                    <>
-                                        <FiCheckCircle size={20} />
-                                        <span>Create Partnership</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="space-y-1 text-xs font-bold text-slate-600">Billing address
+                            <textarea rows="3" value={form.billing_address ?? ""} onChange={(event) => set("billing_address", event.target.value)} className={inputClass} />
+                        </label>
+                        <label className="space-y-1 text-xs font-bold text-slate-600">Shipping address
+                            <textarea rows="3" value={form.shipping_address ?? ""} onChange={(event) => set("shipping_address", event.target.value)} className={inputClass} />
+                        </label>
+                        <label className="space-y-1 text-xs font-bold text-slate-600 sm:col-span-2">Notes
+                            <textarea rows="2" value={form.notes ?? ""} onChange={(event) => set("notes", event.target.value)} className={inputClass} />
+                        </label>
+                    </div>
+                    <footer className="flex justify-end gap-3 border-t pt-4">
+                        <button type="button" onClick={onClose} className="rounded-lg border px-5 py-2.5 text-sm font-bold text-gray-600">Cancel</button>
+                        <button type="submit" disabled={saving} className="rounded-lg bg-primary px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60">{saving ? "Saving..." : dealer ? "Save changes" : "Create dealer"}</button>
+                    </footer>
+                </form>
+            </section>
         </div>,
-        document.body
+        document.body,
     );
-};
-
-export default AddDealerModal;
+}
