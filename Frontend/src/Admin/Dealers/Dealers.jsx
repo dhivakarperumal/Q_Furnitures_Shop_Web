@@ -296,7 +296,7 @@ export default function Dealers() {
                                 ))}
                     </div>
                 )}
-                <footer className="flex items-center justify-between border-t p-4 text-sm text-gray-500">
+                <footer className="flex items-center justify-between p-4 text-sm text-gray-500">
                     <span>{pagination.total} dealers</span>
                     <div className="flex items-center gap-2">
                         <button type="button" disabled={pagination.page <= 1 || loading} onClick={() => { setLoading(true); setPagination((current) => ({ ...current, page: current.page - 1 })); }} className="rounded-lg border px-3 py-2 disabled:opacity-40">Previous</button>
