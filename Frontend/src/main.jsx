@@ -37,8 +37,6 @@ const StockDetails = React.lazy(() => import("./Admin/Stocks/StockDetails.jsx"))
 const AddStock = React.lazy(() => import("./Admin/Stocks/AddStock.jsx"));
 const Dealers = React.lazy(() => import("./Admin/Dealers/Dealers.jsx"));
 const AddInvoice = React.lazy(() => import("./Admin/Dealers/AddInvoice.jsx"));
-const StockDetails = React.lazy(() => import("./Admin/Stocks/StockDetails.jsx"));
-const AddStock = React.lazy(() => import("./Admin/Stocks/AddStock.jsx"));
 const StockMovementHistory = React.lazy(() => import("./Admin/Stocks/StockMovementHistory.jsx"));
 
 const ErrorPage = React.lazy(() => import("./Admin/Pages/ErrorPage.jsx"));
@@ -75,8 +73,6 @@ const router = createBrowserRouter([
       { path: "products/stock/add", element: <AddStock /> },
       { path: "products/:id", element: <ProductDetail /> },
       { path: "products/edit/:id", element: <AddProducts /> },
-      { path: "products/stock", element: <StockDetails /> },
-      { path: "products/stock/add", element: <AddStock /> },
       { path: "products/stock/movements", element: <StockMovementHistory /> },
       { path: "users/all", element: <Users /> },
       { path: "banners", element: <Banners /> },
