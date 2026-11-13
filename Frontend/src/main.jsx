@@ -38,6 +38,8 @@ const AddStock = React.lazy(() => import("./Admin/Stocks/AddStock.jsx"));
 const Dealers = React.lazy(() => import("./Admin/Dealers/Dealers.jsx"));
 const AddInvoice = React.lazy(() => import("./Admin/Dealers/AddInvoice.jsx"));
 const StockMovementHistory = React.lazy(() => import("./Admin/Stocks/StockMovementHistory.jsx"));
+const SettingsPage = React.lazy(() => import("./Admin/Settings/Settings.jsx"));
+const Profile = React.lazy(() => import("./Admin/Settings/Profile.jsx"));
 
 const ErrorPage = React.lazy(() => import("./Admin/Pages/ErrorPage.jsx"));
 
@@ -85,6 +87,8 @@ const router = createBrowserRouter([
       { path: "orders/:id", element: <OrderDetail /> },
       { path: "dealers", element: <Dealers /> },
       { path: "invoices/add", element: <AddInvoice /> },
+      { path: "settings", element: <SettingsPage /> },
+      { path: "profile", element: <Profile /> },
     ],
   },
 ]);

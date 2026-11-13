@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
+import { formatCurrency } from "../../utils/currency";
 import {
     FiPlus,
     FiEye,
@@ -117,7 +118,7 @@ const Billing = () => {
                     </div>
                     <div className="relative z-10 min-w-0">
                         <p className="mb-1 text-xs font-bold tracking-wide text-orange-800">Total Amount</p>
-                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : `₹${totalAmount.toLocaleString("en-IN")}`}</h2>
+                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : formatCurrency(totalAmount)}</h2>
                         <p className="mt-1 text-[10px] font-medium text-stone-500">Shop orders only</p>
                     </div>
                     <FiCreditCard className="pointer-events-none absolute -right-1 bottom-1 text-orange-300/20" size={60} />
@@ -129,7 +130,7 @@ const Billing = () => {
                     </div>
                     <div className="relative z-10 min-w-0">
                         <p className="mb-1 text-xs font-bold tracking-wide text-emerald-800">Today Amount</p>
-                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : `₹${totalAmountToday.toLocaleString("en-IN")}`}</h2>
+                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : formatCurrency(totalAmountToday)}</h2>
                         <p className="mt-1 text-[10px] font-medium text-stone-500">Shop orders only</p>
                     </div>
                     <FiDollarSign className="pointer-events-none absolute -right-1 bottom-1 text-emerald-300/20" size={60} />
@@ -251,7 +252,7 @@ const Billing = () => {
                                 <tr key={inv.id} className="group border-b border-gray-100 transition-colors hover:bg-orange-50/40">
                                     <td className="px-5 py-4 text-xs font-bold text-orange-800">{inv.id}</td>
                                     <td className="px-5 py-4 text-xs font-bold text-slate-700">{inv.customer}</td>
-                                    <td className="px-5 py-4 text-xs font-bold text-slate-800">₹{inv.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="px-5 py-4 text-xs font-bold text-slate-800">{formatCurrency(inv.amount)}</td>
                                     <td className="px-5 py-4">
                                         <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
                                             <FiCreditCard className="text-orange-700" /> {inv.method}
@@ -320,7 +321,7 @@ const Billing = () => {
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Amount</p>
-                                        <p className="text-lg font-black text-slate-800 mt-0.5">₹{inv.amount.toFixed(2)}</p>
+                                        <p className="text-lg font-black text-slate-800 mt-0.5">{formatCurrency(inv.amount)}</p>
                                     </div>
                                 </div>
                                 <div className="mt-5 flex justify-end gap-2 border-t border-gray-100 pt-4">

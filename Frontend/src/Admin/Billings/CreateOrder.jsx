@@ -5,8 +5,9 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import api from "../../api";
 import { toast, Toaster } from "react-hot-toast";
 
+import { formatCurrency } from "../../utils/currency";
+
 const roundCurrency = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
-const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
 function calculateOrderTotals(items, discountType, discountValue, gstRate) {
     const subtotal = roundCurrency(items.reduce((sum, item) => sum + Number(item.total || 0), 0));

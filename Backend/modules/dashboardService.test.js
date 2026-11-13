@@ -57,13 +57,13 @@ test("dashboard data maps database values to the frontend response shape", async
 
   assert.equal(data.stats.length, 8);
   assert.equal(data.stats.find((stat) => stat.label === "Orders").value, 5);
-  assert.equal(data.stats.find((stat) => stat.label === "Revenue").value, "₹1,000.00");
+  assert.equal(data.stats.find((stat) => stat.label === "Revenue").value, 1000);
   assert.deepEqual(data.recentOrders[0], {
     id: "#ORD0007",
     numericId: 7,
     customer: "Test Customer",
     date: new Date("2026-11-13T00:00:00Z"),
-    amount: "₹29.00",
+    amount: 29,
     status: "Packed",
   });
   assert.deepEqual(data.topProducts[0], {

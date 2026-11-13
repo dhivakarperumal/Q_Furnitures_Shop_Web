@@ -18,6 +18,7 @@ import {
 
 import { useAuth } from "../PrivateRouter/AuthContext";
 import { resolveMediaUrl } from "../utils/media";
+import { formatCurrency } from "../utils/currency";
 
 const backendUrl = (import.meta.env.VITE_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
 
@@ -369,7 +370,7 @@ const Header = ({ onMenuClick, onSearchQueryChange }) => {
                         <div className="mt-0.5 flex items-center gap-2">
                           <span className="truncate text-[10px] font-bold text-slate-400">{order.customer_phone || "No phone"}</span>
                           <span className="text-[9px] text-slate-300">•</span>
-                          <span className="text-[10px] font-black text-emerald-600">₹{Number(order.total_amount).toLocaleString("en-IN")}</span>
+                          <span className="text-[10px] font-black text-emerald-600">{formatCurrency(order.total_amount)}</span>
                         </div>
                       </div>
                       <div>
@@ -599,7 +600,7 @@ const Header = ({ onMenuClick, onSearchQueryChange }) => {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between mb-0.5">
                                     <p className="text-sm font-black text-slate-800 tracking-tight">ORD-0{order.id}</p>
-                                    <p className="text-[12px] text-blue-600 font-black">₹{Number(order.total_amount).toLocaleString('en-IN')}</p>
+                                    <p className="text-[12px] text-blue-600 font-black">{formatCurrency(order.total_amount)}</p>
                                   </div>
                                   <div className="flex items-center justify-between">
                                     <p className="text-[10px] text-slate-500 font-bold truncate">
@@ -635,7 +636,7 @@ const Header = ({ onMenuClick, onSearchQueryChange }) => {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between mb-0.5">
                                     <p className="text-sm font-black text-slate-800 tracking-tight">#ORD-0{order.id}</p>
-                                    <p className="text-[12px] text-slate-600 font-black">₹{Number(order.total_amount).toLocaleString('en-IN')}</p>
+                                    <p className="text-[12px] text-slate-600 font-black">{formatCurrency(order.total_amount)}</p>
                                   </div>
                                   <div className="flex items-center justify-between">
                                     <p className="text-[10px] text-slate-400 font-bold truncate">
@@ -728,6 +729,7 @@ const Header = ({ onMenuClick, onSearchQueryChange }) => {
 
                   <Link
                     to="/admin/profile"
+                    onClick={() => setShowDropdown(false)}
                     className="flex items-center gap-3 px-3 py-2.5 
                     rounded-xl hover:bg-orange-50 hover:text-orange-700
                     text-sm text-slate-600 transition font-bold"
@@ -735,14 +737,15 @@ const Header = ({ onMenuClick, onSearchQueryChange }) => {
                     <User className="w-4 h-4 opacity-50" /> Profile
                   </Link>
 
-                  {/* <Link
+                  <Link
                     to="/admin/settings"
+                    onClick={() => setShowDropdown(false)}
                     className="flex items-center gap-3 px-3 py-2.5 
                     rounded-xl hover:bg-orange-50 hover:text-orange-700
                     text-sm text-slate-600 transition font-bold"
                   >
                     <Settings className="w-4 h-4 opacity-50" /> Settings
-                  </Link> */}
+                  </Link>
 
                   <button
                     onClick={handleLogout}

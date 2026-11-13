@@ -4,6 +4,7 @@ import { useAdmin } from "../PrivateRouter/AdminContext";
 import api from "../api";
 import { toast, Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { formatCurrency } from "../utils/currency";
 import {
     FiShoppingBag,
     FiUsers,
@@ -198,7 +199,7 @@ const Dashboard = () => {
                 borderColor: '#eee',
                 borderWidth: 1,
                 callbacks: {
-                    label: (context) => `Revenue: ₹${context.parsed.y.toLocaleString('en-IN')}`
+                    label: (context) => `Revenue: ${formatCurrency(context.parsed.y)}`
                 }
             }
         },
@@ -206,7 +207,7 @@ const Dashboard = () => {
             y: {
                 beginAtZero: true,
                 ticks: {
-                    callback: (value) => `₹${(value / 1000).toFixed(0)}k`,
+                    callback: (value) => formatCurrency(value),
                     color: '#9ca3af',
                     font: { size: 10 }
                 },
@@ -324,7 +325,9 @@ const Dashboard = () => {
                             </div>
                             <div className="relative z-10">
                                 <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">{stat.label}</p>
-                                <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">{stat.value}</h3>
+                                <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">
+                                    {stat.label === "Revenue" ? formatCurrency(stat.value) : stat.value}
+                                </h3>
                                 <p className="text-[10px] font-medium text-stone-500">{stat.description || "Summary"}</p>
                             </div>
                             {getStatIcon(stat.icon, `pointer-events-none absolute -right-1 bottom-1 ${style.watermark}`, 60)}
@@ -498,7 +501,7 @@ const Dashboard = () => {
                                             </div>
                                         </td>
                                         <td className="py-3 text-gray-400 text-xs">{formatOrderDate(order.date)}</td>
-                                        <td className="py-3 font-bold text-slate-800 text-xs">{order.amount}</td>
+                                        <td className="py-3 font-bold text-slate-800 text-xs">{formatCurrency(order.amount)}</td>
                                         <td className="py-3">
                                             <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${getStatusStyle(order.status)}`}>
                                                 {order.status}
