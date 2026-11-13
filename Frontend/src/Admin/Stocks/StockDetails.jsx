@@ -358,9 +358,6 @@ const StockDetails = () => {
                         <table className="w-full text-left">
                             <thead>
                             <tr className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light">
-                                <th className="w-10 px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">
-                                    <input type="checkbox" className="rounded border-[#FCD34D]/40 accent-[#FCD34D]" aria-label="Select all products" />
-                                    </th>
                                 <th className="w-12 px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">S.No.</th>
                                 <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">Product</th>
                                 <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">Category</th>
@@ -378,9 +375,6 @@ const StockDetails = () => {
 
                                         return (
                                             <tr key={product.id} className="group transition-colors hover:bg-orange-50/40">
-                                                <td className="px-5 py-4">
-                                                    <input type="checkbox" className="rounded border-gray-300" />
-                                                </td>
                                                 <td className="px-3 py-4 text-sm text-gray-500 font-medium">
                                                     {(currentPage - 1) * itemsPerPage + index + 1}
                                                 </td>
@@ -443,7 +437,7 @@ const StockDetails = () => {
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan="8" className="px-8 py-10 text-center text-gray-400 font-bold">
+                                        <td colSpan="7" className="px-8 py-10 text-center text-gray-400 font-bold">
                                             No stock data found.
                                         </td>
                                     </tr>
