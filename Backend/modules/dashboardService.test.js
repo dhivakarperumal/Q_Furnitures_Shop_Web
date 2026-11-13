@@ -2,67 +2,89 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createDashboardService } = require("./dashboardService");
 
-test("returns dashboard data in the shape used by the admin dashboard", async () => {
-  const pool = {
+function createDashboardPool() {
+  return {
     async execute(sql) {
-      if (sql.includes("AS productCount")) {
-        return [[{
-          productCount: "12",
-          orderCount: "7",
-          revenue: "1250.50",
-          pendingCount: "2",
-          shippingCount: "1",
-          customerCount: "4",
-          lowStockCount: "3",
-          activeOfferCount: "1",
-        }]];
+      if (sql.includes("AS order_count")) {
+        return [[{ order_count: 5, revenue: "1000.00", pending_count: 1, transit_count: 1 }], []];
+      }
+      if (sql.includes("COUNT(*) AS total FROM products")) return [[{ total: 10 }], []];
+      if (sql.includes("COUNT(*) AS total FROM users")) return [[{ total: 4 }], []];
+      if (sql.includes("COUNT(*) AS total FROM offers")) return [[{ total: 2 }], []];
+      if (sql.includes("COUNT(*) AS total") && sql.includes("FROM product_stock")) {
+        return [[{ total: 1 }], []];
+      }
+      if (sql.includes("DATE_FORMAT(created_at")) {
+        return [[{ month: "13 Nov", revenue: "1000.00" }], []];
       }
       if (sql.includes("FROM order_items")) {
-        return [[{ name: "Wood Chair", cat: "Chairs", sales: "3", img: "/chair.jpg" }]];
+        return [[{ name: "Wooden Desk", category: "Office", img: "/uploads/desk.webp", sales: 3 }], []];
       }
-      if (sql.includes("FROM products p") && sql.includes("product_data")) {
-        return [[{ name: "Side Table", product_data: '{"image":"/table.jpg"}', stock: "2" }]];
-      }
-      if (sql.includes("AS period")) return [[{ month: "Fri", revenue: "500" }]];
-      if (sql.includes("GROUP BY status")) return [[{ status: "Packing", count: "2" }]];
-      if (sql.includes("FROM orders")) {
+      if (sql.includes("FROM products p")) {
         return [[{
-          id: 8,
-          customer: "A Customer",
-          date: new Date("2026-11-13T00:00:00.000Z"),
-          amount: "250",
-          status: "Order Placed",
-        }]];
+          name: "Accent Chair",
+          product_data: { images: ["/uploads/chair.webp"], main_image_index: 0 },
+          stock: 2,
+        }], []];
+      }
+      if (sql.includes("GROUP BY status")) {
+        return [[
+          { status: "Order Placed", total: 1 },
+          { status: "Packing", total: 1 },
+          { status: "Shipping", total: 1 },
+          { status: "Delivered", total: 1 },
+          { status: "Cancelled", total: 1 },
+        ], []];
+      }
+      if (sql.includes("FROM orders") && sql.includes("LIMIT 5")) {
+        return [[{
+          id: 7,
+          order_id: null,
+          customer_name: "Test Customer",
+          created_at: new Date("2026-11-13T00:00:00Z"),
+          total_amount: "29.00",
+          status: "Packing",
+        }], []];
       }
       throw new Error(`Unexpected dashboard query: ${sql}`);
     },
   };
+}
 
-  const dashboard = await createDashboardService(pool).getDashboard("week");
+test("dashboard data maps database values to the frontend response shape", async () => {
+  const service = createDashboardService(createDashboardPool());
+  const data = await service.getDashboard("week");
 
-  assert.equal(dashboard.stats.length, 8);
-  assert.equal(dashboard.stats[2].value, "₹1,250.50");
-  assert.equal(dashboard.recentOrders[0].id, "#ORD-0008");
-  assert.equal(dashboard.recentOrders[0].amount, "₹250.00");
-  assert.equal(dashboard.topProducts[0].sales, 3);
-  assert.deepEqual(dashboard.lowStockAlerts[0], {
-    name: "Side Table",
-    stock: 2,
-    img: "/table.jpg",
+  assert.equal(data.stats.length, 8);
+  assert.equal(data.stats.find((stat) => stat.label === "Orders").value, 5);
+  assert.equal(data.stats.find((stat) => stat.label === "Revenue").value, "₹1,000.00");
+  assert.deepEqual(data.recentOrders[0], {
+    id: "#ORD0007",
+    numericId: 7,
+    customer: "Test Customer",
+    date: new Date("2026-11-13T00:00:00Z"),
+    amount: "₹29.00",
+    status: "Packed",
   });
-  assert.equal(dashboard.revenueTrends[0].revenue, 500);
-  assert.equal(dashboard.orderStatusCounts.Packed, 2);
+  assert.deepEqual(data.topProducts[0], {
+    name: "Wooden Desk",
+    cat: "Office",
+    sales: 3,
+    img: "/uploads/desk.webp",
+  });
+  assert.deepEqual(data.lowStockAlerts[0], {
+    name: "Accent Chair",
+    stock: 2,
+    img: "/uploads/chair.webp",
+  });
+  assert.equal(data.orderStatusCounts.Packed, 1);
+  assert.deepEqual(data.revenueTrends, [{ month: "13 Nov", revenue: 1000 }]);
 });
 
-test("rejects unsupported dashboard ranges", async () => {
-  let queryCount = 0;
-  const service = createDashboardService({
-    async execute() {
-      queryCount += 1;
-      return [[]];
-    },
-  });
-
-  await assert.rejects(service.getDashboard("year"), (error) => error.status === 400);
-  assert.equal(queryCount, 0);
+test("dashboard rejects unsupported revenue ranges", async () => {
+  const service = createDashboardService(createDashboardPool());
+  await assert.rejects(
+    service.getDashboard("quarter"),
+    (error) => error.status === 400 && error.message === "Choose a valid dashboard range.",
+  );
 });

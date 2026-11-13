@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { AuthContext } from "../PrivateRouter/AuthContext";
 import { useAdmin } from "../PrivateRouter/AdminContext";
 import api from "../api";
@@ -16,7 +16,7 @@ import {
     FiEye,
     FiTag
 } from "react-icons/fi";
-import { FaRupeeSign, FaTruck } from "react-icons/fa";
+import { FaRupeeSign, FaTshirt, FaTruck } from "react-icons/fa";
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -35,7 +35,8 @@ import {
 const backendUrl = (import.meta.env.VITE_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
 
 const getDashboardImageUrl = (image) => {
-    if (!image || /^(https?:|data:|blob:)/i.test(image)) return image;
+    if (typeof image !== "string" || !image.trim()) return null;
+    if (/^(https?:|data:|blob:)/i.test(image)) return image;
     return `${backendUrl}${image.startsWith("/") ? image : `/${image}`}`;
 };
 
@@ -73,15 +74,8 @@ const Dashboard = () => {
     const [salesRange, setSalesRange] = useState("week");
     const [stockAlertCount, setStockAlertCount] = useState(0);
 
-    useEffect(() => {
-        fetchDashboardData("week");
-        api.get("/stock/low-stock", { params: { page: 1, limit: 1 } })
-            .then((response) => setStockAlertCount(Number(response.data?.pagination?.total || 0)))
-            .catch((error) => console.error("Low-stock dashboard alert failed to load:", error));
-    }, []);
-
-    const fetchDashboardData = async (range = salesRange) => {
-        if (!dashboardData) setLoading(true);
+    const fetchDashboardData = useCallback(async (range = "week") => {
+        setLoading(true);
         try {
             const response = await api.get('/dashboard', { params: { range } });
             setDashboardCached(response.data);
@@ -91,7 +85,14 @@ const Dashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [setDashboardCached]);
+
+    useEffect(() => {
+        void fetchDashboardData("week");
+        api.get("/stock/low-stock", { params: { page: 1, limit: 1 } })
+            .then((response) => setStockAlertCount(Number(response.data?.pagination?.total || 0)))
+            .catch((error) => console.error("Low-stock dashboard alert failed to load:", error));
+    }, [fetchDashboardData]);
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -107,7 +108,7 @@ const Dashboard = () => {
 
     const getStatIcon = (iconStr, className = "text-white", size = 22) => {
         switch (iconStr) {
-            case "product": return <FiBox className={className} size={size} />;
+            case "saree": return <FaTshirt className={className} size={size} />;
             case "bag": return <FiShoppingBag className={className} size={size} />;
             case "rupee": return <FaRupeeSign className={className} size={size} />;
             case "pending": return <FiClock className={className} size={size} />;
@@ -136,7 +137,14 @@ const Dashboard = () => {
         )
     }
 
-    const { stats, recentOrders, topProducts, lowStockAlerts, revenueTrends = [], orderStatusCounts = {} } = dashboardData;
+    const {
+        stats = [],
+        recentOrders = [],
+        topProducts = [],
+        lowStockAlerts = [],
+        revenueTrends = [],
+        orderStatusCounts = {},
+    } = dashboardData;
 
     // ── Bar Chart: Real Revenue Trends ──────────────────────────────
     const barChartData = {
@@ -229,18 +237,18 @@ const Dashboard = () => {
     }));
 
     const cardStyles = [
-        { border: "border-orange-100/80 hover:border-orange-200", accent: "from-primary-light to-primary-dark", icon: "from-primary to-primary-dark", iconShadow: "shadow-orange-200/70", watermark: "text-orange-300/20" },
-        { border: "border-emerald-100/80 hover:border-emerald-200", accent: "from-emerald-400 to-emerald-600", icon: "from-emerald-400 to-emerald-600", iconShadow: "shadow-emerald-200/70", watermark: "text-emerald-300/20" },
-        { border: "border-amber-100/80 hover:border-amber-200", accent: "from-amber-400 to-amber-600", icon: "from-amber-400 to-amber-600", iconShadow: "shadow-amber-200/70", watermark: "text-amber-300/20" },
-        { border: "border-rose-100/80 hover:border-rose-200", accent: "from-rose-400 to-pink-500", icon: "from-rose-400 to-pink-500", iconShadow: "shadow-rose-200/70", watermark: "text-rose-300/20" },
-        { border: "border-blue-100/80 hover:border-blue-200", accent: "from-blue-400 to-blue-600", icon: "from-blue-400 to-blue-600", iconShadow: "shadow-blue-200/70", watermark: "text-blue-300/20" },
-        { border: "border-cyan-100/80 hover:border-cyan-200", accent: "from-cyan-400 to-cyan-600", icon: "from-cyan-400 to-cyan-600", iconShadow: "shadow-cyan-200/70", watermark: "text-cyan-300/20" },
-        { border: "border-purple-100/80 hover:border-purple-200", accent: "from-purple-400 to-purple-600", icon: "from-purple-400 to-purple-600", iconShadow: "shadow-purple-200/70", watermark: "text-purple-300/20" },
-        { border: "border-orange-100/80 hover:border-orange-200", accent: "from-primary-light to-primary-dark", icon: "from-primary to-primary-dark", iconShadow: "shadow-orange-200/70", watermark: "text-orange-300/20" },
+        { border: "border-orange-100/80", hoverBorder: "hover:border-orange-200", accent: "from-primary-light to-primary-dark", iconGradient: "from-primary to-primary-dark", iconShadow: "shadow-orange-200/70", watermark: "text-orange-300/20" },
+        { border: "border-emerald-100/80", hoverBorder: "hover:border-emerald-200", accent: "from-emerald-400 to-emerald-600", iconGradient: "from-emerald-400 to-emerald-600", iconShadow: "shadow-emerald-200/70", watermark: "text-emerald-300/20" },
+        { border: "border-amber-100/80", hoverBorder: "hover:border-amber-200", accent: "from-amber-400 to-amber-600", iconGradient: "from-amber-400 to-amber-600", iconShadow: "shadow-amber-200/70", watermark: "text-amber-300/20" },
+        { border: "border-rose-100/80", hoverBorder: "hover:border-rose-200", accent: "from-rose-400 to-rose-600", iconGradient: "from-rose-400 to-rose-600", iconShadow: "shadow-rose-200/70", watermark: "text-rose-300/20" },
+        { border: "border-blue-100/80", hoverBorder: "hover:border-blue-200", accent: "from-blue-400 to-blue-600", iconGradient: "from-blue-400 to-blue-600", iconShadow: "shadow-blue-200/70", watermark: "text-blue-300/20" },
+        { border: "border-cyan-100/80", hoverBorder: "hover:border-cyan-200", accent: "from-cyan-400 to-cyan-600", iconGradient: "from-cyan-400 to-cyan-600", iconShadow: "shadow-cyan-200/70", watermark: "text-cyan-300/20" },
+        { border: "border-purple-100/80", hoverBorder: "hover:border-purple-200", accent: "from-purple-400 to-purple-600", iconGradient: "from-purple-400 to-purple-600", iconShadow: "shadow-purple-200/70", watermark: "text-purple-300/20" },
+        { border: "border-violet-100/80", hoverBorder: "hover:border-violet-200", accent: "from-violet-400 to-violet-600", iconGradient: "from-violet-400 to-violet-600", iconShadow: "shadow-violet-200/70", watermark: "text-violet-300/20" },
     ];
 
     return (
-        <div className="space-y-6 pb-12 min-h-screen">
+        <div className="space-y-6 pb-12 bg-slate-50 min-h-screen">
             <Toaster position="top-right" />
 
             {/* Top Stats Grid */}
@@ -248,15 +256,15 @@ const Dashboard = () => {
                 {stats.map((stat, i) => {
                     const style = cardStyles[i % cardStyles.length];
                     return (
-                        <div key={i} className={`group relative flex min-h-36 items-center gap-4 overflow-hidden rounded-xl border bg-gradient-to-br from-white via-orange-50/50 to-amber-100/40 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)] ${style.border}`}>
+                        <div key={i} className={`group relative flex min-h-36 items-center gap-4 overflow-hidden rounded-xl border ${style.border} bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 ${style.hoverBorder} hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]`}>
                             <div className={`absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b ${style.accent}`} />
-                            <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${style.icon} text-white shadow-lg ${style.iconShadow} transition-transform duration-200 group-hover:scale-105`}>
+                            <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${style.iconGradient} text-white shadow-lg ${style.iconShadow} transition-transform duration-200 group-hover:scale-105`}>
                                 {getStatIcon(stat.icon)}
                             </div>
-                            <div className="relative z-10 min-w-0">
+                            <div className="relative z-10">
                                 <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">{stat.label}</p>
                                 <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">{stat.value}</h3>
-                                <p className="text-[10px] font-medium text-stone-500">{stat.description || "Current total"}</p>
+                                <p className="text-[10px] font-medium text-stone-500">{stat.description || "Summary"}</p>
                             </div>
                             {getStatIcon(stat.icon, `pointer-events-none absolute -right-1 bottom-1 ${style.watermark}`, 60)}
                         </div>
@@ -283,7 +291,7 @@ const Dashboard = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     {[
                         { label: "Add Product",    icon: <FiBox size={20} />,          color: "from-[#6C3DE8] to-[#A855F7]", path: "/admin/products/add" },
-                        { label: "New Order",      icon: <FiShoppingBag size={20} />,  color: "from-[#2563EB] to-[#0EA5E9]", path: "/admin/orders/shop-create" },
+                        { label: "New Order",      icon: <FiShoppingBag size={20} />,  color: "from-[#2563EB] to-[#0EA5E9]", path: "/admin/orders/create" },
                         { label: "All Orders",     icon: <FaTruck size={20} />,         color: "from-[#059669] to-[#10B981]", path: "/admin/orders/all" },
                         { label: "Customers",      icon: <FiUsers size={20} />,        color: "from-[#F59E0B] to-[#FBBF24]", path: "/admin/users/all" },
                         { label: "Stock Details",  icon: <FiAlertTriangle size={20} />,color: "from-[#EF4444] to-[#F97316]", path: "/admin/products/stock" },
@@ -429,7 +437,7 @@ const Dashboard = () => {
                                         </td>
                                         <td className="py-3 text-center">
                                             <button
-                                                onClick={() => navigate(`/admin/orders/${order.id.replace('#ORD-0', '')}`)}
+                                                onClick={() => navigate(`/admin/orders/${order.numericId ?? order.id.replace('#ORD-0', '')}`)}
                                                 className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mx-auto hover:bg-purple-600 hover:text-white transition-all"
                                             >
                                                 <FiEye size={13} />
@@ -446,10 +454,10 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Top Selling Products */}
+                {/* Top Selling Sarees */}
                 <div className="lg:col-span-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                     <div className="flex justify-between items-center mb-5">
-                        <h3 className="text-base font-black text-slate-800">Top Selling Products</h3>
+                        <h3 className="text-base font-black text-slate-800">Top Selling Sarees</h3>
                         <button onClick={() => navigate('/admin/products/all')} className="text-xs font-bold text-purple-600 hover:underline">View All →</button>
                     </div>
                     <div className="space-y-3">

@@ -7,9 +7,12 @@ function createDashboardRouter(dashboardService) {
 
   router.get("/", async (request, response, next) => {
     try {
-      return response.json(await dashboardService.getDashboard(request.query.range || "week"));
+      const range = typeof request.query.range === "string" ? request.query.range : "week";
+      return response.json(await dashboardService.getDashboard(range));
     } catch (error) {
-      if (error.status === 400) return response.status(400).json({ message: error.message });
+      if (error.status === 400) {
+        return response.status(400).json({ message: error.message });
+      }
       return next(error);
     }
   });
