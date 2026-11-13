@@ -269,17 +269,19 @@ function BannerModal({ banner, saving, onClose, onSubmit }) {
             />
           </label>
 
-          <label className="block">
-            <span className={labelClassName}>Offer (optional)</span>
-            <input
-              type="text"
-              value={form.offer}
-              onChange={(event) => setField("offer", event.target.value)}
-              placeholder="Type an offer, e.g. 10% OFF"
-              maxLength={80}
-              className={inputClassName}
-            />
-          </label>
+          {form.target_section === "offers" && (
+            <label className="block">
+              <span className={labelClassName}>Offer (optional)</span>
+              <input
+                type="text"
+                value={form.offer}
+                onChange={(event) => setField("offer", event.target.value)}
+                placeholder="Type an offer, e.g. 10% OFF"
+                maxLength={80}
+                className={inputClassName}
+              />
+            </label>
+          )}
 
           <label className="block">
             <span className={`${labelClassName} mb-1.5`}>Action Destination (Link)</span>
