@@ -507,9 +507,9 @@ const Dashboard = () => {
                                         <td className="py-3 text-center">
                                             <button
                                                 onClick={() => navigate(`/admin/orders/${order.numericId ?? order.id.replace('#ORD-0', '')}`)}
-                                                className="group mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-[#9900ff] transition-all hover:bg-purple-700 hover:text-white"
+                                                className="group mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-[#9900ff] transition-all hover:bg-red-50 hover:text-red-600"
                                             >
-                                                <FiEye className="text-[#9900ff] transition-colors group-hover:text-white" size={13} />
+                                                <FiEye className="text-[#9900ff] transition-colors group-hover:text-red-600" size={13} />
                                             </button>
                                         </td>
                                     </tr>
