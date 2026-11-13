@@ -4,24 +4,30 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  Users,
-  MessageSquare,
-  BarChart3,
+  ClipboardList,
+  PackageCheck,
+  PackageSearch,
+  PackagePlus,
+  Warehouse,
+  ArrowLeftRight,
+  ReceiptText,
+  UsersRound,
+  ContactRound,
+  FilePlus2,
+  Megaphone,
+  Tags,
+  TicketPercent,
+  Clapperboard,
+  MessageSquareText,
   X,
   ChevronDown,
   ChevronLeft,
   Home,
-  Tag,
-  PlusCircle,
-  List,
   Layers,
   Truck,
   XCircle,
-  Archive,
   Handshake,
-  Video,
   Image,
-  Activity,
 } from "lucide-react";
 
 import { useAuth } from "../PrivateRouter/AuthContext";
@@ -36,54 +42,46 @@ const navItems = [
     label: "Orders",
     icon: ShoppingCart,
     children: [
-
-      { path: "/admin/orders/new", label: "New Orders", icon: List },
-      { path: "/admin/orders/all", label: "All Orders", icon: Archive },
+      { path: "/admin/orders/new", label: "New Orders", icon: ClipboardList },
+      { path: "/admin/orders/all", label: "All Orders", icon: PackageCheck },
       { path: "/admin/orders/delivery", label: "Delivery Orders", icon: Truck },
       { path: "/admin/orders/cancelled", label: "Cancelled Orders", icon: XCircle },
-
     ],
   },
-
   {
     label: "Inventory",
     icon: Package,
     children: [
-      { path: "/admin/products/all", label: "All Products", icon: List },
-      { path: "/admin/products/add", label: "Add Product", icon: PlusCircle },
+      { path: "/admin/products/all", label: "All Products", icon: PackageSearch },
+      { path: "/admin/products/add", label: "Add Product", icon: PackagePlus },
       { path: "/admin/products/category", label: "Categories", icon: Layers },
-      { path: "/admin/products/stock", label: "Stock Details", icon: Archive, exact: true },
-      { path: "/admin/products/stock/movements", label: "Stock Movements", icon: Activity },
+      { path: "/admin/products/stock", label: "Stock Details", icon: Warehouse, exact: true },
+      { path: "/admin/products/stock/movements", label: "Stock Movements", icon: ArrowLeftRight },
     ],
   },
 
- 
-
-  { path: "/admin/orders/billing", label: "Billing", icon: PlusCircle },
-  { path: "/admin/users/all", label: "Customers", icon: Users },
+  { path: "/admin/orders/billing", label: "Billing", icon: ReceiptText },
+  { path: "/admin/users/all", label: "Customers", icon: UsersRound },
   {
     label: "Dealers",
     icon: Handshake,
     children: [
-      { path: "/admin/dealers", label: "Dealers List", icon: List },
-      { path: "/admin/invoices/add", label: "New Invoice", icon: PlusCircle },
+      { path: "/admin/dealers", label: "Dealers List", icon: ContactRound },
+      { path: "/admin/invoices/add", label: "New Invoice", icon: FilePlus2 },
     ],
   },
-
   {
     label: "Marketing",
-    icon: Handshake,
+    icon: Megaphone,
     children: [
-      { path: "/admin/offers", label: "Top Header Offers Tags", icon: Tag },
-      { path: "/admin/coupons", label: "Coupons", icon: Tag },
+      { path: "/admin/offers", label: "Top Header Offers Tags", icon: Tags },
+      { path: "/admin/coupons", label: "Coupons", icon: TicketPercent },
       { path: "/admin/banners", label: "Promotion Banners", icon: Image },
-      { path: "/admin/videos", label: "Showcase Videos", icon: Video },
-      { path: "/admin/reviews", label: "Reviews", icon: MessageSquare },
+      { path: "/admin/videos", label: "Showcase Videos", icon: Clapperboard },
+      { path: "/admin/reviews", label: "Reviews", icon: MessageSquareText },
     ],
   },
 
-  
-  // { path: "/admin/reports", label: "Reports", icon: BarChart3 },
   { path: "/", label: "Back Home", icon: Home },
 ];
 
@@ -230,14 +228,14 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
                   <button
                     onClick={() => toggleMenu(item.label)}
                     className={`
-                      w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all
+                      group w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all
                       ${isMenuOpen || isAnyChildActive
                         ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-orange-900/30"
                         : "text-white/80 hover:bg-white/10 hover:text-white"
                       }
                     `}
                   >
-                    <Icon className={`w-5 h-5 shrink-0 ${isMenuOpen || isAnyChildActive ? "text-white" : ""}`} />
+                    <Icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110" />
 
                     {!collapsed && (
                       <>
@@ -282,14 +280,14 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
                             to={sub.path}
                             onClick={() => isOpen && onClose()}
                             className={`
-                              flex items-center gap-3 px-4 py-2.5 rounded-md text-xs font-medium tracking-wide transition-all
+                              group flex items-center gap-3 px-4 py-2.5 rounded-md text-xs font-medium tracking-wide transition-all
                               ${isActive
                                 ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-orange-900/30"
                                 : "text-white/75 hover:text-white hover:bg-white/10"
                               }
                             `}
                           >
-                            <SubIcon className={`w-5 h-6 shrink-0 ${isActive ? "text-white" : ""}`} />
+                            <SubIcon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110" />
                             <span className="flex-1">{sub.label}</span>
                             {badgeCount > 0 && (
                               <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-fit">
@@ -318,14 +316,14 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
                   if (isOpen) onClose();
                 }}
                 className={`
-                  flex items-center gap-3 px-4 py-3 rounded-md transition-all
+                  group flex items-center gap-3 px-4 py-3 rounded-md transition-all
                   ${isActive
                     ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-xl shadow-orange-900/30"
                     : "text-white/80 hover:bg-white/10 hover:text-white"
                   }
                 `}
               >
-                <Icon className={`w-5 h-6 shrink-0 ${isActive ? "text-white" : ""}`} />
+                <Icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110" />
                 {!collapsed && <span className="text-sm font-semibold tracking-wide">{item.label}</span>}
               </NavLink>
             );
