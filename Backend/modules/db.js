@@ -312,6 +312,25 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      product_id BIGINT UNSIGNED NULL,
+      user_name VARCHAR(191) NOT NULL,
+      user_email VARCHAR(191) NULL,
+      rating TINYINT UNSIGNED NOT NULL,
+      comment TEXT NOT NULL,
+      review_image VARCHAR(512) NULL,
+      status ENUM('Pending', 'Published', 'Flagged') NOT NULL DEFAULT 'Pending',
+      admin_reply TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY reviews_status_created_idx (status, created_at),
+      KEY reviews_rating_idx (rating),
+      CONSTRAINT reviews_product_fk
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       order_id VARCHAR(32) NULL,
