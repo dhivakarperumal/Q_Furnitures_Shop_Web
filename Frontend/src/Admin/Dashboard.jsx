@@ -282,27 +282,27 @@ const Dashboard = () => {
             <Toaster position="top-right" />
 
             <section
-                className="relative flex min-h-28 items-center justify-between gap-5 overflow-hidden rounded-2xl border border-orange-200/70 bg-cover bg-center px-5 py-5 shadow-[0_8px_24px_rgba(74,46,25,0.06)] sm:px-7"
+                className="relative flex min-h-32 items-center justify-between gap-5 overflow-hidden rounded-2xl border border-slate-700/20 bg-cover bg-center px-5 py-6 shadow-[0_8px_24px_rgba(15,23,42,0.16)] sm:px-7"
                 style={{
-                    backgroundImage: "linear-gradient(90deg, rgba(255,247,237,0.94) 0%, rgba(255,251,235,0.88) 58%, rgba(255,247,237,0.52) 100%), url('/images/admincontent.png')",
+                    backgroundImage: "linear-gradient(90deg, rgba(15,23,42,0.82) 0%, rgba(15,23,42,0.62) 48%, rgba(15,23,42,0.08) 100%), url('/images/welcome.png')",
                 }}
             >
-                <div className="absolute -right-8 -top-14 h-44 w-44 rounded-full bg-white/40" />
-                <div className="absolute -bottom-16 right-24 h-36 w-36 rounded-full bg-amber-200/20" />
+                <div className="absolute -right-8 -top-14 h-44 w-44 rounded-full bg-white/10" />
+                <div className="absolute -bottom-16 right-24 h-36 w-36 rounded-full bg-orange-200/10" />
                 <div className="relative z-10 flex min-w-0 items-center gap-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-orange-200/70">
                         <FiSun size={24} />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-700/80">Admin dashboard</p>
-                        <h2 className="mt-1 truncate text-xl font-black text-slate-800 sm:text-2xl">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-200">Admin dashboard</p>
+                        <h2 className="mt-1 truncate text-xl font-black text-white sm:text-2xl">
                             {greeting}, {displayName}!
                         </h2>
-                        <p className="mt-1 text-xs text-stone-600 sm:text-sm">Here’s what’s happening with your store today.</p>
+                        <p className="mt-1 text-xs text-white/80 sm:text-sm">Here’s what’s happening with your store today.</p>
                     </div>
                 </div>
-                <div className="relative z-10 hidden shrink-0 items-center gap-2 rounded-xl border border-white/80 bg-white/70 px-4 py-2.5 text-sm font-semibold text-stone-600 shadow-sm sm:flex">
-                    <FiClock className="text-orange-600" size={16} />
+                <div className="relative z-10 hidden shrink-0 items-center gap-2 rounded-xl border border-white/25 bg-slate-950/25 px-4 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm sm:flex">
+                    <FiClock className="text-orange-200" size={16} />
                     <span>{todayLabel}</span>
                 </div>
             </section>
