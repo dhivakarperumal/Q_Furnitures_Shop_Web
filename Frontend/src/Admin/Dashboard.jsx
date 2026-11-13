@@ -20,7 +20,8 @@ import {
     FiCreditCard,
     FiImage,
     FiPercent,
-    FiStar
+    FiStar,
+    FiSun
 } from "react-icons/fi";
 import { FaRupeeSign, FaTshirt, FaTruck } from "react-icons/fa";
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -79,6 +80,15 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(!dashboardData);
     const [salesRange, setSalesRange] = useState("week");
     const [stockAlertCount, setStockAlertCount] = useState(0);
+    const currentHour = new Date().getHours();
+    const greeting = currentHour < 12 ? "Good morning" : currentHour < 18 ? "Good afternoon" : "Good evening";
+    const displayName = user?.username || user?.name || "Admin";
+    const todayLabel = new Intl.DateTimeFormat("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    }).format(new Date());
 
     const fetchDashboardData = useCallback(async (range = "week") => {
         setLoading(true);
@@ -270,6 +280,32 @@ const Dashboard = () => {
     return (
         <div className="space-y-6 pb-12 min-h-screen">
             <Toaster position="top-right" />
+
+            <section
+                className="relative flex min-h-28 items-center justify-between gap-5 overflow-hidden rounded-2xl border border-orange-200/70 bg-cover bg-center px-5 py-5 shadow-[0_8px_24px_rgba(74,46,25,0.06)] sm:px-7"
+                style={{
+                    backgroundImage: "linear-gradient(90deg, rgba(255,247,237,0.94) 0%, rgba(255,251,235,0.88) 58%, rgba(255,247,237,0.52) 100%), url('/images/admincontent.png')",
+                }}
+            >
+                <div className="absolute -right-8 -top-14 h-44 w-44 rounded-full bg-white/40" />
+                <div className="absolute -bottom-16 right-24 h-36 w-36 rounded-full bg-amber-200/20" />
+                <div className="relative z-10 flex min-w-0 items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-orange-200/70">
+                        <FiSun size={24} />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-700/80">Admin dashboard</p>
+                        <h2 className="mt-1 truncate text-xl font-black text-slate-800 sm:text-2xl">
+                            {greeting}, {displayName}!
+                        </h2>
+                        <p className="mt-1 text-xs text-stone-600 sm:text-sm">Here’s what’s happening with your store today.</p>
+                    </div>
+                </div>
+                <div className="relative z-10 hidden shrink-0 items-center gap-2 rounded-xl border border-white/80 bg-white/70 px-4 py-2.5 text-sm font-semibold text-stone-600 shadow-sm sm:flex">
+                    <FiClock className="text-orange-600" size={16} />
+                    <span>{todayLabel}</span>
+                </div>
+            </section>
 
             {/* Top Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
