@@ -89,6 +89,10 @@ const Dashboard = () => {
         month: "long",
         year: "numeric",
     }).format(new Date());
+    const todayCompactLabel = new Intl.DateTimeFormat("en-IN", {
+        day: "numeric",
+        month: "short",
+    }).format(new Date());
 
     const fetchDashboardData = useCallback(async (range = "week") => {
         setLoading(true);
@@ -282,7 +286,7 @@ const Dashboard = () => {
             <Toaster position="top-right" />
 
             <section
-                className="relative flex min-h-32 items-center justify-between gap-5 overflow-hidden rounded-2xl border border-slate-700/20 bg-cover bg-center px-5 py-6 shadow-[0_8px_24px_rgba(15,23,42,0.16)] sm:px-7"
+                className="relative flex min-h-32 flex-col items-start justify-center gap-3 overflow-hidden rounded-2xl border border-slate-700/20 bg-cover bg-center px-4 py-6 shadow-[0_8px_24px_rgba(15,23,42,0.16)] sm:px-7"
                 style={{
                     backgroundImage: "linear-gradient(90deg, rgba(15,23,42,0.82) 0%, rgba(15,23,42,0.62) 48%, rgba(15,23,42,0.08) 100%), url('/images/welcome.png')",
                 }}
@@ -301,9 +305,10 @@ const Dashboard = () => {
                         <p className="mt-1 text-xs text-white/80 sm:text-sm">Here’s what’s happening with your store today.</p>
                     </div>
                 </div>
-                <div className="relative z-10 hidden shrink-0 items-center gap-2 rounded-xl border border-white/25 bg-slate-950/25 px-4 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm sm:flex">
-                    <FiClock className="text-orange-200" size={16} />
-                    <span>{todayLabel}</span>
+                <div className="relative z-10 flex shrink-0 items-center gap-2 rounded-xl border border-white/25 bg-slate-950/25 px-3 py-2.5 text-xs font-semibold text-white shadow-sm backdrop-blur-sm sm:gap-2.5 sm:px-4 sm:text-sm">
+                    <FiClock className="shrink-0 text-orange-200" size={16} />
+                    <span className="sm:hidden">{todayCompactLabel}</span>
+                    <span className="hidden sm:inline">{todayLabel}</span>
                 </div>
             </section>
 
