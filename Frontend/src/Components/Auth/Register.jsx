@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  BarChart3,
   Eye,
   EyeOff,
-  House,
+  Headphones,
   LockKeyhole,
   Mail,
-  PackageCheck,
   Phone,
-  ShoppingCart,
+  ShieldCheck,
+  Truck,
   UserRound,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -63,19 +62,23 @@ function Register() {
   };
 
   return (
-    <main className="relative isolate grid min-h-dvh overflow-hidden bg-[#faf5ef] selection:bg-primary selection:text-white lg:grid-cols-[1.05fr_0.95fr]">
-      <div className="absolute inset-0 -z-10 lg:hidden">
+    <main className="relative isolate grid min-h-dvh bg-white selection:bg-primary selection:text-white md:grid-cols-[0.8fr_1fr]">
+      <div className="absolute inset-0 -z-10 overflow-hidden md:hidden">
         <img
-          src="/images/loginbg.png"
+          src="/images/register.png"
           alt=""
           className="h-full w-full object-cover object-[35%_center]"
         />
-        <div className="absolute inset-0 bg-[#faf5ef]/70" />
+        <div className="absolute inset-0 bg-white/70" />
       </div>
 
-      <section aria-label="Q Furnitures" className="relative hidden min-h-dvh overflow-hidden lg:block">
+      <section
+        aria-label="Q Furnitures"
+        className="relative hidden min-h-dvh overflow-hidden md:block"
+        style={{ width: "calc(100% + 80px)" }}
+      >
         <img
-          src="/images/loginbg.png"
+          src="/images/register.png"
           alt=""
           className="absolute inset-0 h-full w-full object-cover object-left"
         />
@@ -83,76 +86,57 @@ function Register() {
           className="absolute inset-0"
           style={{ backdropFilter: "blur(1px)", backgroundColor: "rgba(0, 0, 0, 0.10)" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-secondary-dark/10" />
-        <div className="relative flex min-h-dvh flex-col p-8 xl:p-14">
-          <div
-            className="mx-auto w-full max-w-lg text-center"
-            style={{ marginLeft: "auto", marginRight: "auto", marginTop: "auto", marginBottom: "auto" }}
-          >
-            <Link to="/" className="inline-flex items-center justify-center gap-3 text-secondary-dark">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-orange-200">
-                <House size={27} strokeWidth={2} aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-t from-secondary-dark/65 via-transparent to-primary/10" />
+        <div className="relative flex min-h-dvh flex-col justify-between p-6 xl:p-10">
+          <Link to="/" className="inline-flex items-center gap-3 text-secondary-dark">
+            <span className="text-5xl font-black leading-none text-primary">Q</span>
+            <span>
+              <span className="block text-3xl font-black leading-none tracking-tight">Furnitures</span>
+              <span className="mt-1 block text-sm font-semibold tracking-wide text-secondary-dark/80">
+                Furniture Store Management
               </span>
-              <span className="text-center">
-                <span className="block text-3xl font-black leading-none tracking-tight">
-                  <span className="text-primary">Q</span> Furnitures
-                </span>
-                <span className="mt-1 block text-sm font-semibold tracking-wide text-secondary-dark/80">
-                  Furniture Store Management
-                </span>
-              </span>
-            </Link>
+            </span>
+          </Link>
 
-            <h2 className="mx-auto mt-8 max-w-md text-center text-3xl font-black leading-tight tracking-tight text-secondary-dark xl:text-4xl">
-              Furniture store management, made simple.
+          <div className="mt-auto pt-12 text-center">
+            <h2 className="text-3xl font-black tracking-tight text-white xl:text-4xl">
+              Join Q Furnitures
             </h2>
-            <p className="mx-auto mt-3 max-w-md text-center text-base leading-7 text-secondary-dark/80">
-              Keep your products, orders, and business insights organized in one place.
-            </p>
-          </div>
-
-          <div className="mx-auto mt-8 grid w-full max-w-2xl grid-cols-3 gap-3 pb-2">
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-orange-200">
-                <PackageCheck size={20} aria-hidden="true" />
-              </span>
-              <span className="text-xs font-semibold leading-5 text-secondary-dark sm:text-sm">Manage Products &amp; Inventory</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-orange-200">
-                <ShoppingCart size={20} aria-hidden="true" />
-              </span>
-              <span className="text-xs font-semibold leading-5 text-secondary-dark sm:text-sm">Orders &amp; Billing</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-orange-200">
-                <BarChart3 size={20} aria-hidden="true" />
-              </span>
-              <span className="text-xs font-semibold leading-5 text-secondary-dark sm:text-sm">Reports &amp; Insights</span>
+            <div className="mt-6 grid grid-cols-3 gap-2">
+              <div className="flex flex-col items-center gap-2 text-center text-white">
+                <Truck size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">Fast Delivery</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-white">
+                <ShieldCheck size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">Safe &amp; Secure</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-white">
+                <Headphones size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">Dedicated Support</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-[#faf5ef]/65 px-4 py-8 sm:px-8 lg:bg-gradient-to-br lg:from-[#fffdfa] lg:via-[#faf5ef] lg:to-[#f5e8d9] lg:px-10">
-        <section className="relative w-full min-w-0 max-w-xl rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-6">
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-10 top-0 h-1 rounded-b-full bg-gradient-to-r from-primary/20 via-primary to-primary/20"
-          />
-          <header className="mb-4 text-center">
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-primary-dark ring-1 ring-orange-100">
-              <UserRound size={23} strokeWidth={1.8} aria-hidden="true" />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-secondary-dark sm:text-3xl">
+      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-white/65 px-4 py-8 sm:px-8 md:bg-transparent md:px-6">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 hidden bg-white md:block"
+          style={{ borderTopLeftRadius: "80px", borderBottomLeftRadius: "80px" }}
+        />
+        <section className="relative z-10 w-full min-w-0 max-w-xl rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-6 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+          <header className="mb-5 text-center">
+            <h1 className="text-3xl font-black tracking-tight text-secondary-dark sm:text-4xl">
               Create an <span className="text-primary">Account</span>
             </h1>
-            <p className="mt-1.5 text-sm text-stone-600">
-              Register to get started with Q Furnitures
+            <p className="mt-2 text-sm text-stone-600 sm:text-base">
+              Register now to explore our furniture collection, place orders and track them easily.
             </p>
           </header>
 
-          <form onSubmit={handleSubmit} className="space-y-2.5">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label htmlFor="register-username" className="mb-1.5 block text-sm font-semibold text-secondary-dark">
                 Full name
@@ -164,7 +148,7 @@ function Register() {
                   name="username"
                   type="text"
                   autoComplete="name"
-                  placeholder="Your full name"
+                  placeholder="Full Name"
                   value={form.username}
                   onChange={handleChange}
                   className={inputClass}
@@ -184,7 +168,7 @@ function Register() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  placeholder="you@example.com"
+                  placeholder="Email Address"
                   value={form.email}
                   onChange={handleChange}
                   className={inputClass}
@@ -204,7 +188,7 @@ function Register() {
                   name="phone"
                   type="tel"
                   autoComplete="tel"
-                  placeholder="Your mobile number"
+                  placeholder="Mobile Number"
                   value={form.phone}
                   onChange={handleChange}
                   className={inputClass}
@@ -224,7 +208,7 @@ function Register() {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
-                  placeholder="At least 8 characters"
+                  placeholder="Password"
                   value={form.password}
                   onChange={handleChange}
                   className={`${inputClass} pr-12`}
@@ -252,7 +236,7 @@ function Register() {
                   name="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   autoComplete="new-password"
-                  placeholder="Re-enter password"
+                  placeholder="Confirm Password"
                   value={form.confirmPassword}
                   onChange={handleChange}
                   className={`${inputClass} pr-12`}
@@ -272,16 +256,16 @@ function Register() {
             <button
               type="submit"
               disabled={submitting}
-              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
             >
               <UserRound size={17} aria-hidden="true" />
-              {submitting ? "Creating account..." : "Create account"}
+              {submitting ? "Creating account..." : "Register"}
             </button>
 
             <p className="pt-1 text-center text-sm text-stone-600">
               Already have an account?{" "}
               <Link to="/login" className="font-bold text-primary-dark transition hover:underline">
-                Sign in
+                Login
               </Link>
             </p>
           </form>
