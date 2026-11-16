@@ -470,7 +470,7 @@ const Dashboard = () => {
                 {/* Recent Orders */}
                 <div className="lg:col-span-8 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                     <div className="flex justify-between items-center mb-5">
-                        <h3 className="text-base font-black text-slate-800">Recent Orders</h3>
+                        <h3 className="text-base font-black text-[#9900ff]">Recent Orders</h3>
                         <button onClick={() => navigate('/admin/orders/all')} className="text-xs font-bold text-[#9900ff] hover:underline">View All →</button>
                     </div>
                     <div className="overflow-x-auto">
