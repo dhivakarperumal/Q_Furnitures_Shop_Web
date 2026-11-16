@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import api from "../../api";
-
-const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
 import { Link } from "react-router-dom";
 import { useAdmin } from "../../PrivateRouter/AdminContext";
 import {
@@ -22,6 +20,15 @@ import {
   FiPrinter,
 } from "react-icons/fi";
 import { toast, Toaster } from "react-hot-toast";
+
+const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
+const isOnLocalDate = (timestamp, date) => {
+  const orderDate = new Date(timestamp);
+  return !Number.isNaN(orderDate.getTime()) &&
+    orderDate.getFullYear() === date.getFullYear() &&
+    orderDate.getMonth() === date.getMonth() &&
+    orderDate.getDate() === date.getDate();
+};
 
 const Orders = ({ statusFilter = "All" }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,6 +50,15 @@ const Orders = ({ statusFilter = "All" }) => {
 
   const [activeStatus, setActiveStatus] = useState(statusFilter);
   const [viewMode, setViewMode] = useState("table");
+  const isNewOrdersPage = statusFilter === "Order Placed";
+  const isDeliveredOrdersPage = statusFilter === "Delivered";
+  const isFixedStatusPage = isNewOrdersPage || isDeliveredOrdersPage;
+  const today = new Date();
+  const ordersForDisplay = isNewOrdersPage
+    ? orders.filter((order) => order.status === "Order Placed" && isOnLocalDate(order.created_at, today))
+    : isDeliveredOrdersPage
+      ? orders.filter((order) => order.status === "Delivered")
+      : orders;
 
   useEffect(() => {
     setActiveStatus(statusFilter);
@@ -120,7 +136,7 @@ const Orders = ({ statusFilter = "All" }) => {
     setShowModal(false);
   };
 
-  const filteredOrders = orders.filter((order) => {
+  const filteredOrders = ordersForDisplay.filter((order) => {
     const matchesSearch =
       order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -150,7 +166,7 @@ const Orders = ({ statusFilter = "All" }) => {
       </tr>
     `).join("");
 
-    printWindow.document.write(`<!doctype html><html><head><title>Orders Report</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#1e293b}h1{color:#350866;margin:0 0 6px}p{color:#64748b;margin:0 0 24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #dbe1ea;padding:10px;text-align:left;font-size:12px}th{background:#350866;color:#fcd34d;text-transform:uppercase;font-size:11px}tr:nth-child(even){background:#f8fafc}</style></head><body><h1>Orders Report</h1><p>${filteredOrders.length} order${filteredOrders.length === 1 ? "" : "s"}</p><table><thead><tr><th>S No</th><th>Order ID</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Status</th><th>Order Date</th></tr></thead><tbody>${rows || '<tr><td colspan="7">No orders found</td></tr>'}</tbody></table></body></html>`);
+    printWindow.document.write(`<!doctype html><html><head><title>Orders Report</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#1e293b}h1{color:#350866;margin:0 0 6px}p{color:#64748b;margin:0 0 24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #dbe1ea;padding:10px;text-align:left;font-size:12px}th{background:#350866;color:#fcd34d;text-transform:uppercase;font-size:11px}tr:nth-child(even){background:#f8fafc}</style></head><body><h1>Orders Report</h1><p>${filteredOrders.length} order${filteredOrders.length === 1 ? "" : "s"}</p><table><thead><tr><th>S No</th><th>Order ID</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Status</th><th>Order Date</th></tr></thead><tbody>${rows || `<tr><td colspan="7">${isNewOrdersPage ? "No new orders placed today" : "No orders found"}</td></tr>`}</tbody></table></body></html>`);
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
@@ -187,63 +203,73 @@ const Orders = ({ statusFilter = "All" }) => {
   };
 
   return (
-    <div className="bg-[#f8f9fc] min-h-screen pb-10 font-sans animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="min-h-screen pb-10 font-sans animate-in fade-in slide-in-from-bottom-4 duration-700">
       <Toaster position="top-right" />
       <div className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-2 py-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shrink-0">
+          <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+            <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-primary-light to-primary-dark" />
+            <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-orange-200/70 transition-transform duration-200 group-hover:scale-105">
               <FiShoppingBag size={22} />
             </div>
-            <div>
+            <div className="relative z-10">
               <p className="text-xs text-gray-400 font-medium">Total Orders</p>
               <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{filteredOrders.length || 0}</h3>
-              <p className="text-[10px] text-gray-400">All orders placed</p>
+              <p className="text-[10px] text-gray-400">{isNewOrdersPage ? "Placed today" : "All orders placed"}</p>
             </div>
+            <FiShoppingBag className="pointer-events-none absolute -right-1 bottom-1 text-orange-300/20" size={60} />
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shrink-0">
+          <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-emerald-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+            <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-emerald-400 to-emerald-600" />
+            <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200/70 transition-transform duration-200 group-hover:scale-105">
               <FiCheckCircle size={22} />
             </div>
-            <div>
+            <div className="relative z-10">
               <p className="text-xs text-gray-400 font-medium">Confirmed Orders</p>
-              <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{orders.filter((o) => ["Order Placed", "Processing", "New"].includes(o.status)).length || 0}</h3>
+              <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{ordersForDisplay.filter((o) => ["Order Placed", "Processing", "New"].includes(o.status)).length || 0}</h3>
               <p className="text-[10px] text-gray-400">Orders confirmed</p>
             </div>
+            <FiCheckCircle className="pointer-events-none absolute -right-1 bottom-1 text-emerald-300/20" size={60} />
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-lg shrink-0">
+          <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-sky-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+            <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-sky-400 to-blue-600" />
+            <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-lg shadow-sky-200/70 transition-transform duration-200 group-hover:scale-105">
               <FiTruck size={22} />
             </div>
-            <div>
+            <div className="relative z-10">
               <p className="text-xs text-gray-400 font-medium">Shipped Orders</p>
-              <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{orders.filter((o) => ["Shipping", "Out for Delivery", "Shipped", "Packing"].includes(o.status)).length || 0}</h3>
+              <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{ordersForDisplay.filter((o) => ["Shipping", "Out for Delivery", "Shipped", "Packing"].includes(o.status)).length || 0}</h3>
               <p className="text-[10px] text-gray-400">Orders shipped</p>
             </div>
+            <FiTruck className="pointer-events-none absolute -right-1 bottom-1 text-sky-300/20" size={60} />
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white shadow-lg shrink-0">
+          <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-amber-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+            <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-amber-400 to-amber-600" />
+            <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg shadow-amber-200/70 transition-transform duration-200 group-hover:scale-105">
               <FiShoppingBag size={22} />
             </div>
-            <div>
+            <div className="relative z-10">
               <p className="text-xs text-gray-400 font-medium">Delivered Orders</p>
-              <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{orders.filter((o) => o.status === "Delivered").length || 0}</h3>
+              <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{ordersForDisplay.filter((o) => o.status === "Delivered").length || 0}</h3>
               <p className="text-[10px] text-gray-400">Orders delivered</p>
             </div>
+            <FiShoppingBag className="pointer-events-none absolute -right-1 bottom-1 text-amber-300/20" size={60} />
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white shadow-lg shrink-0">
+          <div className="group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border border-red-100/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-red-200 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]">
+            <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b from-red-400 to-red-600" />
+            <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-400 to-red-600 text-white shadow-lg shadow-red-200/70 transition-transform duration-200 group-hover:scale-105">
               <FiXCircle size={22} />
             </div>
-            <div>
+            <div className="relative z-10">
               <p className="text-xs text-gray-400 font-medium">Cancelled Orders</p>
-              <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{orders.filter((o) => o.status === "Cancelled").length || 0}</h3>
+              <h3 className="text-3xl font-black text-slate-800 leading-none my-0.5">{ordersForDisplay.filter((o) => o.status === "Cancelled").length || 0}</h3>
               <p className="text-[10px] text-gray-400">Orders cancelled</p>
             </div>
+            <FiXCircle className="pointer-events-none absolute -right-1 bottom-1 text-red-300/20" size={60} />
           </div>
         </div>
 
@@ -260,21 +286,22 @@ const Orders = ({ statusFilter = "All" }) => {
               <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
 
-            <div className="relative">
-              
-              <select
-                value={activeStatus}
-                onChange={(e) => setActiveStatus(e.target.value)}
-                className="w-36 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-medium focus:outline-none focus:border-[#4318FF] appearance-none"
-              >
-                <option value="All">All Status</option>
-                <option value="Order Placed">Confirmed</option>
-                <option value="Shipping">Shipped</option>
-                <option value="Delivered">Delivered</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">▼</span>
-            </div>
+            {!isFixedStatusPage && (
+              <div className="relative">
+                <select
+                  value={activeStatus}
+                  onChange={(e) => setActiveStatus(e.target.value)}
+                  className="w-36 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[13px] font-medium focus:outline-none focus:border-[#4318FF] appearance-none"
+                >
+                  <option value="All">All Status</option>
+                  <option value="Order Placed">Confirmed</option>
+                  <option value="Shipping">Shipped</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">▼</span>
+              </div>
+            )}
 
             <div className="relative">
               
@@ -327,17 +354,19 @@ const Orders = ({ statusFilter = "All" }) => {
         {viewMode === "table" ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse whitespace-nowrap">
+            <table className="w-full min-w-[1100px] text-left border-collapse whitespace-nowrap">
               <thead>
-                <tr className="bg-gradient-to-r from-[#1F0A3C] to-[#3c096c] border-b border-[#3c096c]">
-                  <th className="px-6 py-4 w-12"><input type="checkbox" className="rounded border-gray-300 text-[#4318FF] focus:ring-[#4318FF]" /></th>
-                  <th className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">Order ID</th>
-                  <th className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">Customer</th>
-                  <th className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">Amount</th>
-                  <th className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">Payment</th>
-                  <th className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">Status</th>
-                  <th className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">Order Date</th>
-                  <th className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">Actions</th>
+                <tr className="bg-gradient-to-r from-secondary-dark to-secondary-light border-b border-secondary-dark">
+                  <th scope="col" className="w-12 px-4 py-4">
+                    <input type="checkbox" aria-label="Select all orders" className="rounded border-gray-300 text-[#4318FF] focus:ring-[#4318FF]" />
+                  </th>
+                  <th scope="col" className="w-28 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order ID</th>
+                  <th scope="col" className="min-w-[220px] px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Customer</th>
+                  <th scope="col" className="w-32 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Amount</th>
+                  <th scope="col" className="w-28 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Payment</th>
+                  <th scope="col" className="w-40 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Status</th>
+                  <th scope="col" className="w-36 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order Date</th>
+                  <th scope="col" className="w-24 px-4 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -347,7 +376,7 @@ const Orders = ({ statusFilter = "All" }) => {
                   </tr>
                 ) : currentItems.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">No orders found.</td>
+                    <td colSpan="8" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">{isNewOrdersPage ? "No new orders placed today." : "No orders found."}</td>
                   </tr>
                 ) : (
                   currentItems.map((order, idx) => {
@@ -358,11 +387,11 @@ const Orders = ({ statusFilter = "All" }) => {
 
                     return (
                       <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
-                        <td className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">
+                        <td className="w-12 px-4 py-4">
                           <input type="checkbox" className="rounded border-gray-300 text-[#4318FF] focus:ring-[#4318FF]" />
                         </td>
-                        <td className="px-6 py-4 text-[13px] font-black text-[#4318FF]">{formatOrderId(order)}</td>
-                        <td className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">
+                        <td className="w-28 px-4 py-4 text-[13px] font-black text-[#4318FF]">{formatOrderId(order)}</td>
+                        <td className="min-w-[220px] px-4 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold shrink-0">
                               {customerName.charAt(0)}
@@ -373,11 +402,11 @@ const Orders = ({ statusFilter = "All" }) => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">
+                        <td className="w-32 px-4 py-4">
                           <div className="text-[13px] font-black text-[#2B3674]">₹{parseFloat(order.total_amount || 0).toLocaleString()}</div>
                           <div className="text-[11px] text-gray-400 font-medium mt-0.5">1 Item</div>
                         </td>
-                        <td className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">
+                        <td className="w-28 px-4 py-4">
                           <div className="flex flex-col items-start gap-1">
                             <span className={`px-2.5 py-1 rounded text-[10px] font-bold ${paymentMethod === "Online" ? "bg-[#dcfce7] text-[#16a34a]" : "bg-[#f4f1ff] text-[#4318FF]"}`}>
                               {paymentMethod}
@@ -385,7 +414,7 @@ const Orders = ({ statusFilter = "All" }) => {
                             <span className="text-[10px] text-gray-500 font-medium">{paymentStatus}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">
+                        <td className="w-40 px-4 py-4">
                           <div className="flex flex-col items-start gap-1 relative group/status">
                             <select
                               value={order.status}
@@ -408,11 +437,11 @@ const Orders = ({ statusFilter = "All" }) => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">
+                        <td className="w-36 px-4 py-4">
                           <div className="text-[12px] font-bold text-[#2B3674]">{order.created_at ? new Date(order.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Unknown"}</div>
                           <div className="text-[11px] text-gray-500 font-medium">{order.created_at ? new Date(order.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : ""}</div>
                         </td>
-                        <td className="px-4 py-4 text-[11px] font-bold text-[#FCD34D] uppercase tracking-wider w-10">
+                        <td className="w-24 px-4 py-4">
                           <div className="flex items-center justify-center gap-2">
                             <Link to={`/admin/orders/${order.id}`} className="p-1.5 border border-gray-200 rounded hover:bg-gray-100 text-[#4318FF] transition-colors shadow-sm">
                               <FiEye size={14} />
@@ -466,7 +495,7 @@ const Orders = ({ statusFilter = "All" }) => {
               </div>
             ) : currentItems.length === 0 ? (
               <div className="col-span-full bg-white rounded-xl border border-gray-100 px-6 py-10 text-center text-gray-400 text-sm font-semibold">
-                No orders found.
+                {isNewOrdersPage ? "No new orders placed today." : "No orders found."}
               </div>
             ) : (
               currentItems.map((order, idx) => {

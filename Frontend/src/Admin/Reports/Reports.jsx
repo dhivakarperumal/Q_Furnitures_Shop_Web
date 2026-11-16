@@ -12,6 +12,7 @@ import {
     FiArrowUpRight,
     FiArrowDownLeft
 } from "react-icons/fi";
+import { formatCurrency } from "../../utils/currency";
 
 const Reports = () => {
     const { reportsCache, setReportsCache } = useAdmin();
@@ -125,7 +126,7 @@ const Reports = () => {
                             const prevPct = maxVal > 0 ? (prevH / maxVal) * 100 : 0;
 
                             return (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-2 group-hover:cursor-pointer" title={`Sales: ₹${h}`}>
+                                <div key={i} className="flex-1 flex flex-col items-center gap-2 group-hover:cursor-pointer" title={`Sales: ${formatCurrency(h)}`}>
                                     <div className="w-full flex items-end gap-1 h-48">
                                         <div className="flex-1 bg-gray-100 rounded-t-lg transition-all" style={{ height: `${prevPct}%` }}></div>
                                         <div className="flex-1 bg-blue-500 rounded-t-lg transition-all" style={{ height: `${heightPct}%` }}></div>

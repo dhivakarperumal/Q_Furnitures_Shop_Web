@@ -1,9 +1,10 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { AuthContext } from "../PrivateRouter/AuthContext";
 import { useAdmin } from "../PrivateRouter/AdminContext";
 import api from "../api";
 import { toast, Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { formatCurrency } from "../utils/currency";
 import {
     FiShoppingBag,
     FiUsers,
@@ -12,10 +13,16 @@ import {
     FiCheckCircle,
     FiAlertTriangle,
     FiMapPin,
-    FiTrendingUp,
-    FiTrendingDown,
+    FiArrowUpRight,
     FiEye,
-    FiTag
+    FiGrid,
+    FiTag,
+    FiBriefcase,
+    FiCreditCard,
+    FiImage,
+    FiPercent,
+    FiStar,
+    FiSun
 } from "react-icons/fi";
 import { FaRupeeSign, FaTshirt, FaTruck } from "react-icons/fa";
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -36,7 +43,8 @@ import {
 const backendUrl = (import.meta.env.VITE_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
 
 const getDashboardImageUrl = (image) => {
-    if (!image || /^(https?:|data:|blob:)/i.test(image)) return image;
+    if (typeof image !== "string" || !image.trim()) return null;
+    if (/^(https?:|data:|blob:)/i.test(image)) return image;
     return `${backendUrl}${image.startsWith("/") ? image : `/${image}`}`;
 };
 
@@ -73,16 +81,22 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(!dashboardData);
     const [salesRange, setSalesRange] = useState("week");
     const [stockAlertCount, setStockAlertCount] = useState(0);
+    const currentHour = new Date().getHours();
+    const greeting = currentHour < 12 ? "Good morning" : currentHour < 18 ? "Good afternoon" : "Good evening";
+    const displayName = user?.username || user?.name || "Admin";
+    const todayLabel = new Intl.DateTimeFormat("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    }).format(new Date());
+    const todayCompactLabel = new Intl.DateTimeFormat("en-IN", {
+        day: "numeric",
+        month: "short",
+    }).format(new Date());
 
-    useEffect(() => {
-        fetchDashboardData("week");
-        api.get("/stock/low-stock", { params: { page: 1, limit: 1 } })
-            .then((response) => setStockAlertCount(Number(response.data?.pagination?.total || 0)))
-            .catch((error) => console.error("Low-stock dashboard alert failed to load:", error));
-    }, []);
-
-    const fetchDashboardData = async (range = salesRange) => {
-        if (!dashboardData) setLoading(true);
+    const fetchDashboardData = useCallback(async (range = "week") => {
+        setLoading(true);
         try {
             const response = await api.get('/dashboard', { params: { range } });
             setDashboardCached(response.data);
@@ -92,31 +106,38 @@ const Dashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [setDashboardCached]);
+
+    useEffect(() => {
+        void fetchDashboardData("week");
+        api.get("/stock/low-stock", { params: { page: 1, limit: 1 } })
+            .then((response) => setStockAlertCount(Number(response.data?.pagination?.total || 0)))
+            .catch((error) => console.error("Low-stock dashboard alert failed to load:", error));
+    }, [fetchDashboardData]);
 
     const getStatusStyle = (status) => {
         switch (status) {
             case "Delivered": return "bg-green-100 text-green-700";
             case "Confirmed": return "bg-blue-100 text-blue-700";
             case "Shipped": return "bg-orange-100 text-orange-700";
-            case "Packed": return "bg-purple-100 text-purple-700";
+            case "Packed": return "bg-amber-100 text-amber-700";
             case "Pending": return "bg-yellow-100 text-yellow-700";
             case "Cancelled": return "bg-red-100 text-red-700";
             default: return "bg-gray-100 text-gray-700";
         }
     };
 
-    const getStatIcon = (iconStr) => {
+    const getStatIcon = (iconStr, className = "text-white", size = 22) => {
         switch (iconStr) {
-            case "saree": return <FaTshirt className="text-white" size={22} />;
-            case "bag": return <FiShoppingBag className="text-white" size={22} />;
-            case "rupee": return <FaRupeeSign className="text-white" size={22} />;
-            case "pending": return <FiClock className="text-white" size={22} />;
-            case "truck": return <FaTruck className="text-white" size={22} />;
-            case "users": return <FiUsers className="text-white" size={22} />;
-            case "lowstock": return <FiBox className="text-white" size={22} />;
-            case "offer": return <FiTag className="text-white" size={22} />;
-            default: return <FiBox className="text-white" size={22} />;
+            case "saree": return <FaTshirt className={className} size={size} />;
+            case "bag": return <FiShoppingBag className={className} size={size} />;
+            case "rupee": return <FaRupeeSign className={className} size={size} />;
+            case "pending": return <FiClock className={className} size={size} />;
+            case "truck": return <FaTruck className={className} size={size} />;
+            case "users": return <FiUsers className={className} size={size} />;
+            case "lowstock": return <FiBox className={className} size={size} />;
+            case "offer": return <FiTag className={className} size={size} />;
+            default: return <FiBox className={className} size={size} />;
         }
     };
 
@@ -137,7 +158,14 @@ const Dashboard = () => {
         )
     }
 
-    const { stats, recentOrders, topProducts, lowStockAlerts, revenueTrends = [], orderStatusCounts = {} } = dashboardData;
+    const {
+        stats = [],
+        recentOrders = [],
+        topProducts = [],
+        lowStockAlerts = [],
+        revenueTrends = [],
+        orderStatusCounts = {},
+    } = dashboardData;
 
     // ── Bar Chart: Real Revenue Trends ──────────────────────────────
     const barChartData = {
@@ -149,8 +177,9 @@ const Dashboard = () => {
             data: revenueTrends.length > 0
                 ? revenueTrends.map(t => t.revenue)
                 : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            backgroundColor: '#D4AF37',
-            borderColor: '#B8941F',
+            backgroundColor: '#F07816',
+            borderColor: '#D9650B',
+            hoverBackgroundColor: '#D9650B',
             borderWidth: 1,
             borderRadius: 6,
             borderSkipped: false,
@@ -171,7 +200,7 @@ const Dashboard = () => {
                 borderColor: '#eee',
                 borderWidth: 1,
                 callbacks: {
-                    label: (context) => `Revenue: ₹${context.parsed.y.toLocaleString('en-IN')}`
+                    label: (context) => `Revenue: ${formatCurrency(context.parsed.y)}`
                 }
             }
         },
@@ -179,7 +208,7 @@ const Dashboard = () => {
             y: {
                 beginAtZero: true,
                 ticks: {
-                    callback: (value) => `₹${(value / 1000).toFixed(0)}k`,
+                    callback: (value) => formatCurrency(value),
                     color: '#9ca3af',
                     font: { size: 10 }
                 },
@@ -230,53 +259,79 @@ const Dashboard = () => {
     }));
 
     const cardStyles = [
-        { gradient: "from-[#6C3DE8] to-[#A855F7]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#2563EB] to-[#0EA5E9]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#059669] to-[#10B981]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#F59E0B] to-[#FBBF24]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#EF4444] to-[#F97316]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#0891B2] to-[#06B6D4]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#DB2777] to-[#EC4899]", icon_bg: "bg-white/20" },
-        { gradient: "from-[#7C3AED] to-[#6D28D9]", icon_bg: "bg-white/20" },
+        { border: "border-orange-100/80", hoverBorder: "hover:border-orange-200", accent: "from-primary-light to-primary-dark", iconGradient: "from-primary to-primary-dark", iconShadow: "shadow-orange-200/70", watermark: "text-orange-300/20" },
+        { border: "border-emerald-100/80", hoverBorder: "hover:border-emerald-200", accent: "from-emerald-400 to-emerald-600", iconGradient: "from-emerald-400 to-emerald-600", iconShadow: "shadow-emerald-200/70", watermark: "text-emerald-300/20" },
+        { border: "border-amber-100/80", hoverBorder: "hover:border-amber-200", accent: "from-amber-400 to-amber-600", iconGradient: "from-amber-400 to-amber-600", iconShadow: "shadow-amber-200/70", watermark: "text-amber-300/20" },
+        { border: "border-rose-100/80", hoverBorder: "hover:border-rose-200", accent: "from-rose-400 to-rose-600", iconGradient: "from-rose-400 to-rose-600", iconShadow: "shadow-rose-200/70", watermark: "text-rose-300/20" },
+        { border: "border-blue-100/80", hoverBorder: "hover:border-blue-200", accent: "from-blue-400 to-blue-600", iconGradient: "from-blue-400 to-blue-600", iconShadow: "shadow-blue-200/70", watermark: "text-blue-300/20" },
+        { border: "border-cyan-100/80", hoverBorder: "hover:border-cyan-200", accent: "from-cyan-400 to-cyan-600", iconGradient: "from-cyan-400 to-cyan-600", iconShadow: "shadow-cyan-200/70", watermark: "text-cyan-300/20" },
+        { border: "border-purple-100/80", hoverBorder: "hover:border-purple-200", accent: "from-purple-400 to-purple-600", iconGradient: "from-purple-400 to-purple-600", iconShadow: "shadow-purple-200/70", watermark: "text-purple-300/20" },
+        { border: "border-violet-100/80", hoverBorder: "hover:border-violet-200", accent: "from-violet-400 to-violet-600", iconGradient: "from-violet-400 to-violet-600", iconShadow: "shadow-violet-200/70", watermark: "text-violet-300/20" },
+    ];
+
+    const quickActions = [
+        { label: "Add Product", description: "Add an item to your catalog", icon: <FiBox size={19} />, color: "from-primary to-primary-dark", border: "hover:border-orange-200", path: "/admin/products/add" },
+        { label: "New Order", description: "Create a shop order", icon: <FiShoppingBag size={19} />, color: "from-blue-500 to-blue-700", border: "hover:border-blue-200", path: "/admin/orders/shop-create" },
+        { label: "Categories", description: "Manage product categories", icon: <FiGrid size={19} />, color: "from-emerald-400 to-emerald-600", border: "hover:border-emerald-200", path: "/admin/products/category" },
+        { label: "Customers", description: "View customer accounts", icon: <FiUsers size={19} />, color: "from-violet-500 to-violet-700", border: "hover:border-violet-200", path: "/admin/users/all" },
+        { label: "Stock Details", description: "Review available inventory", icon: <FiAlertTriangle size={19} />, color: "from-amber-400 to-amber-600", border: "hover:border-amber-200", path: "/admin/products/stock" },
+        { label: "Top Header Offers", description: "Manage active promotions", icon: <FiTag size={19} />, color: "from-rose-500 to-rose-700", border: "hover:border-rose-200", path: "/admin/offers" },
+        { label: "New Billing", description: "Open billing and create orders", icon: <FiCreditCard size={19} />, color: "from-cyan-500 to-cyan-700", border: "hover:border-cyan-200", path: "/admin/orders/billing" },
+        { label: "Banners", description: "Manage promotional banners", icon: <FiImage size={19} />, color: "from-indigo-500 to-indigo-700", border: "hover:border-indigo-200", path: "/admin/banners" },
+        { label: "Add Dealer", description: "Create or manage dealer accounts", icon: <FiBriefcase size={19} />, color: "from-teal-500 to-teal-700", border: "hover:border-teal-200", path: "/admin/dealers" },
+        { label: "Coupons", description: "Manage discount coupons", icon: <FiPercent size={19} />, color: "from-fuchsia-500 to-fuchsia-700", border: "hover:border-fuchsia-200", path: "/admin/coupons" },
+        { label: "Reviews", description: "Review customer feedback", icon: <FiStar size={19} />, color: "from-sky-500 to-sky-700", border: "hover:border-sky-200", path: "/admin/reviews" },
     ];
 
     return (
-        <div className="space-y-6 pb-12 bg-slate-50 min-h-screen">
+        <div className="space-y-6 pb-12 min-h-screen">
             <Toaster position="top-right" />
+
+            <section
+                className="relative flex min-h-32 flex-col items-start justify-center gap-3 overflow-hidden rounded-2xl border border-slate-700/20 bg-cover bg-center px-4 py-6 shadow-[0_8px_24px_rgba(15,23,42,0.16)] sm:px-7"
+                style={{
+                    backgroundImage: "linear-gradient(90deg, rgba(15,23,42,0.82) 0%, rgba(15,23,42,0.62) 48%, rgba(15,23,42,0.08) 100%), url('/images/welcome.png')",
+                }}
+            >
+                <div className="absolute -right-8 -top-14 h-44 w-44 rounded-full bg-white/10" />
+                <div className="absolute -bottom-16 right-24 h-36 w-36 rounded-full bg-orange-200/10" />
+                <div className="relative z-10 flex min-w-0 items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-orange-200/70">
+                        <FiSun size={24} />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-200">Admin dashboard</p>
+                        <h2 className="mt-1 truncate text-xl font-black text-white sm:text-2xl">
+                            {greeting}, {displayName}!
+                        </h2>
+                        <p className="mt-1 text-xs text-white/80 sm:text-sm">Here’s what’s happening with your store today.</p>
+                    </div>
+                </div>
+                <div className="relative z-10 flex shrink-0 items-center gap-2 rounded-xl border border-white/25 bg-slate-950/25 px-3 py-2.5 text-xs font-semibold text-white shadow-sm backdrop-blur-sm sm:gap-2.5 sm:px-4 sm:text-sm">
+                    <FiClock className="shrink-0 text-orange-200" size={16} />
+                    <span className="sm:hidden">{todayCompactLabel}</span>
+                    <span className="hidden sm:inline">{todayLabel}</span>
+                </div>
+            </section>
 
             {/* Top Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {stats.map((stat, i) => {
                     const style = cardStyles[i % cardStyles.length];
                     return (
-                        <div key={i} className={`relative bg-gradient-to-br ${style.gradient} rounded-2xl p-4 overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer`}>
-                            {/* Decorative circle background */}
-                            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
-                            <div className="absolute -bottom-8 -right-2 w-24 h-24 bg-white/5 rounded-full" />
-
-                            {/* Top row: icon + trend */}
-                            <div className="flex items-center justify-between mb-3 relative z-10">
-                                <div className={`w-11 h-11 ${style.icon_bg} backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30`}>
-                                    {getStatIcon(stat.icon)}
-                                </div>
-                                <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                                    {stat.trendUp ? <FiTrendingUp size={10} /> : <FiTrendingDown size={10} />}
-                                    {stat.trend.replace('+', '').replace('↓', '').trim()}
-                                </span>
+                        <div key={i} className={`group relative flex min-h-36 items-center gap-4 overflow-hidden rounded-xl border ${style.border} bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 ${style.hoverBorder} hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)]`}>
+                            <div className={`absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b ${style.accent}`} />
+                            <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${style.iconGradient} text-white shadow-lg ${style.iconShadow} transition-transform duration-200 group-hover:scale-105`}>
+                                {getStatIcon(stat.icon)}
                             </div>
-
-                            {/* Value */}
                             <div className="relative z-10">
-                                <h3 className="text-3xl font-black text-white leading-none">{stat.value}</h3>
-                                <p className="text-white/70 text-xs font-semibold mt-1">{stat.label}</p>
+                                <p className="mb-1 text-xs font-bold tracking-wide text-secondary-light">{stat.label}</p>
+                                <h3 className="mb-1 text-3xl font-black leading-none text-secondary-dark">
+                                    {stat.label === "Revenue" ? formatCurrency(stat.value) : stat.value}
+                                </h3>
+                                <p className="text-[10px] font-medium text-stone-500">{stat.description || "Summary"}</p>
                             </div>
-
-                            {/* Bottom divider */}
-                            <div className="mt-3 pt-3 border-t border-white/20 relative z-10">
-                                <p className="text-white/60 text-[10px] font-medium">
-                                    {stat.trendUp ? '▲' : '▼'} {stat.trend.replace('+', '').replace('↓', '').trim()} vs last month
-                                </p>
-                            </div>
+                            {getStatIcon(stat.icon, `pointer-events-none absolute -right-1 bottom-1 ${style.watermark}`, 60)}
                         </div>
                     );
                 })}
@@ -292,34 +347,7 @@ const Dashboard = () => {
                 </button>
             )}
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Quick Actions</h3>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Shortcuts</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {[
-                        { label: "Add Product",    icon: <FiBox size={20} />,          color: "from-[#6C3DE8] to-[#A855F7]", path: "/admin/products/add" },
-                        { label: "New Order",      icon: <FiShoppingBag size={20} />,  color: "from-[#2563EB] to-[#0EA5E9]", path: "/admin/orders/create" },
-                        { label: "All Orders",     icon: <FaTruck size={20} />,         color: "from-[#059669] to-[#10B981]", path: "/admin/orders/all" },
-                        { label: "Customers",      icon: <FiUsers size={20} />,        color: "from-[#F59E0B] to-[#FBBF24]", path: "/admin/users/all" },
-                        { label: "Stock Details",  icon: <FiAlertTriangle size={20} />,color: "from-[#EF4444] to-[#F97316]", path: "/admin/products/stock" },
-                        { label: "Reports",        icon: <FiTrendingUp size={20} />,   color: "from-[#DB2777] to-[#EC4899]", path: "/admin/reports" },
-                    ].map((action, i) => (
-                        <button
-                            key={i}
-                            onClick={() => navigate(action.path)}
-                            className="flex flex-col items-center gap-2.5 p-4 rounded-2xl border border-gray-100 hover:border-transparent hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
-                        >
-                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${action.color} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform duration-200`}>
-                                {action.icon}
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 text-center leading-tight">{action.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+            
 
             {/* Middle Section: Charts & Low Stock */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -405,6 +433,38 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+            {/* Quick Actions */}
+            <div className="rounded-2xl border border-orange-100/70 bg-white/90 p-5 shadow-[0_8px_24px_rgba(74,46,25,0.06)]">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                        <h3 className="text-base font-black text-slate-800">Quick Actions</h3>
+                        <p className="mt-0.5 text-xs text-stone-500">Jump to common admin tasks</p>
+                    </div>
+                    <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-700">
+                        {quickActions.length} shortcuts
+                    </span>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
+                    {quickActions.map((action) => (
+                        <button
+                            key={action.label}
+                            type="button"
+                            onClick={() => navigate(action.path)}
+                            className={`group relative flex min-h-20 items-center gap-2 overflow-hidden rounded-xl border border-orange-100/80 bg-white/95 px-2.5 py-3 text-left shadow-[0_8px_24px_rgba(74,46,25,0.06)] transition-all duration-200 hover:-translate-y-0.5 ${action.border} hover:shadow-[0_14px_30px_rgba(74,46,25,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/40`}
+                        >
+                            <span className={`absolute inset-y-3 left-0 w-1 rounded-r-full bg-gradient-to-b ${action.color}`} />
+                            <div className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-lg transition-transform duration-200 group-hover:scale-105 ${action.color}`}>
+                                {action.icon}
+                            </div>
+                            <span className="relative z-10 min-w-0 flex-1">
+                                <span className="block truncate text-xs font-bold text-slate-800 xl:text-sm">{action.label}</span>
+                                <span className="mt-0.5 hidden truncate text-[11px] text-stone-500 xl:block">{action.description}</span>
+                            </span>
+                            <FiArrowUpRight className="relative z-10 hidden shrink-0 text-stone-400 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-orange-600 xl:block" size={16} />
+                        </button>
+                    ))}
+                </div>
+            </div>
 
             {/* Bottom Section: Recent Orders & Top Selling */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -412,34 +472,37 @@ const Dashboard = () => {
                 <div className="lg:col-span-8 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                     <div className="flex justify-between items-center mb-5">
                         <h3 className="text-base font-black text-slate-800">Recent Orders</h3>
-                        <button onClick={() => navigate('/admin/orders/all')} className="text-xs font-bold text-purple-600 hover:underline">View All →</button>
+                        <button onClick={() => navigate('/admin/orders/all')} className="text-xs font-bold text-primary-dark hover:underline">View All →</button>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full border-separate border-spacing-0 text-left text-sm">
                             <thead>
-                                <tr className="text-[11px] text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                                    <th className="pb-3 font-bold">Order ID</th>
-                                    <th className="pb-3 font-bold">Customer</th>
-                                    <th className="pb-3 font-bold">Date</th>
-                                    <th className="pb-3 font-bold">Amount</th>
-                                    <th className="pb-3 font-bold">Status</th>
-                                    <th className="pb-3 font-bold text-center">Action</th>
+                                <tr
+                                    className="bg-gradient-to-r from-secondary-dark to-secondary-light border-b border-secondary-dark"
+                                    style={{ clipPath: 'inset(0 round 12px 12px 0 0)' }}
+                                >
+                                    <th className="rounded-tl-xl px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Order ID</th>
+                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Customer</th>
+                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Date</th>
+                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Amount</th>
+                                    <th className="px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider">Status</th>
+                                    <th className="rounded-tr-xl px-4 py-4 text-[10px] font-bold text-[#FCD34D] uppercase tracking-wider text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {recentOrders && recentOrders.length > 0 ? recentOrders.map((order, i) => (
                                     <tr key={i} className="hover:bg-slate-50/60 transition-colors group">
-                                        <td className="py-3 font-bold text-purple-600 text-xs">{order.id}</td>
+                                        <td className="py-3 font-bold text-slate-800 text-xs">{order.id}</td>
                                         <td className="py-3">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-black shrink-0">
+                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-[10px] font-black shrink-0">
                                                     {(order.customer || 'G').charAt(0).toUpperCase()}
                                                 </div>
                                                 <span className="font-semibold text-slate-800 text-xs truncate max-w-[100px]">{order.customer}</span>
                                             </div>
                                         </td>
                                         <td className="py-3 text-gray-400 text-xs">{formatOrderDate(order.date)}</td>
-                                        <td className="py-3 font-bold text-slate-800 text-xs">{order.amount}</td>
+                                        <td className="py-3 font-bold text-slate-800 text-xs">{formatCurrency(order.amount)}</td>
                                         <td className="py-3">
                                             <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${getStatusStyle(order.status)}`}>
                                                 {order.status}
@@ -447,10 +510,10 @@ const Dashboard = () => {
                                         </td>
                                         <td className="py-3 text-center">
                                             <button
-                                                onClick={() => navigate(`/admin/orders/${order.id.replace('#ORD-0', '')}`)}
-                                                className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mx-auto hover:bg-purple-600 hover:text-white transition-all"
+                                                onClick={() => navigate(`/admin/orders/${order.numericId ?? order.id.replace('#ORD-0', '')}`)}
+                                                className="group mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-primary-dark transition-all hover:bg-red-50 hover:text-red-600"
                                             >
-                                                <FiEye size={13} />
+                                                <FiEye className="text-primary-dark transition-colors group-hover:text-red-600" size={13} />
                                             </button>
                                         </td>
                                     </tr>
@@ -468,7 +531,7 @@ const Dashboard = () => {
                 <div className="lg:col-span-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                     <div className="flex justify-between items-center mb-5">
                         <h3 className="text-base font-black text-slate-800">Top Selling Sarees</h3>
-                        <button onClick={() => navigate('/admin/products/all')} className="text-xs font-bold text-purple-600 hover:underline">View All →</button>
+                        <button onClick={() => navigate('/admin/products/all')} className="text-xs font-bold text-primary-dark hover:underline">View All →</button>
                     </div>
                     <div className="space-y-3">
                         {topProducts && topProducts.length > 0 ? topProducts.map((item, i) => (
@@ -480,10 +543,10 @@ const Dashboard = () => {
                                         className="w-12 h-12 rounded-xl object-cover border border-gray-100"
                                         onError={(event) => {
                                             event.currentTarget.onerror = null;
-                                            event.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=EDE9FE&color=7C3AED`;
+                                            event.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=FFF0E0&color=D9650B`;
                                         }}
                                     />
-                                    <span className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white text-[9px] font-black flex items-center justify-center shadow">
+                                    <span className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-gradient-to-br from-primary to-primary-dark text-white text-[9px] font-black flex items-center justify-center shadow">
                                         {i + 1}
                                     </span>
                                 </div>
@@ -492,7 +555,7 @@ const Dashboard = () => {
                                     <p className="text-[10px] text-gray-400 font-medium">{item.cat}</p>
                                 </div>
                                 <div className="text-right shrink-0">
-                                    <p className="text-sm font-black text-purple-600">{item.sales}</p>
+                                    <p className="text-sm font-black text-primary-dark">{item.sales}</p>
                                     <p className="text-[10px] text-gray-400">sold</p>
                                 </div>
                             </div>
