@@ -125,8 +125,8 @@ const Hero = () => {
 
   const renderLink = (link, index) => {
     const className = index === 0
-      ? "group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-      : "inline-flex items-center rounded-full border border-white/60 bg-white/5 px-6 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition hover:border-white hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white";
+      ? "group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      : "inline-flex items-center rounded-full border border-[#8b735e] bg-white/80 px-6 py-3.5 text-sm font-bold text-secondary-dark transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
     const content = (
       <>
         {link.label}
@@ -169,17 +169,16 @@ const Hero = () => {
             />
           </picture>
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary-dark/75 via-secondary-dark/40 to-secondary-dark/5" />
-        <div className="absolute inset-0 bg-gradient-to-t from-secondary-dark/15 via-transparent to-black/5" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#fffaf3]/95 via-[#fffaf3]/75 to-[#fffaf3]/5" />
 
-        <div className="relative flex min-h-[360px] items-center py-12 md:min-h-[420px] md:py-16">
+        <div className="relative flex min-h-[460px] items-center py-14 sm:min-h-[520px] md:py-16 lg:min-h-[580px]">
           <PageContainer>
             {loading ? (
-              <p role="status" className="text-sm font-semibold text-white/80">Loading featured furniture...</p>
+              <p role="status" className="text-sm font-semibold text-secondary-dark/75">Loading featured furniture...</p>
             ) : loadError ? (
               <div role="alert" className="max-w-xl">
-                <p className="text-3xl font-black sm:text-4xl">Discover furniture made for living.</p>
-                <p className="mt-3 text-white/80">{loadError}</p>
+                <p className="text-3xl font-black text-secondary-dark sm:text-4xl">Discover furniture made for living.</p>
+                <p className="mt-3 text-secondary-dark/75">{loadError}</p>
                 <button
                   type="button"
                   onClick={() => setRetryCount((count) => count + 1)}
@@ -190,21 +189,21 @@ const Hero = () => {
               </div>
             ) : banner ? (
               <div key={banner.id} className="max-w-xl animate-in fade-in">
-                <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold tracking-[0.16em] text-orange-100 backdrop-blur-sm">
-                  <span className="h-2 w-2 rounded-full bg-primary-light shadow-[0_0_12px_rgba(255,179,107,0.9)]" />
+                <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d9c4aa] bg-white/80 px-4 py-2 text-xs font-semibold tracking-[0.16em] text-secondary-dark">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
                   Q LIVING FURNITURE
                 </p>
-                <h1 className="text-3xl font-black leading-[1.1] tracking-tight sm:text-4xl lg:text-5xl">
+                <h1 className="text-3xl font-black leading-[1.1] tracking-tight text-secondary-dark sm:text-4xl lg:text-5xl">
                   {headingLead && `${headingLead} `}
-                  <span className="text-primary-light">{headingAccent}</span>
+                  <span className="text-primary">{headingAccent}</span>
                 </h1>
                 {banner.subtitle && (
-                  <p className="mt-5 max-w-lg text-lg font-semibold leading-7 text-primary-light sm:text-xl">
+                  <p className="mt-5 max-w-lg text-lg font-semibold leading-7 text-primary-dark sm:text-xl">
                     {banner.subtitle}
                   </p>
                 )}
                 {banner.description && (
-                  <p className="mt-2 line-clamp-2 max-w-lg text-sm leading-6 text-white/85 sm:text-base">
+                  <p className="mt-2 line-clamp-2 max-w-lg text-sm leading-6 text-secondary-dark/80 sm:text-base">
                     {banner.description}
                   </p>
                 )}
@@ -214,8 +213,8 @@ const Hero = () => {
               </div>
             ) : (
               <div className="max-w-xl">
-                <p className="text-3xl font-black sm:text-4xl">Your home, your kind of comfort.</p>
-                <p className="mt-3 text-white/80">There are no published hero banners right now.</p>
+                <p className="text-3xl font-black text-secondary-dark sm:text-4xl">Your home, your kind of comfort.</p>
+                <p className="mt-3 text-secondary-dark/75">There are no published hero banners right now.</p>
                 <Link to="/shop" className="mt-6 inline-flex rounded-full bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-dark">
                   Explore furniture
                 </Link>
@@ -230,7 +229,7 @@ const Hero = () => {
               type="button"
               onClick={() => setCurrentIndex((index) => (index - 1 + banners.length) % banners.length)}
               aria-label="Show previous hero banner"
-              className="absolute left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-black/70 sm:left-6"
+              className="absolute left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-secondary-dark text-white transition hover:bg-primary-dark sm:left-6"
             >
               <ArrowLeft size={19} />
             </button>
@@ -238,7 +237,7 @@ const Hero = () => {
               type="button"
               onClick={() => setCurrentIndex((index) => (index + 1) % banners.length)}
               aria-label="Show next hero banner"
-              className="absolute right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-black/70 sm:right-6"
+              className="absolute right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-secondary-dark text-white transition hover:bg-primary-dark sm:right-6"
             >
               <ArrowRight size={19} />
             </button>
@@ -254,7 +253,7 @@ const Hero = () => {
                 aria-label={`Show banner ${index + 1}: ${item.title}`}
                 aria-current={index === currentIndex ? "true" : undefined}
                 onClick={() => setCurrentIndex(index)}
-                className={`h-2.5 rounded-full transition-all ${index === currentIndex ? "w-7 bg-primary-light" : "w-2.5 bg-white/60 hover:bg-white"}`}
+                className={`h-2.5 rounded-full transition-all ${index === currentIndex ? "w-7 bg-primary" : "w-2.5 bg-secondary-dark/40 hover:bg-secondary-dark"}`}
               />
             ))}
           </div>
