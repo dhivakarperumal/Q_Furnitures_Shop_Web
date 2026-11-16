@@ -96,24 +96,23 @@ const OfferBanners = () => {
                     loading="lazy"
                     className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#fffaf3]/95 via-[#fffaf3]/80 to-[#fffaf3]/5" />
-                  <div className="relative z-10 flex min-h-40 w-[68%] flex-col items-start justify-center p-4 sm:min-h-48 sm:p-5">
+                  <div className="relative z-10 flex min-h-40 w-[40%] flex-col items-start justify-center p-3 sm:min-h-48 sm:p-4">
                     {banner.offer && (
-                      <span className="mb-2 rounded-full bg-[#f07816] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white sm:text-xs">
+                      <span className="mb-1.5 rounded-full bg-[#f07816] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white sm:mb-2 sm:px-2.5 sm:text-xs">
                         {banner.offer}
                       </span>
                     )}
-                    <h3 className="line-clamp-2 text-lg font-bold leading-tight text-[#351d0e] sm:text-xl">
+                    <h3 className="line-clamp-2 text-[15px] font-bold leading-tight text-[#351d0e] sm:text-lg">
                       {banner.title}
                     </h3>
                     {(banner.subtitle || banner.description) && (
-                      <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-[#634d3b] sm:text-sm">
+                      <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#351d0e] sm:mt-1.5 sm:text-sm">
                         {banner.subtitle || banner.description}
                       </p>
                     )}
-                    <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#e87516] px-3 py-1.5 text-[11px] font-semibold text-white transition group-hover:bg-[#c95f0a] sm:text-xs">
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#e87516] px-2 py-1 text-[10px] font-semibold text-white transition group-hover:bg-[#c95f0a] sm:mt-3 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
                       {banner.destination_links?.[0]?.label || "Shop now"}
-                      <ArrowRight size={13} />
+                      <ArrowRight size={12} />
                     </span>
                   </div>
                 </>
