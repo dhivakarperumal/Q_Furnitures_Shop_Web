@@ -8,8 +8,8 @@ const Home = () => (
   <main className="bg-[#fcfaf7]">
     <Hero />
     <HomeCategories />
-    <OfferBanners />
     <FeaturedProducts />
+    <OfferBanners />
     <HomeReviews />
   </main>
 );
