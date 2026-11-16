@@ -21,12 +21,20 @@ import { toast } from "react-hot-toast";
 import api from "../api";
 import { AuthContext } from "../PrivateRouter/AuthContext";
 import { StoreContext } from "../PrivateRouter/StoreContext";
-import { formatCurrency } from "../utils/currency";
 import PageContainer from "./CommenComponents/PageContainer";
 
 const GST_RATE = 3;
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
+const checkoutAmountFormatter = new Intl.NumberFormat("en-IN", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 let razorpayScriptPromise;
+
+function formatCheckoutAmount(value) {
+  const amount = Number(value || 0);
+  return `₹${checkoutAmountFormatter.format(Number.isFinite(amount) ? amount : 0)}`;
+}
 
 function loadRazorpay() {
   if (window.Razorpay) return Promise.resolve(true);
@@ -94,15 +102,13 @@ const Checkout = () => {
             zip_code: address.zip_code || "",
           };
           const signature = [
-            savedAddress.customer_name,
-            savedAddress.customer_phone,
             savedAddress.street_address,
             savedAddress.city,
             savedAddress.district,
             savedAddress.state,
             savedAddress.country,
             savedAddress.zip_code,
-          ].map((value) => String(value).trim().toLowerCase()).join("|");
+          ].map((value) => String(value).trim().toLowerCase().replace(/\s+/g, " ")).join("|");
           if (savedAddress.street_address && !uniqueAddresses.has(signature)) {
             if (!savedAddress.id) savedAddress.id = signature;
             uniqueAddresses.set(signature, savedAddress);
@@ -128,7 +134,7 @@ const Checkout = () => {
 
   const filteredAddresses = useMemo(() => {
     const query = addressSearch.trim().toLowerCase();
-    if (!query) return savedAddresses;
+    if (!query) return [];
     return savedAddresses.filter((address) =>
       [
         address.customer_name,
@@ -439,6 +445,8 @@ const Checkout = () => {
                       <p className="mt-3 text-sm text-[#8b735e]">Loading saved addresses...</p>
                     ) : savedAddresses.length === 0 ? (
                       <p className="mt-3 text-sm text-[#8b735e]">No previous delivery addresses yet. Enter a new address below.</p>
+                    ) : !addressSearch.trim() ? (
+                      <p className="mt-3 text-sm text-[#8b735e]">Search by name, phone, street, city, or PIN code to find a saved address.</p>
                     ) : filteredAddresses.length === 0 ? (
                       <p className="mt-3 text-sm text-[#8b735e]">No saved addresses match your search.</p>
                     ) : (
@@ -547,23 +555,23 @@ const Checkout = () => {
                             </div>
                           </div>
                           <span className="shrink-0 text-sm font-semibold text-[#351d0e]">
-                            {formatCurrency(Number(item.price || 0) * Number(item.quantity || 0))}
+                            {formatCheckoutAmount(Number(item.price || 0) * Number(item.quantity || 0))}
                           </span>
                         </li>
                       ))}
                     </ul>
                     <div className="mt-3 space-y-2 border-t border-[#eee4d8] pt-3 text-sm">
-                      <div className="flex justify-between text-[#725d4b]"><span>Subtotal</span><span className="font-semibold text-[#351d0e]">{formatCurrency(subtotal)}</span></div>
+                      <div className="flex justify-between text-[#725d4b]"><span>Subtotal</span><span className="font-semibold text-[#351d0e]">{formatCheckoutAmount(subtotal)}</span></div>
                       <div className="flex justify-between text-[#725d4b]">
                         <span className="flex items-center gap-1.5">GST ({GST_RATE}%) <Info size={14} className="text-[#8b735e]" /></span>
-                        <span>{formatCurrency(gstAmount)}</span>
+                        <span>{formatCheckoutAmount(gstAmount)}</span>
                       </div>
                       <div className="flex justify-between text-[#725d4b]">
                         <span>Delivery charges</span>
                         <span className="rounded-full bg-[#eaf5ed] px-2 py-0.5 text-[10px] font-bold uppercase text-[#278044]">Free</span>
                       </div>
                       <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-[#f7efe5] to-[#f3e6d8] px-3 py-2.5 font-bold text-[#351d0e]">
-                        <span>Total amount</span><span className="text-lg">{formatCurrency(total)}</span>
+                        <span>Total amount</span><span className="text-lg">{formatCheckoutAmount(total)}</span>
                       </div>
                     </div>
                   </div>
@@ -590,8 +598,8 @@ const Checkout = () => {
                   >
                     <LockKeyhole size={16} />
                     {submitting ? "Processing..." : form.payment_method === "Cash"
-                      ? `Place order · ${formatCurrency(total)}`
-                      : `Pay securely · ${formatCurrency(total)}`}
+                      ? `Place order · ${formatCheckoutAmount(total)}`
+                      : `Pay securely · ${formatCheckoutAmount(total)}`}
                   </button>
                   <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs text-[#8b735e]"><LockKeyhole size={12} /> Your payment details are securely processed.</p>
                 </section>
