@@ -1,6 +1,7 @@
 const { randomUUID } = require("node:crypto");
 const mysql = require("mysql2/promise");
 const { getDatabaseConfig } = require("../config/db");
+const { FAVORITE_PRODUCT_FIELDS } = require("./favoriteProductFields");
 
 function createPool() {
   return mysql.createPool(getDatabaseConfig());
@@ -48,6 +49,206 @@ function normalizeLegacyOrderItem(item, orderId, index) {
     String(item.variant_size || "").slice(0, 100),
     typeof item.image === "string" ? item.image : null,
   ];
+}
+
+function parseFavoriteValue(value) {
+  if (value == null) return null;
+  if (typeof value === "object") return value;
+  return JSON.parse(value);
+}
+
+function getFavoriteProductData(row) {
+  const savedDetails = parseFavoriteValue(row.product_details);
+  const currentDetails = parseFavoriteValue(row.product_data);
+  const product = {
+    ...(currentDetails && typeof currentDetails === "object" ? currentDetails : {}),
+    ...(savedDetails && typeof savedDetails === "object" ? savedDetails : {}),
+  };
+  const specifications = product.specifications || {};
+  const shipping = product.shipping || {};
+  Object.assign(product, {
+    name: product.name || row.product_name || row.name,
+    product_code: product.product_code || row.product_code,
+    category: product.category || row.category,
+    subcategory: product.subcategory || row.subcategory,
+    mrp: product.mrp ?? row.mrp,
+    offer: product.offer ?? row.offer,
+    offer_type: product.offer_type || row.offer_type,
+    offer_price: product.offer_price ?? row.offer_price,
+    selling_price: product.selling_price ?? row.selling_price,
+    total_stock: product.total_stock ?? row.available_stock ?? row.total_stock,
+    available_stock: product.available_stock ?? row.available_stock ?? row.total_stock,
+    reserved_stock: product.reserved_stock ?? row.reserved_stock,
+    damaged_stock: product.damaged_stock ?? row.damaged_stock,
+    minimum_stock: product.minimum_stock ?? row.minimum_stock,
+    stock_type: product.stock_type || row.stock_type,
+    deduction_rule: product.deduction_rule || row.deduction_rule,
+    material_type: product.material_type || specifications.materialType,
+    wood_type: product.wood_type || specifications.woodType,
+    colour: product.colour || specifications.colour,
+    finish_type: product.finish_type || specifications.finishType,
+    height: product.height ?? specifications.height,
+    width: product.width ?? specifications.width,
+    depth: product.depth ?? specifications.depth,
+    weight: product.weight ?? specifications.weight,
+    seating_capacity: product.seating_capacity ?? specifications.seatingCapacity,
+    doors: product.doors ?? specifications.doors,
+    drawers: product.drawers ?? specifications.drawers,
+    mattress_size: product.mattress_size || specifications.mattressSize,
+    warranty_period: product.warranty_period || specifications.warrantyPeriod,
+    country_of_origin: product.country_of_origin || specifications.countryOfOrigin,
+    package_length: product.package_length ?? shipping.packageLength,
+    package_width: product.package_width ?? shipping.packageWidth,
+    package_height: product.package_height ?? shipping.packageHeight,
+    delivery_available: product.delivery_available ?? shipping.deliveryAvailable,
+    delivery_charges: product.delivery_charges ?? shipping.deliveryCharges,
+    free_delivery: product.free_delivery ?? shipping.freeDelivery,
+    estimated_delivery_days: product.estimated_delivery_days ?? shipping.estimatedDeliveryDays,
+    assembly_required: product.assembly_required ?? shipping.assemblyRequired,
+    installation_available: product.installation_available ?? shipping.installationAvailable,
+    return_policy: product.return_policy || shipping.returnPolicy,
+  });
+  return product;
+}
+
+async function migrateFavoriteDetails(pool) {
+  const [columnRows] = await pool.execute(
+    `SELECT COLUMN_NAME, IS_NULLABLE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_favorites'`,
+  );
+  const existingColumns = new Set(columnRows.map((column) => column.COLUMN_NAME));
+  const favoriteColumns = [
+    ["product_name", "VARCHAR(191) NULL"],
+    ...FAVORITE_PRODUCT_FIELDS.filter(([column]) => column !== "product_name")
+      .map(([column, type]) => [column, `${type} NULL`]),
+    ["created_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"],
+    ["updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
+    ["created_by", "VARCHAR(255) NULL"],
+    ["updated_by", "VARCHAR(255) NULL"],
+  ];
+  let migrationNeeded = columnRows.some(
+    (column) => column.COLUMN_NAME === "product_name" && column.IS_NULLABLE === "YES",
+  );
+  for (const [column, definition] of favoriteColumns) {
+    if (!existingColumns.has(column)) {
+      await pool.query(`ALTER TABLE user_favorites ADD COLUMN ${column} ${definition}`);
+      migrationNeeded = true;
+    }
+  }
+
+  const hasLegacyDetails = existingColumns.has("product_details");
+  if (hasLegacyDetails || migrationNeeded) {
+    const savedDetailsColumn = hasLegacyDetails ? "favorites.product_details" : "NULL";
+    const savedNameColumn = existingColumns.has("product_name") ? "favorites.product_name" : "NULL";
+    const [rows] = await pool.execute(
+      `SELECT favorites.user_id, favorites.product_id,
+              ${savedNameColumn} AS product_name,
+              ${savedDetailsColumn} AS product_details,
+              p.product_code, p.name, p.category, p.subcategory, p.mrp, p.offer,
+              p.offer_type, p.offer_price, p.selling_price, p.total_stock, p.rating,
+              p.status, p.product_data, p.created_at AS product_created_at,
+              p.updated_at AS product_updated_at,
+              ps.available_stock, ps.reserved_stock, ps.damaged_stock, ps.minimum_stock,
+              ps.stock_type, ps.deduction_rule
+       FROM user_favorites favorites
+       INNER JOIN products p ON p.id = favorites.product_id
+       LEFT JOIN product_stock ps ON ps.product_id = p.id`,
+    );
+
+    for (const row of rows) {
+      const product = getFavoriteProductData(row);
+      const values = FAVORITE_PRODUCT_FIELDS.map(([, , key]) => {
+        const value = product[key];
+        return value === "" || value == null ? null : value;
+      });
+      const columns = FAVORITE_PRODUCT_FIELDS.map(([column]) => column);
+      const assignments = columns.map((column) => `${column} = ?`).join(", ");
+      await pool.execute(
+        `UPDATE user_favorites
+         SET ${assignments}, created_by = COALESCE(created_by, user_id),
+             updated_by = COALESCE(updated_by, user_id)
+         WHERE user_id = ? AND product_id = ?`,
+        [...values, row.user_id, row.product_id],
+      );
+
+      await pool.execute(
+        "DELETE FROM user_favorite_images WHERE user_id = ? AND product_id = ?",
+        [row.user_id, row.product_id],
+      );
+      const images = Array.isArray(product.images)
+        ? product.images
+        : typeof product.image === "string" && product.image ? [product.image] : [];
+      const imageRoles = Array.isArray(product.image_roles) ? product.image_roles : [];
+      for (const [imageIndex, imageUrl] of images.entries()) {
+        if (typeof imageUrl !== "string" || !imageUrl) continue;
+        await pool.execute(
+          `INSERT INTO user_favorite_images
+           (user_id, product_id, image_index, image_url, image_role) VALUES (?, ?, ?, ?, ?)`,
+          [row.user_id, row.product_id, imageIndex, imageUrl, imageRoles[imageIndex] || null],
+        );
+      }
+
+      await pool.execute(
+        "DELETE FROM user_favorite_variants WHERE user_id = ? AND product_id = ?",
+        [row.user_id, row.product_id],
+      );
+      const variants = Array.isArray(product.variants) ? product.variants : [];
+      for (const [variantIndex, variant] of variants.entries()) {
+        await pool.execute(
+          `INSERT INTO user_favorite_variants
+           (user_id, product_id, variant_index, color, size, material, sku, mrp,
+            offer_type, offer, selling_price, stock, image)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            row.user_id, row.product_id, variantIndex, variant.color || null, variant.size || null,
+            variant.material || null, variant.sku || null, variant.mrp ?? null,
+            variant.offer_type || null, variant.offer ?? null, variant.selling_price ?? null,
+            variant.stock ?? null, variant.image || null,
+          ],
+        );
+        const variantImages = Array.isArray(variant.images) ? variant.images : [];
+        for (const [imageIndex, imageUrl] of variantImages.entries()) {
+          if (typeof imageUrl !== "string" || !imageUrl) continue;
+          await pool.execute(
+            `INSERT INTO user_favorite_variant_images
+             (user_id, product_id, variant_index, image_index, image_url)
+             VALUES (?, ?, ?, ?, ?)`,
+            [row.user_id, row.product_id, variantIndex, imageIndex, imageUrl],
+          );
+        }
+      }
+
+      await pool.execute(
+        "DELETE FROM user_favorite_customizations WHERE user_id = ? AND product_id = ?",
+        [row.user_id, row.product_id],
+      );
+      const customizations = Array.isArray(product.customizations) ? product.customizations : [];
+      for (const [customizationIndex, customization] of customizations.entries()) {
+        await pool.execute(
+          `INSERT INTO user_favorite_customizations
+           (user_id, product_id, customization_index, name, type, options, additional_price, required)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            row.user_id, row.product_id, customizationIndex, customization.name || null,
+            customization.type || null, customization.options || null,
+            customization.additionalPrice ?? customization.additional_price ?? null,
+            customization.required == null ? null : Number(Boolean(customization.required)),
+          ],
+        );
+      }
+    }
+  }
+
+  if (hasLegacyDetails) {
+    await pool.query("ALTER TABLE user_favorites DROP COLUMN product_details");
+  }
+  const productNameColumn = columnRows.find((column) => column.COLUMN_NAME === "product_name");
+  if (!productNameColumn || productNameColumn.IS_NULLABLE === "YES") {
+    await pool.query(
+      "ALTER TABLE user_favorites MODIFY COLUMN product_name VARCHAR(191) NOT NULL",
+    );
+  }
 }
 
 async function migrateLegacyOrderDetails(pool) {
@@ -315,15 +516,77 @@ async function initializeDatabase(pool) {
     CREATE TABLE IF NOT EXISTS user_favorites (
       user_id VARCHAR(255) NOT NULL,
       product_id BIGINT UNSIGNED NOT NULL,
-      product_name VARCHAR(191) NOT NULL,
-      product_details JSON NOT NULL,
+      ${FAVORITE_PRODUCT_FIELDS.map(([column, type]) => `${column} ${type} ${column === "product_name" ? "NOT NULL" : "NULL"}`).join(",\n      ")},
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      created_by VARCHAR(255) NULL,
+      updated_by VARCHAR(255) NULL,
       PRIMARY KEY (user_id, product_id),
       KEY user_favorites_product_idx (product_id),
       CONSTRAINT user_favorites_user_fk
         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
       CONSTRAINT user_favorites_product_fk
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_favorite_images (
+        user_id VARCHAR(255) NOT NULL,
+        product_id BIGINT UNSIGNED NOT NULL,
+        image_index INT UNSIGNED NOT NULL,
+        image_url VARCHAR(2048) NOT NULL,
+        image_role VARCHAR(100) NULL,
+        PRIMARY KEY (user_id, product_id, image_index),
+        CONSTRAINT user_favorite_images_favorite_fk
+          FOREIGN KEY (user_id, product_id) REFERENCES user_favorites(user_id, product_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_favorite_variants (
+        user_id VARCHAR(255) NOT NULL,
+        product_id BIGINT UNSIGNED NOT NULL,
+        variant_index INT UNSIGNED NOT NULL,
+        color VARCHAR(100) NULL,
+        size VARCHAR(100) NULL,
+        material VARCHAR(100) NULL,
+        sku VARCHAR(128) NULL,
+        mrp DECIMAL(12,2) NULL,
+        offer_type VARCHAR(32) NULL,
+        offer DECIMAL(12,2) NULL,
+        selling_price DECIMAL(12,2) NULL,
+        stock INT NULL,
+        image VARCHAR(2048) NULL,
+        PRIMARY KEY (user_id, product_id, variant_index),
+        CONSTRAINT user_favorite_variants_favorite_fk
+          FOREIGN KEY (user_id, product_id) REFERENCES user_favorites(user_id, product_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_favorite_variant_images (
+        user_id VARCHAR(255) NOT NULL,
+        product_id BIGINT UNSIGNED NOT NULL,
+        variant_index INT UNSIGNED NOT NULL,
+        image_index INT UNSIGNED NOT NULL,
+        image_url VARCHAR(2048) NOT NULL,
+        PRIMARY KEY (user_id, product_id, variant_index, image_index),
+        CONSTRAINT user_favorite_variant_images_variant_fk
+          FOREIGN KEY (user_id, product_id, variant_index)
+          REFERENCES user_favorite_variants(user_id, product_id, variant_index) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_favorite_customizations (
+        user_id VARCHAR(255) NOT NULL,
+        product_id BIGINT UNSIGNED NOT NULL,
+        customization_index INT UNSIGNED NOT NULL,
+        name VARCHAR(191) NULL,
+        type VARCHAR(100) NULL,
+        options TEXT NULL,
+        additional_price DECIMAL(12,2) NULL,
+        required TINYINT(1) NULL,
+        PRIMARY KEY (user_id, product_id, customization_index),
+        CONSTRAINT user_favorite_customizations_favorite_fk
+          FOREIGN KEY (user_id, product_id) REFERENCES user_favorites(user_id, product_id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
@@ -607,78 +870,7 @@ async function initializeDatabase(pool) {
       KEY product_stock_alert_idx (available_stock, minimum_stock)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
-  const [favoriteColumnRows] = await pool.execute(
-    `SELECT COLUMN_NAME, IS_NULLABLE
-    FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_favorites'`,
-  );
-  const existingFavoriteColumns = new Set(favoriteColumnRows.map((column) => column.COLUMN_NAME));
-  const needsFavoriteBackfill = !existingFavoriteColumns.has("product_name") ||
-    !existingFavoriteColumns.has("product_details") ||
-    favoriteColumnRows.some((column) =>
-      ["product_name", "product_details"].includes(column.COLUMN_NAME) && column.IS_NULLABLE === "YES");
-  const favoriteMigrations = [
-    ["product_name", "ALTER TABLE user_favorites ADD COLUMN product_name VARCHAR(191) NULL"],
-    ["product_details", "ALTER TABLE user_favorites ADD COLUMN product_details JSON NULL"],
-  ];
-  for (const [column, statement] of favoriteMigrations) {
-    if (!existingFavoriteColumns.has(column)) {
-     await pool.query(statement);
-    }
-  }
-  if (needsFavoriteBackfill) {
-    await pool.query(`
-     UPDATE user_favorites favorites
-     INNER JOIN products p ON p.id = favorites.product_id
-     LEFT JOIN product_stock ps ON ps.product_id = p.id
-     SET favorites.product_name = p.name,
-         favorites.product_details = JSON_OBJECT(
-           'id', p.id,
-           'product_id', p.id,
-           'product_code', p.product_code,
-           'name', p.name,
-           'category', p.category,
-           'subcategory', p.subcategory,
-           'mrp', p.mrp,
-           'offer', p.offer,
-           'offer_type', p.offer_type,
-           'offer_price', p.offer_price,
-           'selling_price', p.selling_price,
-           'total_stock', COALESCE(ps.available_stock, p.total_stock),
-           'available_stock', COALESCE(ps.available_stock, p.total_stock),
-           'reserved_stock', COALESCE(ps.reserved_stock, 0),
-           'damaged_stock', COALESCE(ps.damaged_stock, 0),
-           'minimum_stock', COALESCE(ps.minimum_stock, 5),
-           'stock_type', COALESCE(ps.stock_type, 'Ready-Made Furniture'),
-           'deduction_rule', COALESCE(ps.deduction_rule, 'deduct'),
-           'rating', p.rating,
-           'status', p.status,
-           'product_data', p.product_data,
-           'created_at', p.created_at,
-           'updated_at', p.updated_at
-         )
-     WHERE favorites.product_name IS NULL OR favorites.product_details IS NULL
-    `);
-  }
-  const [nullableFavoriteColumns] = await pool.execute(
-    `SELECT COLUMN_NAME
-     FROM INFORMATION_SCHEMA.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE()
-       AND TABLE_NAME = 'user_favorites'
-       AND IS_NULLABLE = 'YES'
-       AND COLUMN_NAME IN ('product_name', 'product_details')`,
-  );
-  const nullableFavoriteColumnNames = new Set(nullableFavoriteColumns.map((column) => column.COLUMN_NAME));
-  if (nullableFavoriteColumnNames.has("product_name")) {
-    await pool.query(
-      "ALTER TABLE user_favorites MODIFY COLUMN product_name VARCHAR(191) NOT NULL",
-    );
-  }
-  if (nullableFavoriteColumnNames.has("product_details")) {
-    await pool.query(
-      "ALTER TABLE user_favorites MODIFY COLUMN product_details JSON NOT NULL",
-    );
-  }
+  await migrateFavoriteDetails(pool);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS stock_settings (
       id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
