@@ -130,13 +130,13 @@ function Register() {
         </div>
       </section>
 
-      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-white/65 px-4 py-8 sm:px-8 md:bg-transparent md:px-2">
+      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-white/65 px-4 py-8 sm:px-2 md:bg-transparent md:px-2">
         <div
           aria-hidden="true"
           className="absolute inset-0 hidden bg-white md:block"
           style={{ borderTopLeftRadius: "80px", borderBottomLeftRadius: "80px" }}
         />
-        <section className="relative z-10 w-full min-w-0 max-w-sm rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-6 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+        <section className="relative z-10 w-full min-w-0 max-w-sm rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
           <header className="mb-5 text-center">
             <h1 className="text-3xl font-black tracking-tight text-secondary-dark sm:text-4xl">
               Create an <span className="text-primary">Account</span>

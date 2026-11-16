@@ -57,24 +57,34 @@ function Login() {
   return (
     <main className="relative isolate grid min-h-dvh overflow-hidden bg-[#faf5ef] selection:bg-primary selection:text-white lg:grid-cols-[1.05fr_0.95fr]">
       <div className="absolute inset-0 -z-10 lg:hidden">
-        <img src="/images/loginbg.png" alt="" className="h-full w-full object-cover object-[35%_center]" />
+        <img src="/images/register.png" alt="" className="h-full w-full object-cover object-[35%_center]" />
         <div className="absolute inset-0 bg-secondary-dark/20" />
       </div>
 
-      <section aria-label="Q Living Furniture" className="relative hidden min-h-dvh overflow-hidden lg:block">
-        <img src="/images/loginbg.png" alt="" className="absolute inset-0 h-full w-full object-cover object-left" />
+      <section
+        aria-label="Q Living Furniture"
+        className="relative hidden min-h-dvh overflow-hidden lg:block"
+        style={{ width: "calc(100% + 100px)" }}
+      >
+        <img src="/images/register.png" alt="" className="absolute inset-0 h-full w-full object-cover object-left" />
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-secondary-dark/10" />
         <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#faf5ef]/45 to-transparent" />
-        <div className="relative flex min-h-dvh items-start p-12 xl:p-16">
-          <div className="max-w-xl pl-14 pt-6 sm:pl-16 xl:pl-20 xl:pt-10">
-            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/75 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-secondary-dark shadow-sm backdrop-blur">
+        <div className="relative flex min-h-dvh items-start p-12 xl:p-16" style={{ width: "calc(100% - 100px)" }}>
+          <div className="max-w-xl pl-14 mt-15 pt-6 sm:pl-16 xl:pl-20 xl:pt-10">
+            <p className="mb-8  inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/75 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-secondary-dark shadow-sm backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-primary" />
               Q Living Furniture
             </p>
-            <h2 className="max-w-lg text-4xl font-black leading-[1.12] tracking-tight text-secondary-dark xl:text-[3.5rem]">
-              Make your home feel like <span className="text-primary-dark">home.</span>
+            <h2
+              className="max-w-lg text-4xl font-black leading-[1.12] tracking-tight text-white xl:text-[3.5rem]"
+              style={{ textShadow: "0 2px 8px rgba(0, 0, 0, 0.75)" }}
+            >
+              Make your home feel like <span className="text-orange-100">home.</span>
             </h2>
-            <p className="mt-4 max-w-md text-base leading-7 text-stone-700 xl:text-lg">
+            <p
+              className="mt-4 max-w-md text-base leading-7 text-white xl:text-lg"
+              style={{ textShadow: "0 2px 6px rgba(0, 0, 0, 0.75)" }}
+            >
               Thoughtful furniture, everyday comfort, and timeless style for the place you love most.
             </p>
             <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-secondary-dark">
@@ -85,13 +95,17 @@ function Login() {
         </div>
       </section>
 
-      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-[#faf5ef]/65 px-4 py-5 sm:px-8 lg:bg-gradient-to-br lg:from-[#fffdfa] lg:via-[#faf5ef] lg:to-[#f5e8d9] lg:px-10">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-[#faf5ef]/65 px-4 py-5 sm:px-8 lg:bg-transparent lg:px-10">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden lg:hidden">
           <span className="absolute -right-20 top-16 h-72 w-72 rounded-full bg-orange-200/35 blur-3xl" />
           <span className="absolute bottom-8 left-8 h-56 w-56 rounded-full bg-amber-100/70 blur-3xl" />
         </div>
-        <section className="relative z-10 w-full min-w-0 max-w-[430px] rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-8">
-          <div aria-hidden="true" className="absolute inset-x-10 top-0 h-1 rounded-b-full bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 hidden bg-white lg:block"
+          style={{ borderTopLeftRadius: "100px 85px", borderBottomLeftRadius: "100px 85px" }}
+        />
+        <section className="relative z-10 w-full min-w-0 max-w-[430px] p-4 sm:p-8">
           <div className="mb-5 text-center">
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-primary-dark ring-1 ring-orange-100">
               <LockKeyhole size={25} strokeWidth={1.8} aria-hidden="true" />
