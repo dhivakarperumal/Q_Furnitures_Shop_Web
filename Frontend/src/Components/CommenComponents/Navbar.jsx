@@ -42,6 +42,8 @@ const Navbar = () => {
   const menuRef = useRef();
   const categoryRef = useRef();
   const roomsRef = useRef();
+  const cartTriggerRef = useRef(null);
+  const wishlistTriggerRef = useRef(null);
 
   const confirmLogout = () => {
     logout();
@@ -54,6 +56,34 @@ const Navbar = () => {
     setMobileMenu(false);
     setMobileCategory(false);
     setMobilePages(false);
+  };
+
+  const openCart = (event) => {
+    cartTriggerRef.current = event.currentTarget;
+    setCartOpen(true);
+  };
+
+  const closeCart = () => {
+    setCartOpen(false);
+    if (cartTriggerRef.current?.isConnected && cartTriggerRef.current.getClientRects().length) {
+      cartTriggerRef.current.focus();
+    } else if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  };
+
+  const openWishlist = (event) => {
+    wishlistTriggerRef.current = event.currentTarget;
+    setWishlistOpen(true);
+  };
+
+  const closeWishlist = () => {
+    setWishlistOpen(false);
+    if (wishlistTriggerRef.current?.isConnected && wishlistTriggerRef.current.getClientRects().length) {
+      wishlistTriggerRef.current.focus();
+    } else if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   };
 
   // Close dropdown when clicking outside
@@ -99,17 +129,16 @@ const Navbar = () => {
   // Fetch user orders count
   useEffect(() => {
     const fetchOrderCount = async () => {
-      if (user) {
-        try {
-          const response = await api.get("/orders");
-          // API returns a plain array when no pagination params are passed
-          const orders = Array.isArray(response.data) ? response.data : (response.data.data || []);
-          // Filter by user_id
-          const userOrders = orders.filter(o => (o.user_id === user.user_id || o.user_id === user.id) && o.status !== "Delivered");
-          setOrderCount(userOrders.length);
-        } catch (error) {
-          console.error("Error fetching order count:", error);
-        }
+      if (!user) {
+        setOrderCount(0);
+        return;
+      }
+      try {
+        const response = await api.get("/orders/mine");
+        const orders = Array.isArray(response.data) ? response.data : [];
+        setOrderCount(orders.filter((order) => order.status !== "Delivered").length);
+      } catch (error) {
+        console.error("Error fetching order count:", error);
       }
     };
 
@@ -266,7 +295,7 @@ const Navbar = () => {
 
             <button
               type="button"
-              onClick={() => setWishlistOpen(true)}
+              onClick={openWishlist}
               aria-label="Open wishlist"
               className="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
             >
@@ -280,7 +309,7 @@ const Navbar = () => {
 
             <button
               type="button"
-              onClick={() => setCartOpen(true)}
+              onClick={openCart}
               aria-label="Open cart"
               className="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
             >
@@ -425,9 +454,9 @@ const Navbar = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(event) => {
                         closeMobileMenu();
-                        setWishlistOpen(true);
+                        openWishlist(event);
                       }}
                       className="flex items-center justify-center gap-2 rounded-lg border border-orange-100 px-3 py-3 text-sm font-semibold text-slate-700"
                     >
@@ -436,9 +465,9 @@ const Navbar = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(event) => {
                         closeMobileMenu();
-                        setCartOpen(true);
+                        openCart(event);
                       }}
                       className="flex items-center justify-center gap-2 rounded-lg border border-orange-100 px-3 py-3 text-sm font-semibold text-slate-700"
                     >
@@ -640,8 +669,8 @@ const Navbar = () => {
           </div>
         </div>
       )}
-      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
-      <WishlistDrawer isOpen={wishlistOpen} onClose={() => setWishlistOpen(false)} />
+      <CartDrawer isOpen={cartOpen} onClose={closeCart} />
+      <WishlistDrawer isOpen={wishlistOpen} onClose={closeWishlist} />
     </nav>
 
   );

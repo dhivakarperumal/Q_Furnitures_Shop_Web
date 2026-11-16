@@ -6,7 +6,7 @@ const ORDER_STATUSES = new Set([
   "Delivered",
   "Cancelled",
 ]);
-const PAYMENT_METHODS = new Set(["Cash", "UPI", "Card"]);
+const PAYMENT_METHODS = new Set(["Cash", "UPI", "Card", "Online"]);
 
 function requestError(status, message) {
   const error = new Error(message);
@@ -59,6 +59,27 @@ function calculateOrderAmounts(subtotal, discountType, discountValue, gstRate) {
     discountAmount,
     gstAmount,
     totalAmount: roundCurrency(subtotal + gstAmount - discountAmount),
+  };
+}
+
+function calculateCartTotals(items, gstRate = 3) {
+  if (!Array.isArray(items) || items.length === 0 || items.length > 100) {
+    throw requestError(400, "Add between 1 and 100 cart items.");
+  }
+
+  const subtotal = items.reduce((total, item, index) => {
+    const price = Number(item?.price);
+    const quantity = Number(item?.quantity);
+    if (!Number.isFinite(price) || price < 0 ||
+        !Number.isSafeInteger(quantity) || quantity < 1) {
+      throw requestError(409, `Cart item ${index + 1} has invalid pricing or quantity.`);
+    }
+    return roundCurrency(total + roundCurrency(price * quantity));
+  }, 0);
+
+  return {
+    subtotal,
+    ...calculateOrderAmounts(subtotal, "percentage", 0, gstRate),
   };
 }
 
@@ -309,8 +330,12 @@ function createOrderService(pool) {
   }
 
   return {
-    async create(body) {
+    async create(body, options = {}) {
       const order = normalizeOrder(body);
+      const paymentStatus = options.paymentStatus || "Pending";
+      if (!["Pending", "Paid"].includes(paymentStatus)) {
+        throw requestError(400, "Payment status is invalid.");
+      }
       const connection = await pool.getConnection();
       try {
         await connection.beginTransaction();
@@ -318,7 +343,7 @@ function createOrderService(pool) {
         const orderItems = [];
         let subtotal = 0;
 
-        for (const item of order.items) {
+        for (const [itemIndex, item] of order.items.entries()) {
           const [products] = await connection.execute(
             `SELECT id, name, selling_price, offer_price, total_stock, status, product_data
              FROM products WHERE id = ? FOR UPDATE`,
@@ -341,12 +366,15 @@ function createOrderService(pool) {
           }
           if (variant) decreaseVariantStock(variant, item);
 
-          const price = Number(
-            variant?.selling_price ??
-            variant?.offer_price ??
-            product.selling_price ??
-            product.offer_price,
-          );
+          const cartPrice = options.useCartPrices ? Number(body.items[itemIndex]?.price) : null;
+          const price = options.useCartPrices
+            ? roundCurrency(cartPrice)
+            : Number(
+              variant?.selling_price ??
+              variant?.offer_price ??
+              product.selling_price ??
+              product.offer_price,
+            );
           if (!Number.isFinite(price) || price < 0) {
             throw requestError(409, `A valid price is unavailable for ${product.name}.`);
           }
@@ -384,8 +412,8 @@ function createOrderService(pool) {
           `INSERT INTO orders
            (user_id, customer_name, customer_email, customer_phone, order_type, payment_method,
             payment_status, status, subtotal, discount_type, discount_value, discount_amount,
-            gst_rate, gst_amount, total_amount)
-           VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?, ?)`,
+            gst_rate, gst_amount, total_amount, razorpay_order_id, razorpay_payment_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             order.userId,
             order.customerName,
@@ -393,6 +421,7 @@ function createOrderService(pool) {
             order.customerPhone,
             order.orderType,
             order.paymentMethod,
+            paymentStatus,
             order.status,
             subtotal,
             order.discountType,
@@ -401,6 +430,8 @@ function createOrderService(pool) {
             order.gstRate,
             gstAmount,
             totalAmount,
+            options.razorpayOrderId || null,
+            options.razorpayPaymentId || null,
           ],
         );
         const orderId = `ORD${String(result.insertId).padStart(4, "0")}`;
@@ -455,7 +486,7 @@ function createOrderService(pool) {
           order_id: orderId,
           order_type: order.orderType,
           status: order.status,
-          payment_status: "Pending",
+          payment_status: paymentStatus,
           payment_method: order.paymentMethod,
           subtotal,
           discount_type: order.discountType,
@@ -464,6 +495,8 @@ function createOrderService(pool) {
           gst_rate: order.gstRate,
           gst_amount: gstAmount,
           total_amount: totalAmount,
+          razorpay_order_id: options.razorpayOrderId || null,
+          razorpay_payment_id: options.razorpayPaymentId || null,
           items: orderItems,
         };
       } catch (error) {
@@ -484,6 +517,17 @@ function createOrderService(pool) {
          ORDER BY created_at DESC, id DESC
          LIMIT 500`,
         normalizedStatus ? [normalizedStatus] : [],
+      );
+      return hydrateOrders(rows);
+    },
+
+    async listForUser(userId) {
+      const [rows] = await pool.execute(
+        `SELECT * FROM orders
+         WHERE user_id = ?
+         ORDER BY created_at DESC, id DESC
+         LIMIT 500`,
+        [userId],
       );
       return hydrateOrders(rows);
     },
@@ -531,6 +575,14 @@ function createOrderService(pool) {
       return order;
     },
 
+    async getByRazorpayPaymentId(paymentId) {
+      const [rows] = await pool.execute(
+        "SELECT id FROM orders WHERE razorpay_payment_id = ? LIMIT 1",
+        [paymentId],
+      );
+      return rows[0] ? getById(rows[0].id) : null;
+    },
+
     getById,
   };
 }
@@ -539,4 +591,5 @@ module.exports = {
   createOrderService,
   normalizeOrder,
   calculateOrderAmounts,
+  calculateCartTotals,
 };

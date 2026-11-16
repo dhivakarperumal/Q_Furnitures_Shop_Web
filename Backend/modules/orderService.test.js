@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { calculateOrderAmounts, createOrderService, normalizeOrder } = require("./orderService");
+const { calculateCartTotals, calculateOrderAmounts, createOrderService, normalizeOrder } = require("./orderService");
 
 function validOrder(overrides = {}) {
   return {
@@ -63,6 +63,35 @@ test("calculates GST before percentage or fixed discounts", () => {
     totalAmount: 176.6,
   });
   assert.throws(() => calculateOrderAmounts(220, "fixed", 221, 3), { status: 400 });
+});
+
+test("calculates checkout totals from saved cart prices", () => {
+  assert.deepEqual(calculateCartTotals([
+    { price: "110.00", quantity: 2 },
+    { price: "19.95", quantity: 1 },
+  ]), {
+    subtotal: 239.95,
+    discountAmount: 0,
+    gstAmount: 7.2,
+    totalAmount: 247.15,
+  });
+  assert.throws(() => calculateCartTotals([{ price: -1, quantity: 1 }]), { status: 409 });
+});
+
+test("lists customer orders using the authenticated customer's ID", async () => {
+  let query;
+  let parameters;
+  const service = createOrderService({
+    async execute(sql, values) {
+      query = sql;
+      parameters = values;
+      return [[]];
+    },
+  });
+
+  assert.deepEqual(await service.listForUser("customer-1"), []);
+  assert.match(query, /WHERE user_id = \?/);
+  assert.deepEqual(parameters, ["customer-1"]);
 });
 
 test("updates order status and stores validated shipping details", async () => {
@@ -194,8 +223,9 @@ test("creates an order, derives price, and decrements product and variant stock 
   assert.doesNotMatch(insertedOrderSql, /\b(address|street_address|items)\b/);
   assert.match(insertedOrderSql, /subtotal, discount_type, discount_value, discount_amount/);
   assert.match(insertedOrderSql, /gst_rate, gst_amount, total_amount/);
-  assert.equal(insertedOrder.length, 14);
-  assert.deepEqual(insertedOrder.slice(7), [220, "percentage", 10, 22, 3, 6.6, 204.6]);
+  assert.equal(insertedOrder.length, 17);
+  assert.equal(insertedOrder[6], "Pending");
+  assert.deepEqual(insertedOrder.slice(8), [220, "percentage", 10, 22, 3, 6.6, 204.6, null, null]);
   assert.deepEqual(insertedAddress, [
     21,
     "customer-123",
@@ -223,6 +253,63 @@ test("creates an order, derives price, and decrements product and variant stock 
   ]]);
   assert.equal(committed, true);
   assert.equal(rolledBack, false);
+});
+
+test("creates paid checkout orders using saved cart price and unique Razorpay IDs", async () => {
+  const product = {
+    id: 7,
+    name: "Dining Chair",
+    selling_price: "120.00",
+    offer_price: "125.00",
+    total_stock: 5,
+    status: "Active",
+    product_data: JSON.stringify({
+      variants: [{ color: "Black", size: "Standard", stock: 5 }],
+    }),
+  };
+  let insertedOrder;
+  const connection = {
+    async beginTransaction() {},
+    async execute(query, parameters) {
+      if (query.includes("FROM products WHERE id = ? FOR UPDATE")) return [[product]];
+      if (query.startsWith("UPDATE products")) return [{ affectedRows: 1 }];
+      if (query.startsWith("INSERT INTO orders")) {
+        insertedOrder = parameters;
+        return [{ insertId: 31 }];
+      }
+      if (query.startsWith("UPDATE orders SET order_id")) return [{ affectedRows: 1 }];
+      if (query.startsWith("INSERT INTO `address`")) return [{ affectedRows: 1 }];
+      if (query.startsWith("INSERT INTO order_items")) return [{ affectedRows: 1 }];
+      throw new Error(`Unexpected SQL in test: ${query}`);
+    },
+    async commit() {},
+    async rollback() {},
+    release() {},
+  };
+  const service = createOrderService({ async getConnection() { return connection; } });
+
+  const order = await service.create(validOrder({
+    payment_method: "Online",
+    items: [{
+      product_id: 7,
+      quantity: 2,
+      variant_color: "Black",
+      variant_size: "Standard",
+      price: 123,
+    }],
+  }), {
+    useCartPrices: true,
+    paymentStatus: "Paid",
+    razorpayOrderId: "order_gateway_31",
+    razorpayPaymentId: "payment_gateway_31",
+  });
+
+  assert.equal(order.subtotal, 246);
+  assert.equal(order.total_amount, 253.38);
+  assert.equal(order.payment_status, "Paid");
+  assert.equal(order.razorpay_payment_id, "payment_gateway_31");
+  assert.equal(insertedOrder[6], "Paid");
+  assert.deepEqual(insertedOrder.slice(-2), ["order_gateway_31", "payment_gateway_31"]);
 });
 
 test("loads normalized address and item rows in the existing order response shape", async () => {

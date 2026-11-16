@@ -714,9 +714,13 @@ async function initializeDatabase(pool) {
       shipped_at DATETIME NULL,
       cancellation_reason TEXT NULL,
       cancelled_at DATETIME NULL,
+      razorpay_order_id VARCHAR(64) NULL,
+      razorpay_payment_id VARCHAR(64) NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY orders_order_id_unique (order_id),
+      UNIQUE KEY orders_razorpay_order_id_unique (razorpay_order_id),
+      UNIQUE KEY orders_razorpay_payment_id_unique (razorpay_payment_id),
       KEY orders_status_created_idx (status, created_at),
       KEY orders_type_created_idx (order_type, created_at),
       KEY orders_customer_phone_idx (customer_phone)
@@ -834,6 +838,8 @@ async function initializeDatabase(pool) {
     ["discount_amount", "ALTER TABLE orders ADD COLUMN discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0"],
     ["gst_rate", "ALTER TABLE orders ADD COLUMN gst_rate DECIMAL(5,2) NOT NULL DEFAULT 0"],
     ["gst_amount", "ALTER TABLE orders ADD COLUMN gst_amount DECIMAL(12,2) NOT NULL DEFAULT 0"],
+    ["razorpay_order_id", "ALTER TABLE orders ADD COLUMN razorpay_order_id VARCHAR(64) NULL"],
+    ["razorpay_payment_id", "ALTER TABLE orders ADD COLUMN razorpay_payment_id VARCHAR(64) NULL"],
   ];
   for (const [column, statement] of orderMigrations) {
     if (!existingOrderColumns.has(column)) {
@@ -846,6 +852,12 @@ async function initializeDatabase(pool) {
   );
   if (!orderIndexes.some((index) => index.INDEX_NAME === "orders_order_id_unique")) {
     await pool.query("ALTER TABLE orders ADD UNIQUE KEY orders_order_id_unique (order_id)");
+  }
+  if (!orderIndexes.some((index) => index.INDEX_NAME === "orders_razorpay_order_id_unique")) {
+    await pool.query("ALTER TABLE orders ADD UNIQUE KEY orders_razorpay_order_id_unique (razorpay_order_id)");
+  }
+  if (!orderIndexes.some((index) => index.INDEX_NAME === "orders_razorpay_payment_id_unique")) {
+    await pool.query("ALTER TABLE orders ADD UNIQUE KEY orders_razorpay_payment_id_unique (razorpay_payment_id)");
   }
   await pool.query(
     `UPDATE orders
