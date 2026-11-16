@@ -55,15 +55,15 @@ function Login() {
   };
 
   return (
-    <main className="relative isolate flex min-h-screen items-center overflow-hidden bg-[#faf5ef] px-4 py-8 selection:bg-primary selection:text-white sm:px-8">
+    <main className="relative isolate flex min-h-dvh items-center overflow-hidden bg-[#faf5ef] px-4 py-4 selection:bg-primary selection:text-white sm:px-8 sm:py-5">
       <img
         src="/images/loginbg.png"
         alt=""
-        className="absolute inset-0 h-full w-full object-cover object-center lg:object-contain lg:object-left"
+        className="absolute inset-0 h-full w-full object-cover object-[left_center]"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white/40 lg:to-[#faf5ef]/80" />
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[1500px] items-center justify-center lg:justify-end lg:px-16">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1500px] items-center justify-center lg:justify-end lg:px-16">
         <section className="w-full max-w-[430px] rounded-[28px] border border-white/80 bg-white/90 p-6 shadow-[0_24px_70px_rgba(53,29,14,0.18)] backdrop-blur-xl sm:p-9">
           <div className="mb-7 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-primary-dark ring-8 ring-orange-50/60">
