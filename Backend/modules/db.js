@@ -315,6 +315,8 @@ async function initializeDatabase(pool) {
     CREATE TABLE IF NOT EXISTS user_favorites (
       user_id VARCHAR(255) NOT NULL,
       product_id BIGINT UNSIGNED NOT NULL,
+      product_name VARCHAR(191) NOT NULL,
+      product_details JSON NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (user_id, product_id),
       KEY user_favorites_product_idx (product_id),
@@ -605,6 +607,78 @@ async function initializeDatabase(pool) {
       KEY product_stock_alert_idx (available_stock, minimum_stock)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [favoriteColumnRows] = await pool.execute(
+    `SELECT COLUMN_NAME, IS_NULLABLE
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_favorites'`,
+  );
+  const existingFavoriteColumns = new Set(favoriteColumnRows.map((column) => column.COLUMN_NAME));
+  const needsFavoriteBackfill = !existingFavoriteColumns.has("product_name") ||
+    !existingFavoriteColumns.has("product_details") ||
+    favoriteColumnRows.some((column) =>
+      ["product_name", "product_details"].includes(column.COLUMN_NAME) && column.IS_NULLABLE === "YES");
+  const favoriteMigrations = [
+    ["product_name", "ALTER TABLE user_favorites ADD COLUMN product_name VARCHAR(191) NULL"],
+    ["product_details", "ALTER TABLE user_favorites ADD COLUMN product_details JSON NULL"],
+  ];
+  for (const [column, statement] of favoriteMigrations) {
+    if (!existingFavoriteColumns.has(column)) {
+     await pool.query(statement);
+    }
+  }
+  if (needsFavoriteBackfill) {
+    await pool.query(`
+     UPDATE user_favorites favorites
+     INNER JOIN products p ON p.id = favorites.product_id
+     LEFT JOIN product_stock ps ON ps.product_id = p.id
+     SET favorites.product_name = p.name,
+         favorites.product_details = JSON_OBJECT(
+           'id', p.id,
+           'product_id', p.id,
+           'product_code', p.product_code,
+           'name', p.name,
+           'category', p.category,
+           'subcategory', p.subcategory,
+           'mrp', p.mrp,
+           'offer', p.offer,
+           'offer_type', p.offer_type,
+           'offer_price', p.offer_price,
+           'selling_price', p.selling_price,
+           'total_stock', COALESCE(ps.available_stock, p.total_stock),
+           'available_stock', COALESCE(ps.available_stock, p.total_stock),
+           'reserved_stock', COALESCE(ps.reserved_stock, 0),
+           'damaged_stock', COALESCE(ps.damaged_stock, 0),
+           'minimum_stock', COALESCE(ps.minimum_stock, 5),
+           'stock_type', COALESCE(ps.stock_type, 'Ready-Made Furniture'),
+           'deduction_rule', COALESCE(ps.deduction_rule, 'deduct'),
+           'rating', p.rating,
+           'status', p.status,
+           'product_data', p.product_data,
+           'created_at', p.created_at,
+           'updated_at', p.updated_at
+         )
+     WHERE favorites.product_name IS NULL OR favorites.product_details IS NULL
+    `);
+  }
+  const [nullableFavoriteColumns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'user_favorites'
+       AND IS_NULLABLE = 'YES'
+       AND COLUMN_NAME IN ('product_name', 'product_details')`,
+  );
+  const nullableFavoriteColumnNames = new Set(nullableFavoriteColumns.map((column) => column.COLUMN_NAME));
+  if (nullableFavoriteColumnNames.has("product_name")) {
+    await pool.query(
+      "ALTER TABLE user_favorites MODIFY COLUMN product_name VARCHAR(191) NOT NULL",
+    );
+  }
+  if (nullableFavoriteColumnNames.has("product_details")) {
+    await pool.query(
+      "ALTER TABLE user_favorites MODIFY COLUMN product_details JSON NOT NULL",
+    );
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS stock_settings (
       id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
