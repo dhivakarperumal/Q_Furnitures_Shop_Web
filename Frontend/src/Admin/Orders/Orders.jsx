@@ -446,7 +446,15 @@ const Orders = ({ statusFilter = "All" }) => {
                             <Link to={`/admin/orders/${order.id}`} className="p-1.5 border border-gray-200 rounded hover:bg-gray-100 text-[#4318FF] transition-colors shadow-sm">
                               <FiEye size={14} />
                             </Link>
-                           
+                            <Link
+                              to={`/admin/orders/${order.id}`}
+                              state={{ autoPrint: true }}
+                              aria-label={`Print order ${formatOrderId(order)}`}
+                              title="Print order"
+                              className="p-1.5 border border-orange-200 rounded text-primary transition-colors shadow-sm hover:bg-primary hover:text-white"
+                            >
+                              <FiPrinter size={14} />
+                            </Link>
                           </div>
                         </td>
                       </tr>
@@ -539,9 +547,19 @@ const Orders = ({ statusFilter = "All" }) => {
                       </div>
                     </div>
 
-                    <Link to={`/admin/orders/${order.id}`} className="w-full inline-flex items-center justify-center gap-2 border border-[#4318FF] text-[#4318FF] rounded-lg py-2 text-xs font-bold hover:bg-[#4318FF] hover:text-white transition-colors">
-                      <FiEye size={14} /> View order
-                    </Link>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link to={`/admin/orders/${order.id}`} className="w-full inline-flex items-center justify-center gap-2 border border-[#4318FF] text-[#4318FF] rounded-lg py-2 text-xs font-bold hover:bg-[#4318FF] hover:text-white transition-colors">
+                        <FiEye size={14} /> View order
+                      </Link>
+                      <Link
+                        to={`/admin/orders/${order.id}`}
+                        state={{ autoPrint: true }}
+                        aria-label={`Print order ${formatOrderId(order)}`}
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-orange-200 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-white"
+                      >
+                        <FiPrinter size={14} /> Print
+                      </Link>
+                    </div>
                   </article>
                 );
               })
@@ -554,7 +572,7 @@ const Orders = ({ statusFilter = "All" }) => {
           <div className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center bg-transparent p-4">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[3px] animate-in fade-in duration-300" onClick={() => setShowModal(false)} />
             <div className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-              <div className={`p-8 ${modalData.status === "Cancelled" ? "bg-red-600" : "bg-slate-900"} text-white`}>
+              <div className={`p-8 ${modalData.status === "Cancelled" ? "bg-red-600" : "bg-secondary-dark"} text-white`}>
                 <h3 className="text-xl font-black tracking-tight">{modalData.status} Pipeline Meta</h3>
                 <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest mt-1 italic">Order Ref: #ORD-0{modalData.orderId}</p>
               </div>
@@ -567,7 +585,7 @@ const Orders = ({ statusFilter = "All" }) => {
                       <input
                         required
                         type="text"
-                        className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500/20 transition-all outline-none font-bold"
+                        className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/30 transition-all outline-none font-bold"
                         placeholder="Enter Tracking ID..."
                         value={modalData.tracking}
                         onChange={(e) => setModalData((p) => ({ ...p, tracking: e.target.value }))}
@@ -578,7 +596,7 @@ const Orders = ({ statusFilter = "All" }) => {
                       <input
                         required
                         type="text"
-                        className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500/20 transition-all outline-none font-bold"
+                        className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/30 transition-all outline-none font-bold"
                         placeholder="e.g. BlueDart, Delhivery..."
                         value={modalData.courier}
                         onChange={(e) => setModalData((p) => ({ ...p, courier: e.target.value }))}
@@ -603,7 +621,7 @@ const Orders = ({ statusFilter = "All" }) => {
                   <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] border-2 border-gray-100 text-gray-400 hover:bg-gray-50 transition-all">
                     Abort
                   </button>
-                  <button type="submit" className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white shadow-lg transition-all active:scale-95 ${modalData.status === "Cancelled" ? "bg-red-600 shadow-red-500/20 hover:bg-red-500" : "bg-[#4318FF] shadow-blue-500/20 hover:bg-blue-800"}`}>
+                  <button type="submit" className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white shadow-lg transition-all active:scale-95 ${modalData.status === "Cancelled" ? "bg-red-600 shadow-red-500/20 hover:bg-red-500" : "bg-primary shadow-orange-500/20 hover:bg-primary-dark"}`}>
                     Sync Pipeline
                   </button>
                 </div>
