@@ -1,7 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const express = require("express");
-const { normalizeBanner, createPublicBannerRouter } = require("./bannerRouter");
+const { normalizeBanner } = require("./bannerRouter");
 
 const validBanner = {
   title: "  Spring Sale  ",
@@ -74,23 +73,4 @@ test("rejects unsafe links and invalid banner fields", () => {
   assert.throws(() => normalizeBanner({ ...validBanner, desktop_image: "data:image/svg+xml,..."}), { status: 400 });
   assert.throws(() => normalizeBanner({ ...validBanner, target_section: "footer" }), { status: 400 });
   assert.throws(() => normalizeBanner({ ...validBanner, is_published: "yes" }), { status: 400 });
-});
-
-test("serves published hero banners without admin authentication", async (t) => {
-  const banners = [{ id: 7, title: "Featured", is_published: 1, target_section: "hero" }];
-  const app = express();
-  app.use("/api/banners", createPublicBannerRouter({
-    async listPublishedHero() {
-      return banners;
-    },
-  }));
-  const server = app.listen(0, "127.0.0.1");
-  await new Promise((resolve) => server.once("listening", resolve));
-  t.after(() => new Promise((resolve, reject) => {
-    server.close((error) => error ? reject(error) : resolve());
-  }));
-
-  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/banners/hero`);
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { banners });
 });

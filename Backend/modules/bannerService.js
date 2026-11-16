@@ -31,15 +31,6 @@ function createBannerService(pool) {
       return rows;
     },
 
-    async listPublishedHero() {
-      const [rows] = await pool.execute(
-        `SELECT ${BANNER_COLUMNS} FROM banners
-         WHERE is_published = 1 AND target_section = 'hero'
-         ORDER BY created_at DESC, id DESC`,
-      );
-      return rows;
-    },
-
     getById,
 
     async create(banner) {

@@ -508,15 +508,14 @@ const AddProducts = () => {
 
     return (
         <div className="mx-auto max-w-[1440px] space-y-6 pb-24">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                <div>
-                    <Link to="/admin/products/all" className="mb-4 inline-flex items-center gap-2 text-xs font-semibold text-slate-500 transition hover:text-orange-700"><ArrowLeft size={15} /> Back to products</Link>
-                    <div className="flex items-center gap-3">
-                        <span className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 sm:flex"><PackageCheck size={23} /></span>
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{isEdit ? "Edit product" : "Add new product"}</h1>
-                            <p className="mt-1 text-sm text-slate-500">Build a complete product listing for your furniture collection.</p>
-                        </div>
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-4">
+                    <Link to="/admin/products/all" aria-label="Back to products" title="Back to products" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-400 shadow-sm transition hover:border-orange-200 hover:text-orange-600">
+                        <ArrowLeft size={20} />
+                    </Link>
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{isEdit ? "Edit product" : "Add new product"}</h1>
+                        <p className="mt-1 text-sm text-slate-500">Build a complete product listing for your furniture collection.</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 self-start rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 shadow-sm sm:self-auto">

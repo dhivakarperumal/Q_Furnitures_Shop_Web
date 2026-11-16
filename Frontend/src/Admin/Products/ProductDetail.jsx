@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../../api";
+import { resolveMediaUrl } from "../../utils/media";
 import { toast } from "react-hot-toast";
 import { QRCodeCanvas } from "qrcode.react";
 import {
@@ -57,7 +58,15 @@ const ProductDetail = () => {
     );
 
     const currentVariant = product.variants?.[activeVariant] || {};
-    const displayImages = currentVariant.images?.length > 0 ? currentVariant.images : (product.images || []);
+    const variantImages = Array.isArray(currentVariant.images) ? currentVariant.images : [];
+    const displayImages = variantImages.length > 0
+        ? variantImages
+        : currentVariant.image ? [currentVariant.image] : (product.images || []);
+    const variantStock = product.variants?.length
+        ? Number(currentVariant.stock ?? Object.values(currentVariant.sizesStock || {}).reduce((sum, quantity) => sum + (Number(quantity) || 0), 0))
+        : Number(product.total_stock || 0);
+    const variantPrice = Number(currentVariant.selling_price ?? currentVariant.offer_price ?? product.offer_price ?? product.mrp ?? 0);
+    const variantMrp = Number(currentVariant.mrp ?? product.mrp ?? 0);
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -93,7 +102,7 @@ const ProductDetail = () => {
                     <div className="bg-white p-3 sm:p-4 rounded-[2rem] sm:rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden group">
                         <div className="aspect-[3/4] rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden bg-gray-50">
                             {displayImages.length > 0 ? (
-                                <img src={displayImages[activeImage] || displayImages[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
+                                <img src={resolveMediaUrl(displayImages[activeImage] || displayImages[0])} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-300">No images</div>
                             )}
@@ -107,7 +116,7 @@ const ProductDetail = () => {
                                     onClick={() => setActiveImage(i)}
                                     className={`aspect-square rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all shadow-sm ${activeImage === i ? 'border-blue-500 scale-95 ring-2 ring-blue-50' : 'border-white hover:border-blue-200 opacity-60 hover:opacity-100'}`}
                                 >
-                                    <img src={img} alt="thumb" className="w-full h-full object-cover" />
+                                    <img src={resolveMediaUrl(img)} alt="thumb" className="w-full h-full object-cover" />
                                 </button>
                             ))}
                         </div>
@@ -133,12 +142,12 @@ const ProductDetail = () => {
                             <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 text-center min-w-[180px] sm:min-w-[200px] shadow-inner">
                                 <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Commercials</p>
                                 <div className="flex items-center justify-center gap-2">
-                                    <span className="text-gray-300 font-bold line-through text-xs sm:text-sm">₹{parseFloat(product.mrp || 0).toLocaleString()}</span>
-                                    <p className="text-2xl sm:text-3xl font-black text-blue-600">₹{parseFloat(product.offer_price || 0).toLocaleString()}</p>
+                                    {variantMrp > variantPrice && <span className="text-gray-300 font-bold line-through text-xs sm:text-sm">₹{variantMrp.toLocaleString("en-IN")}</span>}
+                                    <p className="text-2xl sm:text-3xl font-black text-blue-600">₹{variantPrice.toLocaleString("en-IN")}</p>
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-gray-200">
                                     <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Global Inventory</p>
-                                    <p className="text-lg sm:text-xl font-black text-slate-800 mt-1">{product.total_stock || 0} Units</p>
+                                    <p className="text-lg sm:text-xl font-black text-slate-800 mt-1">{variantStock} Units</p>
                                 </div>
                             </div>
                         </div>
@@ -146,19 +155,20 @@ const ProductDetail = () => {
                         {/* Specs Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 pt-6 sm:pt-8">
                             {[
-                                { label: "Fabric", value: product.material },
-                                { label: "Artisan Work", value: product.work_type },
-                                { label: "Care", value: product.wash_care },
-                                { label: "Saree Length", value: product.saree_length },
-                                { label: "Blouse Length", value: product.blouse_length },
-                                { label: "Top / Lehenga Length", value: product.top_length },
-                                { label: "Bottom Length", value: product.bottom_length },
-                                { label: "Dupatta Length", value: product.dupatta_length },
-                                { label: "Gown Length", value: product.gown_length },
-                                { label: "Sleeve Type", value: product.sleeve_type },
-                                { label: "Neck Type", value: product.neck_type },
-                                { label: "Fit Type", value: product.fit_type },
-                                { label: "Zari Tone", value: product.zari_color },
+                                { label: "Brand", value: product.brand },
+                                { label: "Model", value: product.model_number },
+                                { label: "Material", value: product.material_type || product.material },
+                                { label: "Wood type", value: product.wood_type },
+                                { label: "Colour", value: product.colour },
+                                { label: "Finish", value: product.finish_type },
+                                { label: "Dimensions (H × W × D)", value: [product.height, product.width, product.depth].filter(Boolean).join(" × ") },
+                                { label: "Weight", value: product.weight ? `${product.weight} kg` : "" },
+                                { label: "Seating capacity", value: product.seating_capacity },
+                                { label: "Doors", value: product.doors },
+                                { label: "Drawers", value: product.drawers },
+                                { label: "Mattress size", value: product.mattress_size },
+                                { label: "Warranty", value: product.warranty_period },
+                                { label: "Origin", value: product.country_of_origin },
                             ].filter(s => s.value && s.value.toString().trim() !== "").map((spec, i) => (
                                 <div key={i} className="space-y-1 p-3 sm:p-4 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-white hover:shadow-sm transition-all cursor-default">
                                     <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">{spec.label}</p>
@@ -173,7 +183,7 @@ const ProductDetail = () => {
                         {product.variants?.length > 0 && (
                             <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="font-bold text-slate-800 uppercase tracking-widest text-xs">Available Shades</h3>
+                                    <h3 className="font-bold text-slate-800 uppercase tracking-widest text-xs">Available variants</h3>
                                 </div>
                                 <div className="grid grid-cols-1 gap-4">
                                     {product.variants.map((v, idx) => (
@@ -183,18 +193,19 @@ const ProductDetail = () => {
                                             className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${activeVariant === idx ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-50/50' : 'bg-gray-50 border-gray-100 hover:border-blue-100'}`}
                                         >
                                             <div className="flex items-center gap-4 text-slate-800">
-                                                <div className="w-10 h-10 rounded-xl shadow-inner border-2 border-white" style={{ backgroundColor: v.color }}></div>
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white bg-orange-100 text-xs font-black text-orange-700 shadow-inner">{(v.color || v.colorName || "V").slice(0, 1)}</div>
                                                 <div>
-                                                    <p className="text-sm font-black text-slate-700 uppercase tracking-tight">{v.colorName || "Artisan Shade"}</p>
+                                                    <p className="text-sm font-black text-slate-700 uppercase tracking-tight">{v.color || v.colorName || "Variant"}</p>
                                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
-                                                        {v.selectedSizes?.join(", ") || "No Sizes"}
+                                                        {[v.size, v.material].filter(Boolean).join(" · ") || v.selectedSizes?.join(", ") || "Standard"}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-xs font-black text-blue-600">
-                                                    {Object.values(v.sizesStock || {}).reduce((a, b) => a + (parseInt(b) || 0), 0)} Units
+                                                    {Number(v.stock ?? Object.values(v.sizesStock || {}).reduce((sum, quantity) => sum + (Number(quantity) || 0), 0))} Units
                                                 </p>
+                                                {v.selling_price != null && <p className="mt-1 text-[10px] font-bold text-slate-500">₹{Number(v.selling_price).toLocaleString("en-IN")}</p>}
                                             </div>
                                         </div>
                                     ))}

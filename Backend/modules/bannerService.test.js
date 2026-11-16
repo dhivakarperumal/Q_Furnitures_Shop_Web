@@ -26,20 +26,6 @@ test("updating an unchanged banner still returns the stored record", async () =>
   assert.deepEqual(await service.update(banner.id, banner), banner);
 });
 
-test("lists only published hero banners for the public home page", async () => {
-  const banners = [{ id: 7, target_section: "hero", is_published: 1 }];
-  let query;
-  const service = createBannerService({
-    async execute(sql) {
-      query = sql;
-      return [banners];
-    },
-  });
-
-  assert.deepEqual(await service.listPublishedHero(), banners);
-  assert.match(query, /WHERE is_published = 1 AND target_section = 'hero'/);
-});
-
 test("stores multiple destination buttons and mirrors the first legacy link", async () => {
   const destinationLinks = [
     { label: "Shop now", url: "/shop" },
