@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
+import { BadgeCheck, Eye, EyeOff, Headphones, LockKeyhole, ShieldCheck, Truck, UserRound } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { toast } from "react-hot-toast";
 import api from "../../api";
@@ -55,7 +55,7 @@ function Login() {
   };
 
   return (
-    <main className="relative isolate grid min-h-dvh overflow-hidden bg-[#faf5ef] selection:bg-primary selection:text-white lg:grid-cols-[1.05fr_0.95fr]">
+    <main className="relative isolate grid min-h-dvh overflow-hidden bg-[#faf5ef] selection:bg-primary selection:text-white lg:grid-cols-[1.08fr_0.60fr]">
       <div className="absolute inset-0 -z-10 lg:hidden">
         <img src="/images/register.png" alt="" className="h-full w-full object-cover object-[35%_center]" />
         <div className="absolute inset-0 bg-secondary-dark/20" />
@@ -69,7 +69,10 @@ function Login() {
         <img src="/images/register.png" alt="" className="absolute inset-0 h-full w-full object-cover object-left" />
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-secondary-dark/10" />
         <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#faf5ef]/45 to-transparent" />
-        <div className="relative flex min-h-dvh items-start p-12 xl:p-16" style={{ width: "calc(100% - 100px)" }}>
+        <div
+          className="relative flex min-h-dvh flex-col justify-between p-12 xl:p-16"
+          style={{ width: "calc(100% - 100px)" }}
+        >
           <div className="max-w-xl pl-14 mt-15 pt-6 sm:pl-16 xl:pl-20 xl:pt-10">
             <p className="mb-8  inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/75 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-secondary-dark shadow-sm backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-primary" />
@@ -87,9 +90,31 @@ function Login() {
             >
               Thoughtful furniture, everyday comfort, and timeless style for the place you love most.
             </p>
-            <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-secondary-dark">
-              <span className="rounded-full border border-orange-200/80 bg-white/75 px-3 py-2 shadow-sm backdrop-blur">Made for comfort</span>
-              <span className="rounded-full border border-orange-200/80 bg-white/75 px-3 py-2 shadow-sm backdrop-blur">Quality you can trust</span>
+          </div>
+          <div className="mt-8 pb-4 text-center">
+            <h3
+              className="text-2xl font-black tracking-tight text-white xl:text-3xl"
+              style={{ textShadow: "0 2px 8px rgba(0, 0, 0, 0.75)" }}
+            >
+              Good to have you back
+            </h3>
+            <div className="mt-5 grid w-full grid-cols-4 gap-3">
+              <div className="flex flex-col items-center gap-2 text-center text-white">
+                <Truck size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">Fast Delivery</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-center text-white">
+                <ShieldCheck size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">Safe &amp; Secure</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-center text-white">
+                <Headphones size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">24/7 Support</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-center text-white">
+                <BadgeCheck size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">Quality Furniture</span>
+              </div>
             </div>
           </div>
         </div>
