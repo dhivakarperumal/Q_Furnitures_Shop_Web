@@ -190,5 +190,20 @@ function createBannerRouter(bannerService) {
   return router;
 }
 
+function createPublicBannerRouter(bannerService) {
+  const router = express.Router();
+
+  router.get("/hero", async (request, response, next) => {
+    try {
+      return response.json({ banners: await bannerService.listPublishedHero() });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  return router;
+}
+
 module.exports = createBannerRouter;
 module.exports.normalizeBanner = normalizeBanner;
+module.exports.createPublicBannerRouter = createPublicBannerRouter;
