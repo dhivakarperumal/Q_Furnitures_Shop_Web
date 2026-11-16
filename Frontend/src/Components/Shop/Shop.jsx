@@ -81,7 +81,7 @@ const Shop = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [priceEdit, setPriceEdit] = useState(null);
   const priceDraft = priceEdit?.query === searchParams.toString() ? priceEdit.value : maxPrice;
-  const productsPerPage = filterOpen ? 8 : 10;
+  const productsPerPage = filterOpen ? 12 : 15;
 
   useEffect(() => {
     let active = true;
