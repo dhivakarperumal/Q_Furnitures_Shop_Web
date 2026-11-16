@@ -12,19 +12,9 @@ const resolveStoredImage = (image) => {
     return `${backendUrl}${image.startsWith("/") ? image : `/${image}`}`;
 };
 
-const getFirstStoredImage = (images) => {
-    if (!images) return null;
-    try {
-        const parsed = typeof images === "string" ? JSON.parse(images) : images;
-        return Array.isArray(parsed) ? parsed[0] || null : parsed;
-    } catch {
-        return typeof images === "string" ? images : null;
-    }
-};
-
 export const StoreProvider = ({ children }) => {
     const { user } = useContext(AuthContext);
-    const [cart, setCart] = useState([]);
+    const [cartState, setCartState] = useState({ userId: null, items: [] });
     const [wishlistState, setWishlistState] = useState({ userId: null, items: [] });
     const [loadingCart, setLoadingCart] = useState(false);
     const [loadingWishlist, setLoadingWishlist] = useState(false);
@@ -33,23 +23,35 @@ export const StoreProvider = ({ children }) => {
     const [bannersCache, setBannersCache] = useState({});
     const [categoriesCache, setCategoriesCache] = useState([]);
     const [lastFetchTime, setLastFetchTime] = useState(0);
+    const cartFetchSequence = useRef(0);
     const wishlistFetchSequence = useRef(0);
+    const cart = user?.user_id === cartState.userId ? cartState.items : [];
     const wishlist = user?.user_id === wishlistState.userId ? wishlistState.items : [];
 
     // ─── Fetch cart from backend ─────────────────────────────────
     const fetchCart = useCallback(async () => {
-        if (!user?.user_id) { setCart([]); return; }
+        const requestSequence = ++cartFetchSequence.current;
+        if (!user?.user_id) {
+            setCartState({ userId: null, items: [] });
+            setLoadingCart(false);
+            return;
+        }
         try {
             setLoadingCart(true);
-            const res = await api.get(`/cart/${user.user_id}`);
-            setCart((Array.isArray(res.data) ? res.data : []).map(item => ({
-                ...item,
-                image: resolveStoredImage(item.image),
-            })));
+            const res = await api.get("/cart");
+            if (requestSequence === cartFetchSequence.current) {
+                setCartState({
+                    userId: user.user_id,
+                    items: (Array.isArray(res.data) ? res.data : []).map(item => ({
+                        ...item,
+                        image: resolveStoredImage(item.image),
+                    })),
+                });
+            }
         } catch (err) {
             console.error("Fetch cart error:", err);
         } finally {
-            setLoadingCart(false);
+            if (requestSequence === cartFetchSequence.current) setLoadingCart(false);
         }
     }, [user?.user_id]);
 
@@ -99,37 +101,32 @@ export const StoreProvider = ({ children }) => {
         }
 
         const selectedVariant = variant || product.variants?.[0] || null;
-        const selectedSize = size || selectedVariant?.selectedSizes?.[0] || "Free Size";
+        const selectedSize = size || selectedVariant?.size || selectedVariant?.selectedSizes?.[0] || "Free Size";
+        const quantity = Number(qty);
+        if (!Number.isSafeInteger(quantity) || quantity < 1) {
+            toast.error("Choose a valid quantity");
+            return;
+        }
         const availableStock = getProductStock(product, selectedVariant, selectedSize);
         if (availableStock < 1) {
             toast.error("This product is out of stock");
             return;
         }
-        if (qty > availableStock) {
+        if (quantity > availableStock) {
             toast.error(`Only ${availableStock} item${availableStock === 1 ? "" : "s"} available`);
             return;
         }
-        const variantColor = selectedVariant?.colorName || selectedVariant?.color || "Default";
+        const variantColor = selectedVariant?.colorName || selectedVariant?.color || selectedVariant?.colour || "Default";
         
-        // Correctly parse images if they are stored as JSON strings
-        const variantImage = getFirstStoredImage(selectedVariant?.images) || getFirstStoredImage(product.images);
-        
-        const price = parseFloat(product.offer_price || product.price || 0);
-
         try {
             await api.post("/cart", {
-                user_id: user.user_id,
                 product_id: Number(productId),
                 variant_color: variantColor,
                 variant_size: selectedSize,
-                image: variantImage,
-                email: user.email || "",
-                price: price,
-                total_price: price * qty, 
-                quantity: qty,
+                quantity,
             });
             toast.success("Added to cart!");
-            await fetchCart(); // Refresh from backend to get image + full details
+            await fetchCart();
         } catch (err) {
             console.error("Add to cart error:", err);
             toast.error(err.response?.data?.message || "Failed to add to cart");
@@ -153,28 +150,22 @@ export const StoreProvider = ({ children }) => {
         if (!targetItem) return;
 
         try {
-            await api.put(`/cart/${cartItemId}`, {
-                quantity: qty,
-                price: targetItem.price
-            });
-            setCart(prev => prev.map(item =>
-                item.id === cartItemId ? {
-                    ...item,
-                    quantity: qty,
-                    total_price: item.price * qty
-                } : item
-            ));
+            await api.put(`/cart/${cartItemId}`, { quantity: qty });
+            await fetchCart();
         } catch (err) {
             console.error("Update qty error:", err);
-            toast.error("Failed to update quantity");
+            toast.error(err.response?.data?.message || "Failed to update quantity");
         }
     };
 
     const clearCart = async () => {
-        if (!user?.user_id) { setCart([]); return; }
+        if (!user?.user_id) {
+            setCartState({ userId: null, items: [] });
+            return;
+        }
         try {
-            await api.delete(`/cart/clear/${user.user_id}`);
-            setCart([]);
+            await api.delete("/cart/clear");
+            setCartState({ userId: user.user_id, items: [] });
         } catch (err) {
             console.error("Clear cart error:", err);
         }
