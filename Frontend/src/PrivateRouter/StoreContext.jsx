@@ -100,8 +100,10 @@ export const StoreProvider = ({ children }) => {
             return;
         }
 
+        const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
         const selectedVariant = variant || product.variants?.[0] || null;
-        const selectedSize = size || selectedVariant?.size || selectedVariant?.selectedSizes?.[0] || "Free Size";
+        const selectedSize = size || selectedVariant?.size || selectedVariant?.selectedSizes?.[0] ||
+            (hasVariants ? "Free Size" : "");
         const quantity = Number(qty);
         if (!Number.isSafeInteger(quantity) || quantity < 1) {
             toast.error("Choose a valid quantity");

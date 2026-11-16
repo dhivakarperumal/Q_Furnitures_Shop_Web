@@ -107,6 +107,11 @@ function getFavoriteProductData(row) {
     assembly_required: product.assembly_required ?? shipping.assemblyRequired,
     installation_available: product.installation_available ?? shipping.installationAvailable,
     return_policy: product.return_policy || shipping.returnPolicy,
+    image: row.saved_image || (typeof product.image === "string" && product.image) || (
+      Array.isArray(product.images)
+        ? product.images[Number(product.main_image_index) || 0] || product.images[0]
+        : null
+    ),
   });
   return product;
 }
@@ -145,6 +150,7 @@ async function migrateFavoriteDetails(pool) {
       `SELECT favorites.user_id, favorites.product_id,
               ${savedNameColumn} AS product_name,
               ${savedDetailsColumn} AS product_details,
+              favorites.image AS saved_image,
               p.product_code, p.name, p.category, p.subcategory, p.mrp, p.offer,
               p.offer_type, p.offer_price, p.selling_price, p.total_stock, p.rating,
               p.status, p.product_data, p.created_at AS product_created_at,
@@ -171,72 +177,6 @@ async function migrateFavoriteDetails(pool) {
          WHERE user_id = ? AND product_id = ?`,
         [...values, row.user_id, row.product_id],
       );
-
-      await pool.execute(
-        "DELETE FROM user_favorite_images WHERE user_id = ? AND product_id = ?",
-        [row.user_id, row.product_id],
-      );
-      const images = Array.isArray(product.images)
-        ? product.images
-        : typeof product.image === "string" && product.image ? [product.image] : [];
-      const imageRoles = Array.isArray(product.image_roles) ? product.image_roles : [];
-      for (const [imageIndex, imageUrl] of images.entries()) {
-        if (typeof imageUrl !== "string" || !imageUrl) continue;
-        await pool.execute(
-          `INSERT INTO user_favorite_images
-           (user_id, product_id, image_index, image_url, image_role) VALUES (?, ?, ?, ?, ?)`,
-          [row.user_id, row.product_id, imageIndex, imageUrl, imageRoles[imageIndex] || null],
-        );
-      }
-
-      await pool.execute(
-        "DELETE FROM user_favorite_variants WHERE user_id = ? AND product_id = ?",
-        [row.user_id, row.product_id],
-      );
-      const variants = Array.isArray(product.variants) ? product.variants : [];
-      for (const [variantIndex, variant] of variants.entries()) {
-        await pool.execute(
-          `INSERT INTO user_favorite_variants
-           (user_id, product_id, variant_index, color, size, material, sku, mrp,
-            offer_type, offer, selling_price, stock, image)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            row.user_id, row.product_id, variantIndex, variant.color || null, variant.size || null,
-            variant.material || null, variant.sku || null, variant.mrp ?? null,
-            variant.offer_type || null, variant.offer ?? null, variant.selling_price ?? null,
-            variant.stock ?? null, variant.image || null,
-          ],
-        );
-        const variantImages = Array.isArray(variant.images) ? variant.images : [];
-        for (const [imageIndex, imageUrl] of variantImages.entries()) {
-          if (typeof imageUrl !== "string" || !imageUrl) continue;
-          await pool.execute(
-            `INSERT INTO user_favorite_variant_images
-             (user_id, product_id, variant_index, image_index, image_url)
-             VALUES (?, ?, ?, ?, ?)`,
-            [row.user_id, row.product_id, variantIndex, imageIndex, imageUrl],
-          );
-        }
-      }
-
-      await pool.execute(
-        "DELETE FROM user_favorite_customizations WHERE user_id = ? AND product_id = ?",
-        [row.user_id, row.product_id],
-      );
-      const customizations = Array.isArray(product.customizations) ? product.customizations : [];
-      for (const [customizationIndex, customization] of customizations.entries()) {
-        await pool.execute(
-          `INSERT INTO user_favorite_customizations
-           (user_id, product_id, customization_index, name, type, options, additional_price, required)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            row.user_id, row.product_id, customizationIndex, customization.name || null,
-            customization.type || null, customization.options || null,
-            customization.additionalPrice ?? customization.additional_price ?? null,
-            customization.required == null ? null : Number(Boolean(customization.required)),
-          ],
-        );
-      }
     }
   }
 
@@ -248,6 +188,55 @@ async function migrateFavoriteDetails(pool) {
     await pool.query(
       "ALTER TABLE user_favorites MODIFY COLUMN product_name VARCHAR(191) NOT NULL",
     );
+  }
+}
+
+async function migratePrimaryImages(pool) {
+  const [tables] = await pool.execute(
+    `SELECT TABLE_NAME
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME IN ('user_favorite_images', 'user_cart_images')`,
+  );
+  const existingTables = new Set(tables.map((table) => table.TABLE_NAME));
+
+  if (existingTables.has("user_favorite_images")) {
+    const [images] = await pool.execute(
+      `SELECT user_id, product_id, image_url
+       FROM user_favorite_images
+       ORDER BY user_id, product_id, image_index`,
+    );
+    const migratedFavorites = new Set();
+    for (const image of images) {
+      const key = `${image.user_id}:${image.product_id}`;
+      if (migratedFavorites.has(key)) continue;
+      migratedFavorites.add(key);
+      await pool.execute(
+        `UPDATE user_favorites
+         SET image = COALESCE(image, ?)
+         WHERE user_id = ? AND product_id = ?`,
+        [image.image_url, image.user_id, image.product_id],
+      );
+    }
+  }
+
+  if (existingTables.has("user_cart_images")) {
+    const [images] = await pool.execute(
+      `SELECT cart_item_id, image_url
+       FROM user_cart_images
+       ORDER BY cart_item_id, image_index`,
+    );
+    const migratedCartItems = new Set();
+    for (const image of images) {
+      if (migratedCartItems.has(image.cart_item_id)) continue;
+      migratedCartItems.add(image.cart_item_id);
+      await pool.execute(
+        `UPDATE user_cart_items
+         SET image = COALESCE(image, ?), cart_image = COALESCE(cart_image, ?)
+         WHERE id = ?`,
+        [image.image_url, image.image_url, image.cart_item_id],
+      );
+    }
   }
 }
 
@@ -530,66 +519,6 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_favorite_images (
-        user_id VARCHAR(255) NOT NULL,
-        product_id BIGINT UNSIGNED NOT NULL,
-        image_index INT UNSIGNED NOT NULL,
-        image_url VARCHAR(2048) NOT NULL,
-        image_role VARCHAR(100) NULL,
-        PRIMARY KEY (user_id, product_id, image_index),
-        CONSTRAINT user_favorite_images_favorite_fk
-          FOREIGN KEY (user_id, product_id) REFERENCES user_favorites(user_id, product_id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_favorite_variants (
-        user_id VARCHAR(255) NOT NULL,
-        product_id BIGINT UNSIGNED NOT NULL,
-        variant_index INT UNSIGNED NOT NULL,
-        color VARCHAR(100) NULL,
-        size VARCHAR(100) NULL,
-        material VARCHAR(100) NULL,
-        sku VARCHAR(128) NULL,
-        mrp DECIMAL(12,2) NULL,
-        offer_type VARCHAR(32) NULL,
-        offer DECIMAL(12,2) NULL,
-        selling_price DECIMAL(12,2) NULL,
-        stock INT NULL,
-        image VARCHAR(2048) NULL,
-        PRIMARY KEY (user_id, product_id, variant_index),
-        CONSTRAINT user_favorite_variants_favorite_fk
-          FOREIGN KEY (user_id, product_id) REFERENCES user_favorites(user_id, product_id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_favorite_variant_images (
-        user_id VARCHAR(255) NOT NULL,
-        product_id BIGINT UNSIGNED NOT NULL,
-        variant_index INT UNSIGNED NOT NULL,
-        image_index INT UNSIGNED NOT NULL,
-        image_url VARCHAR(2048) NOT NULL,
-        PRIMARY KEY (user_id, product_id, variant_index, image_index),
-        CONSTRAINT user_favorite_variant_images_variant_fk
-          FOREIGN KEY (user_id, product_id, variant_index)
-          REFERENCES user_favorite_variants(user_id, product_id, variant_index) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_favorite_customizations (
-        user_id VARCHAR(255) NOT NULL,
-        product_id BIGINT UNSIGNED NOT NULL,
-        customization_index INT UNSIGNED NOT NULL,
-        name VARCHAR(191) NULL,
-        type VARCHAR(100) NULL,
-        options TEXT NULL,
-        additional_price DECIMAL(12,2) NULL,
-        required TINYINT(1) NULL,
-        PRIMARY KEY (user_id, product_id, customization_index),
-        CONSTRAINT user_favorite_customizations_favorite_fk
-          FOREIGN KEY (user_id, product_id) REFERENCES user_favorites(user_id, product_id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
     CREATE TABLE IF NOT EXISTS user_cart_items (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id VARCHAR(255) NOT NULL,
@@ -620,62 +549,9 @@ async function initializeDatabase(pool) {
   if (!cartColumns.has("cart_image")) {
     await pool.query("ALTER TABLE user_cart_items ADD COLUMN cart_image VARCHAR(2048) NULL");
   }
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_cart_images (
-      cart_item_id BIGINT UNSIGNED NOT NULL,
-      image_index INT UNSIGNED NOT NULL,
-      image_url VARCHAR(2048) NOT NULL,
-      image_role VARCHAR(100) NULL,
-      PRIMARY KEY (cart_item_id, image_index),
-      CONSTRAINT user_cart_images_item_fk
-        FOREIGN KEY (cart_item_id) REFERENCES user_cart_items(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_cart_variants (
-      cart_item_id BIGINT UNSIGNED NOT NULL,
-      variant_index INT UNSIGNED NOT NULL,
-      color VARCHAR(100) NULL,
-      size VARCHAR(100) NULL,
-      material VARCHAR(100) NULL,
-      sku VARCHAR(128) NULL,
-      mrp DECIMAL(12,2) NULL,
-      offer_type VARCHAR(32) NULL,
-      offer DECIMAL(12,2) NULL,
-      selling_price DECIMAL(12,2) NULL,
-      stock INT NULL,
-      image VARCHAR(2048) NULL,
-      PRIMARY KEY (cart_item_id, variant_index),
-      CONSTRAINT user_cart_variants_item_fk
-        FOREIGN KEY (cart_item_id) REFERENCES user_cart_items(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_cart_variant_images (
-      cart_item_id BIGINT UNSIGNED NOT NULL,
-      variant_index INT UNSIGNED NOT NULL,
-      image_index INT UNSIGNED NOT NULL,
-      image_url VARCHAR(2048) NOT NULL,
-      PRIMARY KEY (cart_item_id, variant_index, image_index),
-      CONSTRAINT user_cart_variant_images_variant_fk
-        FOREIGN KEY (cart_item_id, variant_index)
-        REFERENCES user_cart_variants(cart_item_id, variant_index) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_cart_customizations (
-      cart_item_id BIGINT UNSIGNED NOT NULL,
-      customization_index INT UNSIGNED NOT NULL,
-      name VARCHAR(191) NULL,
-      type VARCHAR(100) NULL,
-      options TEXT NULL,
-      additional_price DECIMAL(12,2) NULL,
-      required TINYINT(1) NULL,
-      PRIMARY KEY (cart_item_id, customization_index),
-      CONSTRAINT user_cart_customizations_item_fk
-        FOREIGN KEY (cart_item_id) REFERENCES user_cart_items(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  if (!cartColumns.has("image")) {
+    await pool.query("ALTER TABLE user_cart_items ADD COLUMN image VARCHAR(2048) NULL");
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS coupons (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -958,6 +834,19 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await migrateFavoriteDetails(pool);
+  await migratePrimaryImages(pool);
+  for (const table of [
+    "user_favorite_variant_images",
+    "user_favorite_variants",
+    "user_favorite_images",
+    "user_favorite_customizations",
+    "user_cart_variant_images",
+    "user_cart_variants",
+    "user_cart_images",
+    "user_cart_customizations",
+  ]) {
+    await pool.query(`DROP TABLE IF EXISTS ${table}`);
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS stock_settings (
       id TINYINT UNSIGNED NOT NULL PRIMARY KEY,

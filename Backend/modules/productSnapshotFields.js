@@ -57,6 +57,7 @@ const PRODUCT_SNAPSHOT_FIELDS = [
   ["customization_description", "TEXT", "customization_description"],
   ["rating", "DECIMAL(2,1)", "rating"],
   ["main_image_index", "INT", "main_image_index"],
+  ["image", "VARCHAR(2048)", "image"],
 ];
 
 module.exports = { PRODUCT_SNAPSHOT_FIELDS };

@@ -87,8 +87,11 @@ function getCartImage(product, variant) {
 function toSnapshotProduct(product) {
   const specifications = product.specifications || {};
   const shipping = product.shipping || {};
+  const images = getImageList(product);
   return {
     ...product,
+    image: (typeof product.image === "string" && product.image) ||
+      images[Number(product.main_image_index) || 0] || images[0] || null,
     material_type: product.material_type || specifications.materialType,
     wood_type: product.wood_type || specifications.woodType,
     colour: product.colour || specifications.colour,
@@ -116,63 +119,7 @@ function toSnapshotProduct(product) {
   };
 }
 
-async function saveCartChildren(connection, cartItemId, product) {
-  const images = getImageList(product);
-  const imageRoles = Array.isArray(product.image_roles) ? product.image_roles : [];
-  for (const [imageIndex, imageUrl] of images.entries()) {
-    if (typeof imageUrl !== "string" || !imageUrl) continue;
-    await connection.execute(
-      `INSERT INTO user_cart_images
-       (cart_item_id, image_index, image_url, image_role) VALUES (?, ?, ?, ?)`,
-      [cartItemId, imageIndex, imageUrl, imageRoles[imageIndex] || null],
-    );
-  }
-
-  const variants = Array.isArray(product.variants) ? product.variants : [];
-  for (const [variantIndex, variant] of variants.entries()) {
-    await connection.execute(
-      `INSERT INTO user_cart_variants
-       (cart_item_id, variant_index, color, size, material, sku, mrp,
-        offer_type, offer, selling_price, stock, image)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        cartItemId, variantIndex, variant.color || null, variant.size || null,
-        variant.material || null, variant.sku || null, variant.mrp ?? null,
-        variant.offer_type || null, variant.offer ?? null, variant.selling_price ?? null,
-        variant.stock ?? null, variant.image || null,
-      ],
-    );
-    const variantImages = Array.isArray(variant.images) ? variant.images : [];
-    for (const [imageIndex, imageUrl] of variantImages.entries()) {
-      if (typeof imageUrl !== "string" || !imageUrl) continue;
-      await connection.execute(
-        `INSERT INTO user_cart_variant_images
-         (cart_item_id, variant_index, image_index, image_url)
-         VALUES (?, ?, ?, ?)`,
-        [cartItemId, variantIndex, imageIndex, imageUrl],
-      );
-    }
-  }
-
-  const customizations = Array.isArray(product.customizations) ? product.customizations : [];
-  for (const [customizationIndex, customization] of customizations.entries()) {
-    await connection.execute(
-      `INSERT INTO user_cart_customizations
-       (cart_item_id, customization_index, name, type, options, additional_price, required)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        cartItemId, customizationIndex, customization.name || null, customization.type || null,
-        customization.options || null,
-        customization.additionalPrice ?? customization.additional_price ?? null,
-        customization.required == null ? null : Number(Boolean(customization.required)),
-      ],
-    );
-  }
-}
-
-function mapCartItem(row, children) {
-  const images = children.images.map((image) => image.image_url);
-  const mainImageIndex = Number(row.main_image_index) || 0;
+function mapCartItem(row) {
   return {
     ...row,
     id: Number(row.id),
@@ -181,19 +128,10 @@ function mapCartItem(row, children) {
     price: Number(row.price),
     total_price: Number(row.total_price),
     name: row.product_name,
-    image: row.cart_image || images[mainImageIndex] || images[0] || null,
-    images,
-    image_roles: children.images.map((image) => image.image_role),
+    image: row.cart_image || row.image || null,
     colorName: row.variant_color || "",
     color: row.variant_color || "",
     size: row.variant_size || "",
-    variants: children.variants.map((variant) => ({
-      ...variant,
-      images: children.variantImages
-        .filter((image) => image.variant_index === variant.variant_index)
-        .map((image) => image.image_url),
-    })),
-    customizations: children.customizations,
   };
 }
 
@@ -212,43 +150,6 @@ function createCartService(pool) {
     return { row: rows[0], product: toProduct(rows[0]) };
   }
 
-  async function loadChildren(cartItemIds) {
-    if (!cartItemIds.length) return [];
-    const placeholders = cartItemIds.map(() => "?").join(", ");
-    const [images] = await pool.execute(
-      `SELECT cart_item_id, image_index, image_url, image_role
-       FROM user_cart_images WHERE cart_item_id IN (${placeholders})
-       ORDER BY cart_item_id, image_index`,
-      cartItemIds,
-    );
-    const [variants] = await pool.execute(
-      `SELECT cart_item_id, variant_index, color, size, material, sku, mrp,
-              offer_type, offer, selling_price, stock, image
-       FROM user_cart_variants WHERE cart_item_id IN (${placeholders})
-       ORDER BY cart_item_id, variant_index`,
-      cartItemIds,
-    );
-    const [variantImages] = await pool.execute(
-      `SELECT cart_item_id, variant_index, image_index, image_url
-       FROM user_cart_variant_images WHERE cart_item_id IN (${placeholders})
-       ORDER BY cart_item_id, variant_index, image_index`,
-      cartItemIds,
-    );
-    const [customizations] = await pool.execute(
-      `SELECT cart_item_id, name, type, options, additional_price AS additionalPrice, required
-       FROM user_cart_customizations WHERE cart_item_id IN (${placeholders})
-       ORDER BY cart_item_id, customization_index`,
-      cartItemIds,
-    );
-
-    return cartItemIds.map((cartItemId) => ({
-      images: images.filter((image) => image.cart_item_id === cartItemId),
-      variants: variants.filter((variant) => variant.cart_item_id === cartItemId),
-      variantImages: variantImages.filter((image) => image.cart_item_id === cartItemId),
-      customizations: customizations.filter((customization) => customization.cart_item_id === cartItemId),
-    }));
-  }
-
   return {
     async list(userId) {
       const [rows] = await pool.execute(
@@ -256,8 +157,7 @@ function createCartService(pool) {
          WHERE user_id = ? ORDER BY created_at DESC, id DESC`,
         [userId],
       );
-      const children = await loadChildren(rows.map((row) => row.id));
-      return rows.map((row, index) => mapCartItem(row, children[index]));
+      return rows.map(mapCartItem);
     },
 
     async add(userId, input) {
@@ -319,9 +219,6 @@ function createCartService(pool) {
           );
           if (updateResult.affectedRows !== 1) throw new Error("Cart item could not be updated.");
           cartItemId = existing.id;
-          await connection.execute("DELETE FROM user_cart_images WHERE cart_item_id = ?", [cartItemId]);
-          await connection.execute("DELETE FROM user_cart_variants WHERE cart_item_id = ?", [cartItemId]);
-          await connection.execute("DELETE FROM user_cart_customizations WHERE cart_item_id = ?", [cartItemId]);
         } else {
           const columns = [
             "user_id", "product_id", "variant_color", "variant_size", "cart_image",
@@ -339,7 +236,6 @@ function createCartService(pool) {
           cartItemId = insertResult.insertId;
         }
 
-        await saveCartChildren(connection, cartItemId, product);
         await connection.commit();
         return { id: Number(cartItemId), quantity: nextQuantity, price, total_price: Number((price * nextQuantity).toFixed(2)) };
       } catch (error) {
