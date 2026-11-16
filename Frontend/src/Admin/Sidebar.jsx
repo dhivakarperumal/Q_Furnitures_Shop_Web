@@ -214,7 +214,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
         </div>
 
         {/* ========== NAVIGATION ========== */}
-        <nav className="relative z-20 flex-1 px-3 py-6 space-y-1 overflow-y-auto hide-scrollbar">
+        <nav className="relative z-20 flex-1 px-3 py-6 space-y-2 overflow-y-auto hide-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
 
@@ -224,14 +224,14 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
               const isAnyChildActive = isActiveRoute(item);
 
               return (
-                <div key={item.label} className="space-y-1">
+                <div key={item.label} className="space-y-2">
                   <button
                     onClick={() => toggleMenu(item.label)}
                     className={`
                       group w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all
                       ${isMenuOpen || isAnyChildActive
                         ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-orange-900/30"
-                        : "text-white/80 hover:bg-white/10 hover:text-white"
+                        : "text-white hover:bg-white/10"
                       }
                     `}
                   >
@@ -258,7 +258,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
                   {/* ===== SUB MENU ===== */}
                   {!collapsed && (
                     <div
-                      className={`relative ml-4 pl-4 border-white/5 space-y-1 overflow-y-auto hide-scrollbar transition-all duration-300
+                      className={`relative ml-4 pl-4 border-white/5 space-y-2 overflow-y-auto hide-scrollbar transition-all duration-300
                       ${isMenuOpen ? "z-30 max-h-60 opacity-100 py-1" : "z-0 max-h-0 opacity-0"}`}
                     >
                       {item.children.map((sub) => {
@@ -283,7 +283,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
                               group flex items-center gap-3 px-4 py-2.5 rounded-md text-xs font-medium tracking-wide transition-all
                               ${isActive
                                 ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-orange-900/30"
-                                : "text-white/75 hover:text-white hover:bg-white/10"
+                                : "text-white hover:bg-white/10"
                               }
                             `}
                           >
@@ -319,7 +319,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
                   group flex items-center gap-3 px-4 py-3 rounded-md transition-all
                   ${isActive
                     ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-xl shadow-orange-900/30"
-                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                    : "text-white hover:bg-white/10"
                   }
                 `}
               >
