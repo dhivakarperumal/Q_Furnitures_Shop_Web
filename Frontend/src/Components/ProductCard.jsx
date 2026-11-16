@@ -60,7 +60,7 @@ export default function ProductCard({ product }) {
           </div>
         )}
         {discount > 0 && (
-          <span className="absolute left-3 top-3 rounded-full bg-[#a34720] px-3 py-1 text-[11px] font-bold tracking-wide text-white">
+          <span className="absolute left-3 top-3 rounded-full bg-emerald-700 px-3 py-1 text-[11px] font-bold tracking-wide text-white">
             {discount}% OFF
           </span>
         )}
@@ -103,7 +103,7 @@ export default function ProductCard({ product }) {
             onClick={() => addToCart(product)}
             disabled={stock <= 0}
             aria-label={`${isInCart ? "Add another" : "Add"} ${product.name} to cart`}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#351d0e] px-3 text-xs font-semibold text-white transition hover:bg-[#a34720] disabled:cursor-not-allowed disabled:bg-[#c7b5a2]"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-[#c7b5a2]"
           >
             <ShoppingBag size={16} />
             <span>{isInCart ? "Add more" : "Add to cart"}</span>
