@@ -19,6 +19,15 @@ function parseNumber(value, field, fallback) {
   return number;
 }
 
+function parseOptionalQueryNumber(value, field) {
+  if (value === undefined || value === "") return undefined;
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) {
+    throw badRequest(`${field} must be a non-negative number.`);
+  }
+  return number;
+}
+
 function normalizeProduct(body, existing = {}) {
   const input = { ...existing, ...body };
   const name = typeof input.name === "string" ? input.name.trim() : "";
@@ -131,7 +140,15 @@ function createProductRouter(productService) {
       const limit = Math.min(100, Math.max(1, Number.parseInt(request.query.limit, 10) || 10));
       const search = typeof request.query.search === "string" ? request.query.search.trim() : "";
       const status = typeof request.query.status === "string" ? request.query.status : "All";
-      return response.json(await productService.list({ page, limit, search, status }));
+      const category = typeof request.query.category === "string" ? request.query.category.trim() : "";
+      const material = typeof request.query.material === "string" ? request.query.material.trim() : "";
+      const availability = typeof request.query.availability === "string" ? request.query.availability : "";
+      const sort = typeof request.query.sort === "string" ? request.query.sort : "featured";
+      const minPrice = parseOptionalQueryNumber(request.query.minPrice, "Minimum price");
+      const maxPrice = parseOptionalQueryNumber(request.query.maxPrice, "Maximum price");
+      return response.json(await productService.list({
+        page, limit, search, status, category, material, minPrice, maxPrice, availability, sort,
+      }));
     } catch (error) {
       return next(error);
     }

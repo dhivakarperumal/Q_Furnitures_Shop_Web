@@ -315,7 +315,7 @@ function createProductService(pool) {
       }
     },
 
-    async list({ page, limit, search, status }) {
+    async list({ page, limit, search, status, category, material, minPrice, maxPrice, availability, sort }) {
       const filters = [];
       const parameters = [];
 
@@ -327,14 +327,41 @@ function createProductService(pool) {
       if (status === "Low Stock") {
         filters.push("COALESCE(ps.available_stock, p.total_stock) > 0 AND COALESCE(ps.available_stock, p.total_stock) <= COALESCE(ps.minimum_stock, 5)");
       }
+      if (category) {
+        filters.push("p.category = ?");
+        parameters.push(category);
+      }
+      if (material) {
+        filters.push("JSON_UNQUOTE(JSON_EXTRACT(p.product_data, '$.material_type')) = ?");
+        parameters.push(material);
+      }
+      if (Number.isFinite(minPrice)) {
+        filters.push("COALESCE(p.offer_price, p.selling_price, p.mrp) >= ?");
+        parameters.push(minPrice);
+      }
+      if (Number.isFinite(maxPrice)) {
+        filters.push("COALESCE(p.offer_price, p.selling_price, p.mrp) <= ?");
+        parameters.push(maxPrice);
+      }
+      if (availability === "in-stock") {
+        filters.push("COALESCE(ps.available_stock, p.total_stock) > 0");
+      } else if (availability === "out-of-stock") {
+        filters.push("COALESCE(ps.available_stock, p.total_stock) <= 0");
+      }
 
       const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
       const offset = (page - 1) * limit;
+      const sortOrder = {
+        featured: "p.created_at DESC, p.id DESC",
+        "price-low": "COALESCE(p.offer_price, p.selling_price, p.mrp) ASC, p.id DESC",
+        "price-high": "COALESCE(p.offer_price, p.selling_price, p.mrp) DESC, p.id DESC",
+        rating: "p.rating DESC, p.id DESC",
+      }[sort] || "p.created_at DESC, p.id DESC";
       const [rows] = await pool.execute(
         `SELECT ${PRODUCT_COLUMNS}, ps.available_stock, ps.reserved_stock, ps.damaged_stock,
                 ps.minimum_stock, ps.stock_type, ps.deduction_rule
          FROM products p LEFT JOIN product_stock ps ON ps.product_id = p.id ${whereClause}
-         ORDER BY p.created_at DESC, p.id DESC
+         ORDER BY ${sortOrder}
          LIMIT ? OFFSET ?`,
         [...parameters, limit, offset],
       );
