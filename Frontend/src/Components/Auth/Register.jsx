@@ -84,49 +84,52 @@ function Register() {
           style={{ backdropFilter: "blur(1px)", backgroundColor: "rgba(0, 0, 0, 0.10)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-secondary-dark/10" />
-        <div className="relative flex min-h-dvh items-center p-8 xl:p-14">
-          <div className="w-full max-w-lg" style={{ marginLeft: "32px" }}>
-          <Link to="/" className="inline-flex items-center gap-3 text-secondary-dark">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-orange-200">
-              <House size={27} strokeWidth={2} aria-hidden="true" />
-            </span>
-            <span>
-              <span className="block text-3xl font-black leading-none tracking-tight">
-                <span className="text-primary">Q</span> Furnitures
+        <div className="relative flex min-h-dvh flex-col p-8 xl:p-14">
+          <div
+            className="mx-auto w-full max-w-lg text-center"
+            style={{ marginLeft: "auto", marginRight: "auto", marginTop: "auto", marginBottom: "auto" }}
+          >
+            <Link to="/" className="inline-flex items-center justify-center gap-3 text-secondary-dark">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-orange-200">
+                <House size={27} strokeWidth={2} aria-hidden="true" />
               </span>
-              <span className="mt-1 block text-sm font-semibold tracking-wide text-secondary-dark/80">
-                Furniture Store Management
+              <span className="text-center">
+                <span className="block text-3xl font-black leading-none tracking-tight">
+                  <span className="text-primary">Q</span> Furnitures
+                </span>
+                <span className="mt-1 block text-sm font-semibold tracking-wide text-secondary-dark/80">
+                  Furniture Store Management
+                </span>
               </span>
-            </span>
-          </Link>
+            </Link>
 
-          <h2 className="mt-8 max-w-md text-3xl font-black leading-tight tracking-tight text-secondary-dark xl:text-4xl">
-            Furniture store management, made simple.
-          </h2>
-          <p className="mt-3 max-w-md text-base leading-7 text-secondary-dark/80">
-            Keep your products, orders, and business insights organized in one place.
-          </p>
+            <h2 className="mx-auto mt-8 max-w-md text-center text-3xl font-black leading-tight tracking-tight text-secondary-dark xl:text-4xl">
+              Furniture store management, made simple.
+            </h2>
+            <p className="mx-auto mt-3 max-w-md text-center text-base leading-7 text-secondary-dark/80">
+              Keep your products, orders, and business insights organized in one place.
+            </p>
+          </div>
 
-          <div className="mt-8 space-y-4">
-            <div className="flex items-center gap-3">
+          <div className="mx-auto mt-8 grid w-full max-w-2xl grid-cols-3 gap-3 pb-2">
+            <div className="flex flex-col items-center gap-2 text-center">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-orange-200">
                 <PackageCheck size={20} aria-hidden="true" />
               </span>
-              <span className="text-sm font-semibold text-secondary-dark">Manage Products &amp; Inventory</span>
+              <span className="text-xs font-semibold leading-5 text-secondary-dark sm:text-sm">Manage Products &amp; Inventory</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center gap-2 text-center">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-orange-200">
                 <ShoppingCart size={20} aria-hidden="true" />
               </span>
-              <span className="text-sm font-semibold text-secondary-dark">Orders &amp; Billing</span>
+              <span className="text-xs font-semibold leading-5 text-secondary-dark sm:text-sm">Orders &amp; Billing</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center gap-2 text-center">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-orange-200">
                 <BarChart3 size={20} aria-hidden="true" />
               </span>
-              <span className="text-sm font-semibold text-secondary-dark">Reports &amp; Insights</span>
+              <span className="text-xs font-semibold leading-5 text-secondary-dark sm:text-sm">Reports &amp; Insights</span>
             </div>
-          </div>
           </div>
         </div>
       </section>
