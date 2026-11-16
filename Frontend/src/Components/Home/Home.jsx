@@ -1,5 +1,6 @@
 import { ArrowUpRight, Sparkles } from "lucide-react";
 import FeaturedProducts from "./FeaturedProducts";
+import HomeCategories from "./HomeCategories";
 
 const Home = () => (
   <main className="bg-[#fcfaf7]">
@@ -37,6 +38,7 @@ const Home = () => (
       </div>
     </section>
 
+    <HomeCategories />
     <FeaturedProducts />
   </main>
 );
