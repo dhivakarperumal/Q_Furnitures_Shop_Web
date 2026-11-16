@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
+import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from "react";
 import { toast } from "react-hot-toast";
 import api from "../api";
 import { AuthContext } from "./AuthContext";
@@ -25,7 +25,7 @@ const getFirstStoredImage = (images) => {
 export const StoreProvider = ({ children }) => {
     const { user } = useContext(AuthContext);
     const [cart, setCart] = useState([]);
-    const [wishlist, setWishlist] = useState([]);
+    const [wishlistState, setWishlistState] = useState({ userId: null, items: [] });
     const [loadingCart, setLoadingCart] = useState(false);
     const [loadingWishlist, setLoadingWishlist] = useState(false);
     const [productsCache, setProductsCache] = useState([]);
@@ -33,6 +33,8 @@ export const StoreProvider = ({ children }) => {
     const [bannersCache, setBannersCache] = useState({});
     const [categoriesCache, setCategoriesCache] = useState([]);
     const [lastFetchTime, setLastFetchTime] = useState(0);
+    const wishlistFetchSequence = useRef(0);
+    const wishlist = user?.user_id === wishlistState.userId ? wishlistState.items : [];
 
     // ─── Fetch cart from backend ─────────────────────────────────
     const fetchCart = useCallback(async () => {
@@ -53,15 +55,25 @@ export const StoreProvider = ({ children }) => {
 
     // ─── Fetch wishlist from backend ─────────────────────────────
     const fetchWishlist = useCallback(async () => {
-        if (!user?.user_id) { setWishlist([]); return; }
+        const requestSequence = ++wishlistFetchSequence.current;
+        if (!user?.user_id) {
+            setWishlistState({ userId: null, items: [] });
+            setLoadingWishlist(false);
+            return;
+        }
         try {
             setLoadingWishlist(true);
-            const res = await api.get(`/wishlist/${user.user_id}`);
-            setWishlist(res.data);
+            const res = await api.get("/favorites");
+            if (requestSequence === wishlistFetchSequence.current) {
+                setWishlistState({
+                    userId: user.user_id,
+                    items: Array.isArray(res.data) ? res.data : [],
+                });
+            }
         } catch (err) {
             console.error("Fetch wishlist error:", err);
         } finally {
-            setLoadingWishlist(false);
+            if (requestSequence === wishlistFetchSequence.current) setLoadingWishlist(false);
         }
     }, [user?.user_id]);
 
@@ -170,7 +182,7 @@ export const StoreProvider = ({ children }) => {
 
     // ─── WISHLIST ACTIONS ────────────────────────────────────────
 
-    const toggleWishlist = async (product, variant = null, size = null) => {
+    const toggleWishlist = async (product) => {
         if (!user?.user_id) {
             toast.error("Please login to manage wishlist");
             return;
@@ -183,28 +195,10 @@ export const StoreProvider = ({ children }) => {
 
         try {
             if (isAlready) {
-                await api.delete(`/wishlist/${user.user_id}/${productId}`);
+                await api.delete(`/favorites/${productId}`);
                 toast.error("Removed from favorites");
             } else {
-                const selectedVariant = variant || product.variants?.[0] || null;
-                const selectedSize = size || selectedVariant?.selectedSizes?.[0] || "";
-                const variantColor = selectedVariant?.colorName || selectedVariant?.color || "";
-                
-                // Correctly parse images if they are stored as JSON strings
-                const variantImage = getFirstStoredImage(selectedVariant?.images) || getFirstStoredImage(product.images);
-                
-                const price = parseFloat(product.offer_price || product.price || 0);
-
-                await api.post("/wishlist", {
-                    user_id: user.user_id,
-                    product_id: productId,
-                    variant_color: variantColor,
-                    variant_size: selectedSize,
-                    image: variantImage,
-                    email: user.email || "",
-                    price: price,
-                    total_price: price,
-                });
+                await api.post("/favorites", { product_id: Number(productId) });
                 toast.success("Added to favorites!");
             }
             await fetchWishlist();
