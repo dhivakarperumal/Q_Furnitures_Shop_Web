@@ -56,7 +56,6 @@ const Hero = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [retryCount, setRetryCount] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
 
   useEffect(() => {
@@ -96,7 +95,6 @@ const Hero = () => {
       loading ||
       loadError ||
       banners.length < 2 ||
-      isHovered ||
       hasFocus ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
@@ -108,7 +106,7 @@ const Hero = () => {
     }, 6000);
 
     return () => window.clearInterval(timer);
-  }, [banners.length, currentIndex, hasFocus, isHovered, loadError, loading]);
+  }, [banners.length, hasFocus, loadError, loading]);
 
   const banner = banners[currentIndex];
   const links = useMemo(() => banner ? getBannerLinks(banner) : [], [banner]);
@@ -144,9 +142,7 @@ const Hero = () => {
       <section
         aria-label="Featured furniture promotions"
         aria-roledescription="carousel"
-        className="relative isolate overflow-hidden bg-secondary-dark text-white"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        className="relative isolate overflow-hidden bg-[#f4eadc] text-secondary-dark"
         onFocusCapture={() => setHasFocus(true)}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false);
@@ -169,7 +165,7 @@ const Hero = () => {
             />
           </picture>
         )}
-        <div className="relative flex min-h-[460px] items-center py-14 sm:min-h-[520px] md:py-16 lg:min-h-[580px]">
+        <div className="relative flex min-h-[460px] items-start pt-10 pb-16 sm:min-h-[520px] sm:pt-14 md:pb-20 lg:min-h-[580px]">
           <PageContainer>
             {loading ? (
               <p role="status" className="text-sm font-semibold text-secondary-dark/75">Loading featured furniture...</p>
