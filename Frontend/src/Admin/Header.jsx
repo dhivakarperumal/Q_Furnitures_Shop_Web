@@ -60,7 +60,7 @@ const pageTitles = {
   "/admin/products/stock/add": "Add Stock",
   "/admin/products": "Inventory",
   "/admin/orders/billing": "Billing",
-  "/admin/orders/shop-create": "Create Billing",
+  "/admin/orders/shop-create": "Create Shop Order",
   "/admin/orders/new": "New Orders",
   "/admin/orders/all": "All Orders",
   "/admin/orders/delivery": "Delivery Orders",

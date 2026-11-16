@@ -1,40 +1,38 @@
-﻿import { useState, useContext } from "react";
-import api from "../../api";
-import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../../PrivateRouter/AuthContext";
-import { toast } from "react-hot-toast";
+import { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
-import { Eye, EyeOff, Footprints } from "lucide-react";
-import { Link } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import api from "../../api";
+import { AuthContext } from "../../PrivateRouter/AuthContext";
 
 function Login() {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
   const [form, setForm] = useState({
     identifier: "",
     password: "",
   });
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    setForm({ ...form, [event.target.name]: event.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const completeLogin = (user, token) => {
+    login(user, token);
+    navigate(user.role === "admin" ? "/admin" : "/", { replace: true });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (submitting) return;
     setSubmitting(true);
     try {
-      const res = await api.post("/auth/login", form);
-      login(res.data.user, res.data.token);
+      const { data } = await api.post("/auth/login", form);
+      completeLogin(data.user, data.token);
       toast.success("Login successful!");
-      if (res.data.user.role === "admin") {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate("/", { replace: true });
-      }
     } catch (error) {
       console.error("Login Error:", error);
       toast.error(error.response?.data?.message || "Login failed");
@@ -45,16 +43,11 @@ function Login() {
 
   const handleSuccess = async (credentialResponse) => {
     try {
-      const res = await api.post("/auth/google-login", {
+      const { data } = await api.post("/auth/google-login", {
         credential: credentialResponse.credential,
       });
-      login(res.data.user, res.data.token);
+      completeLogin(data.user, data.token);
       toast.success("Google Login Successful!");
-      if (res.data.user.role === "admin") {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate("/", { replace: true });
-      }
     } catch (error) {
       console.error("Google Login Error:", error);
       toast.error(error.response?.data?.message || error.message || "Google Login Failed");
@@ -62,159 +55,133 @@ function Login() {
   };
 
   return (
-    <div className="h-screen w-full font-sans flex overflow-hidden bg-[#faf9f8] relative selection:bg-primary selection:text-white">
+    <main className="relative isolate grid min-h-dvh overflow-hidden bg-[#faf5ef] selection:bg-primary selection:text-white lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="absolute inset-0 -z-10 lg:hidden">
+        <img src="/images/loginbg.png" alt="" className="h-full w-full object-cover object-[35%_center]" />
+        <div className="absolute inset-0 bg-secondary-dark/20" />
+      </div>
 
-      {/* Background Accents */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-pink-100/40 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-0 right-[20%] w-[400px] h-[400px] bg-yellow-100/30 rounded-full blur-[80px] pointer-events-none" />
-
-      {/* SVG Clip Path */}
-      <svg width="0" height="0" className="absolute">
-        <defs>
-          <clipPath id="sCurve" clipPathUnits="objectBoundingBox">
-            <path d="M 0 0 L 0.92 0 C 1 0.35, 0.9 0.7, 0.65 1 L 0 1 Z" />
-          </clipPath>
-        </defs>
-      </svg>
-
-      {/* LEFT IMAGE */}
-      <div className="hidden lg:block lg:w-5/12 relative h-full z-20 drop-shadow-[20px_0_30px_rgba(0,0,0,0.15)]">
-        <div
-          className="absolute inset-0 bg-gradient-to-b from-yellow-200 via-yellow-500 to-yellow-700 w-[101.5%] h-full z-10"
-          style={{ clipPath: 'url(#sCurve)' }}
-        />
-        <div
-          className="absolute inset-0 bg-black w-full h-full z-20"
-          style={{ clipPath: 'url(#sCurve)' }}
-        >
-          <img
-            src="/images/loginbanner.png"
-            alt="Q Furnitures"
-            className="h-full w-full object-cover object-center opacity-90"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-black/20 to-transparent pointer-events-none" />
-          <div className="absolute bottom-44 left-12 xl:left-16 text-white z-30">
-            <h1 className="text-4xl xl:text-5xl font-serif mb-4 leading-tight drop-shadow-2xl text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
-              Find Your <br/> Perfect Pair
-            </h1>
-            <p className="text-gray-200 text-sm max-w-[260px] font-light tracking-wide drop-shadow-md">
-              Discover shoes made for every step, from everyday comfort to standout style.
+      <section aria-label="Q Living Furniture" className="relative hidden min-h-dvh overflow-hidden lg:block">
+        <img src="/images/loginbg.png" alt="" className="absolute inset-0 h-full w-full object-cover object-left" />
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-secondary-dark/10" />
+        <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#faf5ef]/45 to-transparent" />
+        <div className="relative flex min-h-dvh items-start p-12 xl:p-16">
+          <div className="max-w-xl pl-14 pt-6 sm:pl-16 xl:pl-20 xl:pt-10">
+            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/75 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-secondary-dark shadow-sm backdrop-blur">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Q Living Furniture
             </p>
-            <div className="flex items-center gap-3 mt-6">
-              <div className="h-[2px] w-10 bg-gradient-to-r from-yellow-400 to-transparent" />
-              <span className="text-yellow-400 text-sm drop-shadow-lg shadow-yellow-400">✦</span>
-              <div className="h-[2px] w-10 bg-gradient-to-l from-yellow-400 to-transparent" />
+            <h2 className="max-w-lg text-4xl font-black leading-[1.12] tracking-tight text-secondary-dark xl:text-[3.5rem]">
+              Make your home feel like <span className="text-primary-dark">home.</span>
+            </h2>
+            <p className="mt-4 max-w-md text-base leading-7 text-stone-700 xl:text-lg">
+              Thoughtful furniture, everyday comfort, and timeless style for the place you love most.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-secondary-dark">
+              <span className="rounded-full border border-orange-200/80 bg-white/75 px-3 py-2 shadow-sm backdrop-blur">Made for comfort</span>
+              <span className="rounded-full border border-orange-200/80 bg-white/75 px-3 py-2 shadow-sm backdrop-blur">Quality you can trust</span>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* RIGHT FORM */}
-      <div className="w-full lg:w-7/12 h-full flex flex-col justify-center px-6 py-4 sm:px-16 lg:px-24 relative z-10 overflow-hidden">
-        <div className="max-w-md mx-auto w-full">
-
-          {/* Logo & Header */}
-          <div className="text-center mb-5">
-            <div className="flex justify-center mb-2 relative">
-              <div className="absolute inset-0 bg-yellow-400/20 blur-xl rounded-full scale-150" />
-              <Footprints size={48} strokeWidth={1.4} className="text-yellow-600 relative z-10 drop-shadow-sm" aria-hidden="true" />
+      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-[#faf5ef]/65 px-4 py-5 sm:px-8 lg:bg-gradient-to-br lg:from-[#fffdfa] lg:via-[#faf5ef] lg:to-[#f5e8d9] lg:px-10">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <span className="absolute -right-20 top-16 h-72 w-72 rounded-full bg-orange-200/35 blur-3xl" />
+          <span className="absolute bottom-8 left-8 h-56 w-56 rounded-full bg-amber-100/70 blur-3xl" />
+        </div>
+        <section className="relative z-10 w-full min-w-0 max-w-[430px] rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-8">
+          <div aria-hidden="true" className="absolute inset-x-10 top-0 h-1 rounded-b-full bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
+          <div className="mb-5 text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-primary-dark ring-1 ring-orange-100">
+              <LockKeyhole size={25} strokeWidth={1.8} aria-hidden="true" />
             </div>
-            
-            <p className="text-xs text-yellow-700 font-bold tracking-[0.2em] uppercase mb-4">Step into your style</p>
-            <h3 className="text-xl font-serif text-gray-800 mb-1">Welcome Back</h3>
-            <p className="text-gray-500 text-sm">Sign in to discover shoes, bags, and everyday essentials.</p>
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-dark">
+              Q Living Furniture
+            </p>
+            <h1 className="text-3xl font-black tracking-tight text-secondary-dark">
+              Welcome <span className="text-primary">back</span>
+            </h1>
+            <p className="mt-1.5 text-sm text-stone-600">
+              Sign in to continue to your furniture account.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* Username, email, or mobile */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1 tracking-wide">
-                Username / Email / Mobile Number
+              <label htmlFor="login-identifier" className="mb-1.5 block text-sm font-semibold text-secondary-dark">
+                Username, email, or mobile number
               </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
+              <div className="relative">
+                <UserRound className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={19} aria-hidden="true" />
                 <input
+                  id="login-identifier"
                   name="identifier"
                   type="text"
-                  placeholder="Enter your username, email, or mobile number"
+                  autoComplete="username"
+                  placeholder="Enter your username, email, or mobile"
                   value={form.identifier}
                   onChange={handleChange}
-                  className="w-full pl-12 p-3.5 rounded-xl bg-white border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium text-gray-700"
+                  className="w-full rounded-xl border border-stone-200 bg-white py-3 pl-12 pr-4 text-sm text-secondary-dark outline-none transition placeholder:text-stone-400 focus:border-primary focus:ring-4 focus:ring-orange-100"
                   required
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1 tracking-wide">
+              <label htmlFor="login-password" className="mb-1.5 block text-sm font-semibold text-secondary-dark">
                 Password
               </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
+              <div className="relative">
+                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={19} aria-hidden="true" />
                 <input
-                  type={showPassword ? "text" : "password"}
+                  id="login-password"
                   name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   placeholder="Enter your password"
                   value={form.password}
                   onChange={handleChange}
-                  className="w-full pl-12 p-3.5 pr-12 rounded-xl bg-white border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium text-gray-700"
+                  className="w-full rounded-xl border border-stone-200 bg-white py-3 pl-12 pr-12 text-sm text-secondary-dark outline-none transition placeholder:text-stone-400 focus:border-primary focus:ring-4 focus:ring-orange-100"
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors cursor-pointer"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 transition hover:text-primary-dark"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
                 </button>
               </div>
             </div>
 
-            {/* Remember & Forgot */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 accent-primary" />
-                <span className="text-sm text-gray-600 group-hover:text-primary transition-colors">Remember Me</span>
+            <div className="flex items-center justify-between gap-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-600">
+                <input type="checkbox" className="h-4 w-4 rounded accent-primary" />
+                Remember me
               </label>
-              <a href="#" className="text-sm font-semibold text-primary-light hover:text-primary hover:underline transition-colors">
-                Forgot Password?
+              <a href="#" className="text-sm font-semibold text-primary-dark transition hover:underline">
+                Forgot password?
               </a>
             </div>
 
-            {/* Login Button */}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 rounded-xl text-white font-semibold bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary transition-all flex items-center justify-center gap-2 relative overflow-hidden group shadow-lg shadow-primary/30 cursor-pointer hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <span className="relative z-10 flex items-center gap-2 tracking-wide">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                {submitting ? "Signing In..." : "Secure Login"}
-              </span>
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <LockKeyhole size={17} aria-hidden="true" />
+              {submitting ? "Signing in..." : "Sign in"}
             </button>
 
-            {/* OR */}
-            <div className="flex items-center gap-4 my-1">
-              <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent via-gray-300 to-gray-300"></div>
-              <span className="text-xs text-gray-400 font-bold tracking-widest uppercase">OR</span>
-              <div className="flex-1 h-[1px] bg-gradient-to-l from-transparent via-gray-300 to-gray-300"></div>
+            <div className="flex items-center gap-3 py-1">
+              <span className="h-px flex-1 bg-stone-200" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400">or continue with</span>
+              <span className="h-px flex-1 bg-stone-200" />
             </div>
 
-            {/* Google Login */}
-            <div className="flex justify-center w-full [&>div]:w-full [&>div]:flex [&>div]:justify-center hover:scale-[1.02] transition-transform">
+            <div className="flex w-full min-w-0 justify-center [&>div]:justify-center">
               <GoogleLogin
                 onSuccess={handleSuccess}
                 onError={() => toast.error("Google sign-in could not be completed.")}
@@ -222,60 +189,21 @@ function Login() {
                 theme="outline"
                 size="large"
                 shape="rectangular"
-                width="100%"
+                width="250"
                 logo_alignment="center"
               />
             </div>
 
-            {/* Register Link */}
-            <p className="text-center text-sm text-gray-500">
-              Don't have an account?{" "}
-              <Link to="/register" className="text-primary-light font-bold hover:underline transition-all">
-                Register Now
+            <p className="pt-1 text-center text-sm text-stone-600">
+              New to Q Living?{" "}
+              <Link to="/register" className="font-bold text-primary-dark transition hover:underline">
+                Create an account
               </Link>
             </p>
-
           </form>
-        </div>
+        </section>
       </div>
-
-      {/* BOTTOM FEATURES BAR */}
-      <div className="hidden lg:flex absolute bottom-0 left-0 w-[55%] h-36 bg-gradient-to-r from-primary-dark to-primary-light z-30 rounded-tr-[100px] shadow-2xl shadow-primary/30 items-center justify-evenly px-12 border-t border-r border-primary-light/50">
-
-        <div className="flex flex-col items-center justify-center text-center group">
-          <div className="p-3 bg-white/5 rounded-full mb-2 group-hover:bg-white/10 transition-colors">
-            <svg className="w-7 h-7 text-yellow-400 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-            </svg>
-          </div>
-          <span className="text-white text-[10px] uppercase font-bold tracking-widest">Premium<br/>Quality</span>
-        </div>
-
-        <div className="w-[1px] h-16 bg-gradient-to-b from-transparent via-yellow-600/30 to-transparent" />
-
-        <div className="flex flex-col items-center justify-center text-center group">
-          <div className="p-3 bg-white/5 rounded-full mb-2 group-hover:bg-white/10 transition-colors">
-            <svg className="w-7 h-7 text-yellow-400 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
-          <span className="text-white text-[10px] uppercase font-bold tracking-widest">New Arrival<br/>Every Week</span>
-        </div>
-
-        <div className="w-[1px] h-16 bg-gradient-to-b from-transparent via-yellow-600/30 to-transparent" />
-
-        <div className="flex flex-col items-center justify-center text-center group">
-          <div className="p-3 bg-white/5 rounded-full mb-2 group-hover:bg-white/10 transition-colors">
-            <svg className="w-7 h-7 text-yellow-400 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </div>
-          <span className="text-white text-[10px] uppercase font-bold tracking-widest">Easy<br/>Returns</span>
-        </div>
-
-      </div>
-
-    </div>
+    </main>
   );
 }
 
