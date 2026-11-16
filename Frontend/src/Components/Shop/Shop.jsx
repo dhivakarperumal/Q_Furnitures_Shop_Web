@@ -17,7 +17,6 @@ import { resolveMediaUrl } from "../../utils/media";
 import PageContainer from "../CommenComponents/PageContainer";
 import ProductCard from "../ProductCard";
 
-const PRODUCTS_PER_PAGE = 8;
 const MAX_PRICE = 600000;
 const MATERIALS = ["Solid Wood", "Engineered Wood", "Upholstered", "Plywood", "Metal"];
 const COLORS = [
@@ -79,8 +78,10 @@ const Shop = () => {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [listView, setListView] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [priceEdit, setPriceEdit] = useState(null);
   const priceDraft = priceEdit?.query === searchParams.toString() ? priceEdit.value : maxPrice;
+  const productsPerPage = filterOpen ? 8 : 10;
 
   useEffect(() => {
     let active = true;
@@ -107,7 +108,7 @@ const Shop = () => {
     let active = true;
     const params = {
       page: currentPage,
-      limit: PRODUCTS_PER_PAGE,
+      limit: productsPerPage,
       search: searchTerm,
       status: "All",
       sort,
@@ -144,7 +145,7 @@ const Shop = () => {
     return () => {
       active = false;
     };
-  }, [availability, category, color, currentPage, maxPrice, material, minRating, onSale, reloadKey, searchTerm, sort]);
+  }, [availability, category, color, currentPage, maxPrice, material, minRating, onSale, productsPerPage, reloadKey, searchTerm, sort]);
 
   const heroImage = useMemo(() => getProductImage(products[0]), [products]);
 
@@ -157,6 +158,11 @@ const Shop = () => {
     if (resetPage) nextParams.delete("page");
     setLoading(true);
     setSearchParams(nextParams);
+  };
+
+  const toggleFilters = () => {
+    setFilterOpen((open) => !open);
+    updateParams({});
   };
 
   const handleSearch = (event) => {
@@ -211,8 +217,13 @@ const Shop = () => {
     maxPrice < MAX_PRICE && { label: `Up to ₹${maxPrice.toLocaleString("en-IN")}`, key: "maxPrice" },
   ].filter(Boolean);
 
-  const pageStart = pagination.total ? (currentPage - 1) * PRODUCTS_PER_PAGE + 1 : 0;
-  const pageEnd = Math.min(currentPage * PRODUCTS_PER_PAGE, pagination.total);
+  const pageStart = pagination.total ? (currentPage - 1) * productsPerPage + 1 : 0;
+  const pageEnd = Math.min(currentPage * productsPerPage, pagination.total);
+  const productGridClass = listView
+    ? "grid-cols-1"
+    : filterOpen
+      ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+      : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
 
   return (
     <main className="min-h-[60vh] bg-[#fcfaf7] pb-12 text-[#302218]">
@@ -246,8 +257,8 @@ const Shop = () => {
           <span className="font-semibold text-[#351d0e]">Shop</span>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)]">
-          <aside className="h-fit rounded-xl border border-[#e9ded2] bg-white px-3.5 shadow-[0_3px_15px_rgba(53,29,14,0.04)]">
+        <div className={`grid gap-5 ${filterOpen ? "lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)]" : "grid-cols-1"}`}>
+          {filterOpen && <aside id="shop-filter-sidebar" className="h-fit rounded-xl border border-[#e9ded2] bg-white px-3.5 shadow-[0_3px_15px_rgba(53,29,14,0.04)]">
             <div className="flex items-center justify-between py-3">
               <h2 className="flex items-center gap-2 text-sm font-bold text-[#281b12]">
                 <SlidersHorizontal size={17} /> Filters
@@ -379,7 +390,7 @@ const Shop = () => {
                 On sale
               </label>
             </FilterSection>
-          </aside>
+          </aside>}
 
           <section aria-label="Furniture products" className="min-w-0">
             <form onSubmit={handleSearch} className="flex items-center gap-2 rounded-lg border border-[#dccfc1] bg-white p-1.5 shadow-sm">
@@ -404,6 +415,16 @@ const Shop = () => {
                 {searchTerm && <span className="ml-1 text-[#8b735e]">for “{searchTerm}”</span>}
               </p>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={toggleFilters}
+                  aria-expanded={filterOpen}
+                  aria-controls={filterOpen ? "shop-filter-sidebar" : undefined}
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${filterOpen ? "bg-[#e87500] text-white" : "border border-[#ded2c6] bg-white text-[#4d3b2b] hover:border-[#e87500]"}`}
+                >
+                  <SlidersHorizontal size={15} />
+                  {filterOpen ? "Hide filters" : "Filters"}
+                </button>
                 <label htmlFor="shop-sort" className="whitespace-nowrap text-xs font-semibold">Sort by:</label>
                 <select
                   id="shop-sort"
@@ -454,8 +475,8 @@ const Shop = () => {
             )}
 
             {loading ? (
-              <div className={`mt-4 grid gap-3 ${listView ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 xl:grid-cols-4"}`}>
-                {Array.from({ length: PRODUCTS_PER_PAGE }, (_, index) => (
+              <div className={`mt-4 grid gap-3 ${productGridClass}`}>
+                {Array.from({ length: productsPerPage }, (_, index) => (
                   <div key={index} className="overflow-hidden rounded-xl border border-[#eee4d8] bg-white">
                     <div className="aspect-[4/3] animate-pulse bg-[#f1e9df]" />
                     <div className="space-y-2 p-3">
@@ -474,7 +495,7 @@ const Shop = () => {
               </div>
             ) : products.length ? (
               <>
-                <div className={`mt-4 grid gap-3 ${listView ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 xl:grid-cols-4"}`}>
+                <div className={`mt-4 grid gap-3 ${productGridClass}`}>
                   {products.map((product) => <ProductCard key={product.id} product={product} compact />)}
                 </div>
 
