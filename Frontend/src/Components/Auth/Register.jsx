@@ -84,11 +84,31 @@ function Register() {
         />
         <div
           className="absolute inset-0"
-          style={{ backdropFilter: "blur(1px)", backgroundColor: "rgba(0, 0, 0, 0.10)" }}
+          style={{ backdropFilter: "blur(1px)", backgroundColor: "rgba(0, 0, 0, 0.06)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-secondary-dark/65 via-transparent to-primary/10" />
-        <div className="relative flex min-h-dvh flex-col justify-between p-6 xl:p-10">
-          <div className="mt-auto pt-12 text-center">
+        <div
+          className="relative flex min-h-dvh flex-col p-6 xl:p-10"
+          style={{ width: "calc(100% - 80px)" }}
+        >
+          <div className="ml-15 mt-25 flex flex-1 flex-col items-start justify-center px-2 text-left">
+            <p className="mb-10 rounded-full border border-orange-200/80 bg-orange-600/90 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-lg">
+              Furniture for everyday living
+            </p>
+            <h2 className="text-3xl font-black tracking-tight text-white drop-shadow-lg xl:text-4xl">
+              Comfort for <span className="text-[#fff0b3]">Every Room</span>
+            </h2>
+            <p className="mt-3 mb-8 max-w-md text-sm font-medium leading-6 text-white drop-shadow-md">
+              Find inspiring furniture for living, dining, and restful spaces, bringing comfort and
+              style into everyday life.
+            </p>
+            <div className="mt-2 flex flex-wrap justify-start gap-2 text-xs font-semibold text-white">
+              <span className="rounded-full border border-orange-100 bg-orange-100 px-3 py-1.5 text-orange-900 shadow-md">Living room</span>
+              <span className="rounded-full border border-orange-100 bg-orange-100 px-3 py-1.5 text-orange-900 shadow-md">Dining</span>
+              <span className="rounded-full border border-orange-100 bg-orange-100 px-3 py-1.5 text-orange-900 shadow-md">Bedroom</span>
+            </div>
+          </div>
+          <div className="pt-8 text-center">
             <h2 className="text-3xl font-black tracking-tight text-white xl:text-4xl">
               Join Q Furnitures
             </h2>
