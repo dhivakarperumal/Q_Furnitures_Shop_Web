@@ -62,7 +62,7 @@ function Register() {
   };
 
   return (
-    <main className="relative isolate grid min-h-dvh bg-white selection:bg-primary selection:text-white md:grid-cols-[0.9fr_0.6fr]">
+    <main className="relative isolate grid min-h-dvh bg-white selection:bg-primary selection:text-white md:h-dvh md:overflow-hidden md:grid-cols-[0.9fr_0.6fr]">
       <div className="absolute inset-0 -z-10 overflow-hidden md:hidden">
         <img
           src="/images/register.png"
@@ -138,6 +138,11 @@ function Register() {
         />
         <section className="relative z-10 w-full min-w-0 max-w-sm rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
           <header className="mb-5 text-center">
+            <img
+              src="/images/logo.png"
+              alt="Q Furnitures"
+              className="mx-auto mb-3 block h-auto w-64 max-w-full object-contain"
+            />
             <h1 className="text-3xl font-black tracking-tight text-secondary-dark sm:text-4xl">
               Create an <span className="text-primary">Account</span>
             </h1>

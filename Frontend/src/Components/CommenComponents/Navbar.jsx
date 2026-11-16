@@ -146,9 +146,9 @@ const Navbar = () => {
             aria-label="Q Living Furniture home"
           >
             <img
-              src="/images/q-living-nav-logo.png"
-              alt="Q Living Furniture"
-              className="h-16 w-[114px] rounded-lg object-contain"
+              src="/images/logo.png"
+              alt="Q Furnitures"
+              className="h-auto max-h-14 w-40 object-contain sm:w-44"
             />
           </Link>
 

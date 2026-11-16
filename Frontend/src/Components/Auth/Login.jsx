@@ -143,12 +143,11 @@ function Login() {
         />
         <section className="relative z-10 w-full min-w-0 max-w-[430px] p-4 sm:p-8">
           <div className="mb-5 text-center">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-primary-dark ring-1 ring-orange-100">
-              <LockKeyhole size={25} strokeWidth={1.8} aria-hidden="true" />
-            </div>
-            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-dark">
-              Q Living Furniture
-            </p>
+            <img
+              src="/images/logo.png"
+              alt="Q Furnitures"
+              className="mx-auto mb-3 block h-auto w-64 max-w-full object-contain"
+            />
             <h1 className="text-3xl font-black tracking-tight text-secondary-dark">
               Welcome <span className="text-primary">back</span>
             </h1>
