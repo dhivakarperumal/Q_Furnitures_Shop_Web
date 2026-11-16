@@ -1,27 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Award,
-  CreditCard,
-  RefreshCw,
-  ShieldCheck,
-  Truck,
-  Wrench,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../../api";
 import { resolveMediaUrl } from "../../utils/media";
 import PageContainer from "../CommenComponents/PageContainer";
-
-const benefits = [
-  { icon: Truck, title: "Free delivery", detail: "Across India" },
-  { icon: ShieldCheck, title: "5 years", detail: "Warranty" },
-  { icon: RefreshCw, title: "Easy returns", detail: "Hassle-free" },
-  { icon: CreditCard, title: "EMI options", detail: "Flexible payments" },
-  { icon: Wrench, title: "Installation", detail: "At your home" },
-  { icon: Award, title: "Quality assured", detail: "Premium materials" },
-];
 
 function getBannerLinks(banner) {
   let links = banner.destination_links;
@@ -218,27 +200,6 @@ const Hero = () => {
         </div>
 
         {!loading && !loadError && banners.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={() => setCurrentIndex((index) => (index - 1 + banners.length) % banners.length)}
-              aria-label="Show previous hero banner"
-              className="absolute left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-secondary-dark text-white transition hover:bg-primary-dark sm:left-6"
-            >
-              <ArrowLeft size={19} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentIndex((index) => (index + 1) % banners.length)}
-              aria-label="Show next hero banner"
-              className="absolute right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-secondary-dark text-white transition hover:bg-primary-dark sm:right-6"
-            >
-              <ArrowRight size={19} />
-            </button>
-          </>
-        )}
-
-        {!loading && !loadError && banners.length > 1 && (
           <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2">
             {banners.map((item, index) => (
               <button
@@ -252,24 +213,6 @@ const Hero = () => {
             ))}
           </div>
         )}
-      </section>
-
-      <section aria-label="Shopping benefits" className="border-b border-orange-100 bg-white">
-        <PageContainer>
-          <div className="grid grid-cols-2 divide-y divide-orange-100 sm:grid-cols-3 sm:divide-y-0 lg:grid-cols-6">
-            {benefits.map(({ icon: Icon, title, detail }) => (
-              <div key={title} className="flex items-center gap-3 px-3 py-4 sm:justify-center lg:px-2">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-primary-dark">
-                  <Icon size={19} strokeWidth={1.8} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-bold text-secondary-dark">{title}</span>
-                  <span className="mt-0.5 block truncate text-[11px] text-muted">{detail}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </PageContainer>
       </section>
     </>
   );
