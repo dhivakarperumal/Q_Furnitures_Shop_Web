@@ -11,6 +11,20 @@ function createReviewService(pool) {
   }
 
   return {
+    async listPublished() {
+      const [reviews] = await pool.execute(
+        `SELECT reviews.id, reviews.product_id, reviews.user_name, reviews.rating,
+                reviews.comment, reviews.review_image, reviews.admin_reply, reviews.created_at,
+                products.name AS product_name
+         FROM reviews
+         LEFT JOIN products ON products.id = reviews.product_id
+         WHERE reviews.status = 'Published'
+         ORDER BY reviews.created_at DESC, reviews.id DESC
+         LIMIT 6`,
+      );
+      return reviews;
+    },
+
     async list({ status, rating, search }) {
       const filters = [];
       const parameters = [];

@@ -94,3 +94,22 @@ test("serves published hero banners without admin authentication", async (t) => 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { banners });
 });
+
+test("serves published offer banners without admin authentication", async (t) => {
+  const banners = [{ id: 8, title: "Living Room", is_published: 1, target_section: "offers" }];
+  const app = express();
+  app.use("/api/banners", createPublicBannerRouter({
+    async listPublishedOffers() {
+      return banners;
+    },
+  }));
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
+  t.after(() => new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  }));
+
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/banners/offers`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { banners });
+});
