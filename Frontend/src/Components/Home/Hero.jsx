@@ -169,8 +169,6 @@ const Hero = () => {
             />
           </picture>
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#fffaf3]/95 via-[#fffaf3]/75 to-[#fffaf3]/5" />
-
         <div className="relative flex min-h-[460px] items-center py-14 sm:min-h-[520px] md:py-16 lg:min-h-[580px]">
           <PageContainer>
             {loading ? (
