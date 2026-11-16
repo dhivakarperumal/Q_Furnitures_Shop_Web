@@ -36,8 +36,11 @@ const HomeReviews = () => {
 
   const scrollReviews = (direction) => {
     if (!sliderRef.current) return;
+    const firstCard = sliderRef.current.firstElementChild;
+    if (!firstCard) return;
+    const gap = Number.parseFloat(window.getComputedStyle(sliderRef.current).columnGap) || 0;
     sliderRef.current.scrollBy({
-      left: direction * sliderRef.current.clientWidth * 0.8,
+      left: direction * (firstCard.getBoundingClientRect().width + gap),
       behavior: "smooth",
     });
   };
