@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
+import PageHeader from "../CommenComponents/PageHeader";
 import ProductCard from "../ProductCard";
 
 const PRODUCTS_PER_PAGE = 12;
@@ -88,32 +89,33 @@ const Shop = () => {
   };
 
   return (
-    <main className="min-h-[60vh] bg-[#fcfaf7] py-10 sm:py-14">
-      <PageContainer>
-        <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a06e46]">The Q Living collection</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#351d0e] sm:text-4xl">Shop all furniture</h1>
-            <p className="mt-2 text-sm text-[#8b735e] sm:text-base">
-              Explore our collection and find the right pieces for your home.
-            </p>
+    <>
+      <PageHeader title="Shop all furniture" />
+      <main className="min-h-[60vh] bg-[#fcfaf7] py-10 sm:py-14">
+        <PageContainer>
+          <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a06e46]">The Q Living collection</p>
+              <p className="mt-2 text-sm text-[#8b735e] sm:text-base">
+                Explore our collection and find the right pieces for your home.
+              </p>
+            </div>
+            <form onSubmit={handleSearch} className="flex w-full max-w-md items-center gap-2 rounded-xl border border-[#e5d8ca] bg-white p-2 shadow-sm">
+              <Search size={18} className="ml-2 shrink-0 text-[#8b735e]" />
+              <input
+                key={searchTerm}
+                type="search"
+                name="search"
+                defaultValue={searchTerm}
+                placeholder="Search furniture..."
+                aria-label="Search furniture"
+                className="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm text-[#351d0e] outline-none placeholder:text-[#a99a8b]"
+              />
+              <button type="submit" className="rounded-lg bg-[#351d0e] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#a34720]">
+                Search
+              </button>
+            </form>
           </div>
-          <form onSubmit={handleSearch} className="flex w-full max-w-md items-center gap-2 rounded-xl border border-[#e5d8ca] bg-white p-2 shadow-sm">
-            <Search size={18} className="ml-2 shrink-0 text-[#8b735e]" />
-            <input
-              key={searchTerm}
-              type="search"
-              name="search"
-              defaultValue={searchTerm}
-              placeholder="Search furniture..."
-              aria-label="Search furniture"
-              className="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm text-[#351d0e] outline-none placeholder:text-[#a99a8b]"
-            />
-            <button type="submit" className="rounded-lg bg-[#351d0e] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#a34720]">
-              Search
-            </button>
-          </form>
-        </div>
 
         <div className="mb-5 flex items-center justify-between">
           <p className="text-sm text-[#8b735e]">
@@ -182,8 +184,9 @@ const Shop = () => {
             <p className="mt-2 text-sm text-[#8b735e]">Try a different search or browse the full collection.</p>
           </div>
         )}
-      </PageContainer>
-    </main>
+        </PageContainer>
+      </main>
+    </>
   );
 };
 

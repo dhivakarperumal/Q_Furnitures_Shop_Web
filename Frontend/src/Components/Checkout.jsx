@@ -1,7 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft,
   Check,
   CheckCircle2,
   CreditCard,
@@ -22,6 +21,7 @@ import api from "../api";
 import { AuthContext } from "../PrivateRouter/AuthContext";
 import { StoreContext } from "../PrivateRouter/StoreContext";
 import PageContainer from "./CommenComponents/PageContainer";
+import PageHeader from "./CommenComponents/PageHeader";
 
 const GST_RATE = 3;
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
@@ -330,54 +330,50 @@ const Checkout = () => {
 
   if (createdOrderId) {
     return (
-      <main className="min-h-[60vh] bg-gradient-to-br from-[#f7efe5] via-white to-[#fcfaf7] py-12 sm:py-16">
-        <PageContainer>
-          <section className="mx-auto max-w-xl rounded-2xl border border-[#e5d8ca] bg-white px-6 py-10 text-center shadow-sm sm:px-10">
-            <CheckCircle2 className="mx-auto text-[#278044]" size={54} />
-            <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-[#a06e46]">Order confirmed</p>
-            <h1 className="mt-2 text-3xl font-semibold text-[#351d0e]">Thank you for your order</h1>
-            <p className="mt-3 text-sm text-[#8b735e]">
-              Your order number is <strong className="text-[#351d0e]">{createdOrderId}</strong>.
-            </p>
-            <div className="mt-8 flex items-center justify-center gap-2 text-xs font-bold text-[#278044]">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#eaf5ed]"><Check size={15} /></span>
-              Payment and delivery details are securely processed
-            </div>
-            <Link to="/shop" className="mt-7 inline-flex rounded-lg bg-[#351d0e] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a34720]">
-              Continue shopping
-            </Link>
-          </section>
-        </PageContainer>
-      </main>
+      <>
+        <PageHeader title="Order placed" />
+        <main className="min-h-[60vh] bg-gradient-to-br from-[#f7efe5] via-white to-[#fcfaf7] py-12 sm:py-16">
+          <PageContainer>
+            <section className="mx-auto max-w-xl rounded-2xl border border-[#e5d8ca] bg-white px-6 py-10 text-center shadow-sm sm:px-10">
+              <CheckCircle2 className="mx-auto text-[#278044]" size={54} />
+              <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-[#a06e46]">Order confirmed</p>
+              <h1 className="mt-2 text-3xl font-semibold text-[#351d0e]">Thank you for your order</h1>
+              <p className="mt-3 text-sm text-[#8b735e]">
+                Your order number is <strong className="text-[#351d0e]">{createdOrderId}</strong>.
+              </p>
+              <div className="mt-8 flex items-center justify-center gap-2 text-xs font-bold text-[#278044]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#eaf5ed]"><Check size={15} /></span>
+                Payment and delivery details are securely processed
+              </div>
+              <Link to="/shop" className="mt-7 inline-flex rounded-lg bg-[#351d0e] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a34720]">
+                Continue shopping
+              </Link>
+            </section>
+          </PageContainer>
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="min-h-[60vh] bg-gradient-to-br from-[#f7efe5] via-white to-[#fcfaf7] py-5 sm:py-8">
-      <PageContainer>
-        {loadingCart ? (
-          <div className="mt-6 rounded-xl border border-[#e5d8ca] bg-white p-8 text-center text-sm text-[#8b735e]">Loading your cart...</div>
-        ) : cart.length === 0 ? (
-          <section className="mx-auto mt-8 max-w-xl rounded-2xl border border-dashed border-[#d9c4aa] bg-white px-5 py-14 text-center">
-            <h1 className="text-xl font-semibold text-[#351d0e]">Your cart is empty</h1>
-            <p className="mt-2 text-sm text-[#8b735e]">Add something beautiful before checking out.</p>
-            <Link to="/shop" className="mt-6 inline-flex rounded-lg bg-[#351d0e] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a34720]">
-              Browse furniture
-            </Link>
-          </section>
-        ) : (
-          <>
-            <header className="mb-5 overflow-hidden rounded-2xl border border-[#e5d8ca] bg-gradient-to-r from-[#f7efe5] via-white to-[#fcfaf7] p-4 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-5">
-              <div className="flex items-center gap-3">
-                <Link to="/shop" aria-label="Continue shopping" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f7efe5] text-[#a34720] transition hover:bg-[#efe1d1]">
-                  <ArrowLeft size={18} />
-                </Link>
-                <div>
-                  <h1 className="text-xl font-semibold text-[#351d0e] sm:text-2xl">Checkout</h1>
-                  <p className="text-xs text-[#8b735e] sm:text-sm">Complete your order securely</p>
-                </div>
-              </div>
-              <ol aria-label="Checkout progress" className="mt-5 flex items-center justify-between gap-1 sm:mt-0 sm:min-w-[390px] sm:gap-3">
+    <>
+      <PageHeader title="Checkout" />
+      <main className="min-h-[60vh] bg-gradient-to-br from-[#f7efe5] via-white to-[#fcfaf7] py-5 sm:py-8">
+        <PageContainer>
+          {loadingCart ? (
+            <div className="mt-6 rounded-xl border border-[#e5d8ca] bg-white p-8 text-center text-sm text-[#8b735e]">Loading your cart...</div>
+          ) : cart.length === 0 ? (
+            <section className="mx-auto mt-8 max-w-xl rounded-2xl border border-dashed border-[#d9c4aa] bg-white px-5 py-14 text-center">
+              <h1 className="text-xl font-semibold text-[#351d0e]">Your cart is empty</h1>
+              <p className="mt-2 text-sm text-[#8b735e]">Add something beautiful before checking out.</p>
+              <Link to="/shop" className="mt-6 inline-flex rounded-lg bg-[#351d0e] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a34720]">
+                Browse furniture
+              </Link>
+            </section>
+          ) : (
+            <>
+              <header className="mb-5 overflow-hidden rounded-2xl border border-[#e5d8ca] bg-gradient-to-r from-[#f7efe5] via-white to-[#fcfaf7] p-4 shadow-sm sm:px-6 sm:py-5">
+                <ol aria-label="Checkout progress" className="flex w-full items-center justify-between gap-1 sm:gap-3">
                 <li className="flex flex-col items-center gap-1 text-[11px] font-semibold text-[#278044] sm:text-xs">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#278044] shadow-sm ring-1 ring-[#e5d8ca]"><ShoppingBag size={15} /></span>
                   <span className="flex items-center gap-1">Cart <CheckCircle2 size={12} /></span>
@@ -397,8 +393,8 @@ const Checkout = () => {
                   <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e5d8ca] bg-white"><Check size={15} /></span>
                   Complete
                 </li>
-              </ol>
-            </header>
+                </ol>
+              </header>
 
             <form onSubmit={handleSubmit} className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
               <section className="overflow-hidden rounded-2xl border border-[#e5d8ca] bg-white shadow-sm">
@@ -615,10 +611,11 @@ const Checkout = () => {
                 </section>
               </aside>
             </form>
-          </>
-        )}
-      </PageContainer>
-    </main>
+            </>
+          )}
+        </PageContainer>
+      </main>
+    </>
   );
 };
 
