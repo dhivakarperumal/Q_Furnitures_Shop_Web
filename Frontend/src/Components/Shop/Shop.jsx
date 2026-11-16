@@ -258,7 +258,7 @@ const Shop = () => {
         </div>
 
         <div className={`grid gap-5 ${filterOpen ? "lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)]" : "grid-cols-1"}`}>
-          {filterOpen && <aside id="shop-filter-sidebar" className="h-fit rounded-xl border border-[#e9ded2] bg-white px-3.5 shadow-[0_3px_15px_rgba(53,29,14,0.04)]">
+          {filterOpen && <aside id="shop-filter-sidebar" className="h-fit rounded-xl border border-[#e9ded2] bg-white px-3.5 shadow-[0_3px_15px_rgba(53,29,14,0.04)] lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
             <div className="flex items-center justify-between py-3">
               <h2 className="flex items-center gap-2 text-sm font-bold text-[#281b12]">
                 <SlidersHorizontal size={17} /> Filters
@@ -392,7 +392,10 @@ const Shop = () => {
             </FilterSection>
           </aside>}
 
-          <section aria-label="Furniture products" className="min-w-0">
+          <section
+            aria-label="Furniture products"
+            className={`min-w-0 ${filterOpen ? "lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1" : ""}`}
+          >
             <form onSubmit={handleSearch} className="flex items-center gap-2 rounded-lg border border-[#dccfc1] bg-white p-1.5 shadow-sm">
               <Search size={18} className="ml-2 shrink-0 text-[#4c392a]" />
               <input
