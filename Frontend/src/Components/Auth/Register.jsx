@@ -1,12 +1,24 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Eye,
+  EyeOff,
+  Headphones,
+  LockKeyhole,
+  Mail,
+  Phone,
+  ShieldCheck,
+  Truck,
+  UserRound,
+} from "lucide-react";
 import { toast } from "react-hot-toast";
-import { Eye, EyeOff, Footprints } from "lucide-react";
 import api from "../../api";
+
+const inputClass =
+  "w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-11 pr-4 text-sm text-secondary-dark outline-none transition placeholder:text-stone-400 focus:border-primary focus:ring-4 focus:ring-orange-100";
 
 function Register() {
   const navigate = useNavigate();
-
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -14,17 +26,16 @@ function Register() {
     password: "",
     confirmPassword: "",
   });
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    setForm({ ...form, [event.target.name]: event.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (submitting) return;
     if (form.password !== form.confirmPassword) {
       return toast.error("Passwords do not match");
@@ -51,232 +62,227 @@ function Register() {
   };
 
   return (
-    <div className="h-screen w-full font-sans flex flex-col bg-[#faf9f8] relative overflow-hidden">
+    <main className="relative isolate grid min-h-dvh bg-white selection:bg-primary selection:text-white md:grid-cols-[0.9fr_0.6fr]">
+      <div className="absolute inset-0 -z-10 overflow-hidden md:hidden">
+        <img
+          src="/images/register.png"
+          alt=""
+          className="h-full w-full object-cover object-[35%_center]"
+        />
+        <div className="absolute inset-0 bg-white/70" />
+      </div>
 
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pink-100/40 rounded-full blur-[100px] pointer-events-none z-0" />
-      <div className="absolute bottom-0 right-[20%] w-[350px] h-[350px] bg-yellow-100/30 rounded-full blur-[80px] pointer-events-none z-0" />
-
-      <svg width="0" height="0" className="absolute">
-        <defs>
-          <clipPath id="sCurveReg" clipPathUnits="objectBoundingBox">
-            <path d="M 0 0 L 0.78 0 Q 1.15 0.5, 0.78 1 L 0 1 Z" />
-          </clipPath>
-        </defs>
-      </svg>
-
-      {/* MAIN CONTENT ROW: Image + Form */}
-      <div className="flex flex-1 overflow-hidden">
-
-      {/* LEFT: Sticky Image */}
-      <div className="hidden lg:block lg:w-5/12 flex-shrink-0 relative h-full">
-        <div className="absolute inset-0 w-[103%] h-full bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-800 z-10" style={{ clipPath: "url(#sCurveReg)" }} />
-        <div className="absolute inset-0 w-full h-full z-20" style={{ clipPath: "url(#sCurveReg)" }}>
-          <img src="/images/loginbanner.png" alt="Q Furnitures" className="w-full h-full object-cover object-center" />
-          <div className="absolute inset-0 bg-gradient-to-t from-primary/85 via-black/20 to-transparent" />
-          <div className="absolute bottom-10 left-0 right-[15%] px-10 py-8 z-30">
-            <svg className="w-7 h-7 text-yellow-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-            </svg>
-            <h2 className="text-2xl font-serif text-white leading-snug mb-5 tracking-wide">Step Into Style<br />Every Day</h2>
-            <div className="flex items-center gap-3">
-              <div className="h-px w-8 bg-yellow-500/70" />
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-yellow-400">
-                <path d="M12 22C12 22 19 18 19 12C19 9 17 6.5 14.5 5.5C13.5 5.1 12.5 5 12 5C11.5 5 10.5 5.1 9.5 5.5C7 6.5 5 9 5 12C5 18 12 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <div className="h-px w-8 bg-yellow-500/70" />
+      <section
+        aria-label="Q Furnitures"
+        className="relative hidden min-h-dvh overflow-hidden md:block"
+        style={{ width: "calc(100% + 80px)" }}
+      >
+        <img
+          src="/images/register.png"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-left"
+        />
+        <div
+          className="absolute inset-0"
+          style={{ backdropFilter: "blur(1px)", backgroundColor: "rgba(0, 0, 0, 0.06)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-secondary-dark/65 via-transparent to-primary/10" />
+        <div
+          className="relative flex min-h-dvh flex-col p-6 xl:p-10"
+          style={{ width: "calc(100% - 80px)" }}
+        >
+          <div className="ml-15 mt-25 flex flex-1 flex-col items-start justify-center px-2 text-left">
+            <p className="mb-10 rounded-full border border-orange-200/80 bg-orange-600/90 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-lg">
+              Furniture for everyday living
+            </p>
+            <h2 className="text-3xl font-black tracking-tight text-white drop-shadow-lg xl:text-4xl">
+              Comfort for <span className="text-[#fff0b3]">Every Room</span>
+            </h2>
+            <p className="mt-3 mb-8 max-w-md text-sm font-medium leading-6 text-white drop-shadow-md">
+              Find inspiring furniture for living, dining, and restful spaces, bringing comfort and
+              style into everyday life.
+            </p>
+            <div className="mt-2 flex flex-wrap justify-start gap-2 text-xs font-semibold text-white">
+              <span className="rounded-full border border-orange-100 bg-orange-100 px-3 py-1.5 text-orange-900 shadow-md">Living room</span>
+              <span className="rounded-full border border-orange-100 bg-orange-100 px-3 py-1.5 text-orange-900 shadow-md">Dining</span>
+              <span className="rounded-full border border-orange-100 bg-orange-100 px-3 py-1.5 text-orange-900 shadow-md">Bedroom</span>
+            </div>
+          </div>
+          <div className="pt-8 text-center">
+            <h2 className="text-3xl font-black tracking-tight text-white xl:text-4xl">
+              Join Q Furnitures
+            </h2>
+            <div className="mt-6 grid grid-cols-3 gap-2">
+              <div className="flex flex-col items-center gap-2 text-center text-white">
+                <Truck size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">Fast Delivery</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-white">
+                <ShieldCheck size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">Safe &amp; Secure</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-white">
+                <Headphones size={26} strokeWidth={1.8} aria-hidden="true" />
+                <span className="text-xs font-semibold sm:text-sm">Dedicated Support</span>
+              </div>
             </div>
           </div>
         </div>
+      </section>
+
+      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-white/65 px-4 py-8 sm:px-8 md:bg-transparent md:px-2">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 hidden bg-white md:block"
+          style={{ borderTopLeftRadius: "80px", borderBottomLeftRadius: "80px" }}
+        />
+        <section className="relative z-10 w-full min-w-0 max-w-sm rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-6 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+          <header className="mb-5 text-center">
+            <h1 className="text-3xl font-black tracking-tight text-secondary-dark sm:text-4xl">
+              Create an <span className="text-primary">Account</span>
+            </h1>
+            <p className="mt-2 text-sm text-stone-600 sm:text-base">
+              Register now to explore our furniture collection, place orders and track them easily.
+            </p>
+          </header>
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <label htmlFor="register-username" className="mb-1.5 block text-sm font-semibold text-secondary-dark">
+                Full name
+              </label>
+              <div className="relative">
+                <UserRound className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={19} aria-hidden="true" />
+                <input
+                  id="register-username"
+                  name="username"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Full Name"
+                  value={form.username}
+                  onChange={handleChange}
+                  className={inputClass}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="register-email" className="mb-1.5 block text-sm font-semibold text-secondary-dark">
+                Email address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={19} aria-hidden="true" />
+                <input
+                  id="register-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Email Address"
+                  value={form.email}
+                  onChange={handleChange}
+                  className={inputClass}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="register-phone" className="mb-1.5 block text-sm font-semibold text-secondary-dark">
+                Mobile number
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={19} aria-hidden="true" />
+                <input
+                  id="register-phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="Mobile Number"
+                  value={form.phone}
+                  onChange={handleChange}
+                  className={inputClass}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="register-password" className="mb-1.5 block text-sm font-semibold text-secondary-dark">
+                Password
+              </label>
+              <div className="relative">
+                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={19} aria-hidden="true" />
+                <input
+                  id="register-password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="Password"
+                  value={form.password}
+                  onChange={handleChange}
+                  className={`${inputClass} pr-12`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 transition hover:text-primary-dark"
+                >
+                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="register-confirm-password" className="mb-1.5 block text-sm font-semibold text-secondary-dark">
+                Confirm password
+              </label>
+              <div className="relative">
+                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={19} aria-hidden="true" />
+                <input
+                  id="register-confirm-password"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="Confirm Password"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  className={`${inputClass} pr-12`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((visible) => !visible)}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 transition hover:text-primary-dark"
+                >
+                  {showConfirmPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <UserRound size={17} aria-hidden="true" />
+              {submitting ? "Creating account..." : "Register"}
+            </button>
+
+            <p className="pt-1 text-center text-sm text-stone-600">
+              Already have an account?{" "}
+              <Link to="/login" className="font-bold text-primary-dark transition hover:underline">
+                Login
+              </Link>
+            </p>
+          </form>
+        </section>
       </div>
-
-      {/* RIGHT: Scrollable Form */}
-      <div className="flex-1 flex flex-col justify-center items-center px-4 py-2 sm:px-8 lg:px-12 z-10 relative overflow-hidden">
-        <div className="w-full max-w-[460px]">
-
-          <div className="text-center mb-2"><div className="flex justify-center mb-1.5 relative">
-              <div className="absolute inset-0 bg-yellow-400/20 blur-xl rounded-full scale-150" />
-              <Footprints size={44} strokeWidth={1.4} className="text-yellow-600 relative z-10" aria-hidden="true" />
-            </div>
-            
-            <p className="text-[11px] text-yellow-700 font-bold tracking-[0.2em] uppercase">Find your next favorite pair</p>
-          </div>
-
-          <div className="px-0">
-            <div className="text-center mb-3"><h2 className="text-xl font-serif text-primary mb-1">Create Your Account</h2>
-              <p className="text-gray-400 text-sm">Join us for shoes, bags, and accessories made for every day.</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-2.5">
-
-              <div className="group space-y-1">
-                <label htmlFor="register-username" className="block text-xs font-semibold text-gray-600">Full Name</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <input id="register-username" name="username" type="text" placeholder="Full Name" onChange={handleChange} className="w-full pl-11 pr-4 py-4 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-all placeholder:text-gray-400" required />
-                </div>
-              </div>
-
-              <div className="group space-y-1">
-                <label htmlFor="register-email" className="block text-xs font-semibold text-gray-600">Email Address</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <input id="register-email" name="email" type="email" placeholder="Email Address" onChange={handleChange} className="w-full pl-11 pr-4 py-4 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-all placeholder:text-gray-400" required />
-                </div>
-              </div>
-
-              <div className="group space-y-1">
-                <label htmlFor="register-phone" className="block text-xs font-semibold text-gray-600">Mobile Number</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                  </div>
-                  <input id="register-phone" name="phone" type="text" placeholder="Mobile Number" onChange={handleChange} className="w-full pl-11 pr-4 py-4 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-all placeholder:text-gray-400" required />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="group space-y-1">
-                <label htmlFor="register-password" className="block text-xs font-semibold text-gray-600">Password</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <input id="register-password" type={showPassword ? "text" : "password"} name="password" placeholder="Password" onChange={handleChange} className="w-full pl-11 pr-12 py-4 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-all placeholder:text-gray-400" required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors">
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="group space-y-1">
-                <label htmlFor="register-confirm-password" className="block text-xs font-semibold text-gray-600">Confirm Password</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <input id="register-confirm-password" type={showConfirmPassword ? "text" : "password"} name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} className="w-full pl-11 pr-12 py-4 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-all placeholder:text-gray-400" required />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors">
-                    {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </div>
-              </div>
-              </div>
-
-             
-
-              <button type="submit" disabled={submitting} className="w-full py-4 mt-2 rounded-xl text-white font-semibold text-sm tracking-wide bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 relative overflow-hidden group cursor-pointer disabled:cursor-not-allowed disabled:opacity-60">
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  {submitting ? "Creating Account..." : "Create Account"}
-                </span>
-                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              </button>
-
-              <div className="flex items-center gap-3 py-0">
-                <div className="flex-1 h-px bg-gray-100" />
-                <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-widest">OR</span>
-                <div className="flex-1 h-px bg-gray-100" />
-              </div>
-
-         
-
-              <p className="text-center text-xs text-gray-400 pt-1">
-                Already have an account?{" "}
-                <Link to="/login" className="text-primary font-bold hover:underline">Login</Link>
-              </p>
-
-            </form>
-          </div>
-        </div>
-      </div>
-      </div>{/* end MAIN CONTENT ROW */}
-
-     
-      <div className="w-full bg-primary border-t border-primary-light/30 shadow-[0_-4px_20px_rgba(0,0,0,0.2)] z-30 flex-shrink-0">
-        <div className="max-w-[1400px] mx-auto px-6 py-4 flex items-center justify-evenly gap-4">
-
-          {/* Premium Quality */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full border border-yellow-500/50 bg-white/5">
-              <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-white leading-tight tracking-wide">Premium Quality</p>
-              <p className="text-[10px] text-gray-300 leading-tight mt-0.5">Finest fabrics crafted with care</p>
-            </div>
-          </div>
-
-          <div className="w-px h-8 bg-white/10 hidden sm:block" />
-
-          {/* Free Shipping */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full border border-yellow-500/50 bg-white/5">
-              <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-white leading-tight tracking-wide">Free Shipping</p>
-              <p className="text-[10px] text-gray-300 leading-tight mt-0.5">On orders above Ã¢â€šÂ¹999</p>
-            </div>
-          </div>
-
-          <div className="w-px h-8 bg-white/10 hidden sm:block" />
-
-          {/* Secure Payment */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full border border-yellow-500/50 bg-white/5">
-              <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-white leading-tight tracking-wide">Secure Payment</p>
-              <p className="text-[10px] text-gray-300 leading-tight mt-0.5">100% safe & trusted</p>
-            </div>
-          </div>
-
-          <div className="w-px h-8 bg-white/10 hidden sm:block" />
-
-          {/* Easy Returns */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full border border-yellow-500/50 bg-white/5">
-              <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-white leading-tight tracking-wide">Easy Returns</p>
-              <p className="text-[10px] text-gray-300 leading-tight mt-0.5">Hassle-free returns</p>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
+    </main>
   );
 }
 
 export default Register;
-
-
