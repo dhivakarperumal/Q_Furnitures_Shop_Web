@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Armchair, ArrowUpRight } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Armchair, ArrowLeft, ArrowRight } from "lucide-react";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
 import { resolveMediaUrl } from "../../utils/media";
@@ -20,6 +20,7 @@ const HomeCategories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const sliderRef = useRef(null);
 
   const requestCategories = useCallback(async () => {
     const response = await api.get("/categories");
@@ -65,24 +66,47 @@ const HomeCategories = () => {
       .finally(() => setLoading(false));
   };
 
+  const scrollCategories = (direction) => {
+    if (!sliderRef.current) return;
+    sliderRef.current.scrollBy({
+      left: direction * sliderRef.current.clientWidth * 0.8,
+      behavior: "smooth",
+    });
+  };
+
   return (
-    <section className="bg-white py-14 sm:py-16">
+    <section className="bg-white py-10 sm:py-14">
       <PageContainer>
-        <div className="mb-7">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a06e46]">Find your style</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#351d0e] sm:text-4xl">Shop by category</h2>
-          <p className="mt-2 text-sm text-[#8b735e] sm:text-base">Explore furniture for every room and moment.</p>
+        <div className="mb-5 flex items-center justify-between gap-4 sm:mb-7">
+          <h2 className="text-xl font-bold tracking-tight text-[#351d0e] sm:text-2xl">
+            Shop by <span className="text-[#e87424]">Category</span>
+          </h2>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scrollCategories(-1)}
+              aria-label="Scroll to previous categories"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#eee4d8] bg-white text-[#634d3b] transition hover:border-[#351d0e] hover:bg-[#351d0e] hover:text-white"
+            >
+              <ArrowLeft size={17} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollCategories(1)}
+              aria-label="Scroll to more categories"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#eee4d8] bg-white text-[#634d3b] transition hover:border-[#351d0e] hover:bg-[#351d0e] hover:text-white"
+            >
+              <ArrowRight size={17} />
+            </button>
+          </div>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="flex gap-3 overflow-hidden sm:gap-4">
             {Array.from({ length: 4 }, (_, index) => (
-              <div key={index} className="overflow-hidden rounded-2xl border border-[#eee4d8] bg-white">
-                <div className="aspect-[4/3] animate-pulse bg-[#f1e9df]" />
-                <div className="space-y-2 p-4">
-                  <div className="h-4 w-2/3 animate-pulse rounded bg-[#f1e9df]" />
-                  <div className="h-3 w-1/3 animate-pulse rounded bg-[#f1e9df]" />
-                </div>
+              <div key={index} className="w-28 shrink-0 sm:w-32">
+                <div className="aspect-square animate-pulse rounded-2xl bg-[#f1e9df]" />
+                <div className="mx-auto mt-3 h-3 w-2/3 animate-pulse rounded bg-[#f1e9df]" />
               </div>
             ))}
           </div>
@@ -98,17 +122,20 @@ const HomeCategories = () => {
             </button>
           </div>
         ) : categories.length ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
+          <div
+            ref={sliderRef}
+            className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 sm:gap-4"
+            aria-label="Furniture categories"
+          >
             {categories.map((category) => {
               const image = getCategoryImage(category.images);
-              const subcategoryCount = Array.isArray(category.subcategory) ? category.subcategory.length : 0;
 
               return (
                 <article
                   key={category.catId || category.id || category.name}
-                  className="group overflow-hidden rounded-2xl border border-[#eee4d8] bg-[#fcfaf7] transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(53,29,14,0.1)]"
+                  className="group w-28 shrink-0 snap-start sm:w-32 lg:w-36"
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[#f3e7d8] to-[#dfc6ad]">
+                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-[#f6eee5] to-[#eee1d3]">
                     {image ? (
                       <img
                         src={image}
@@ -117,21 +144,14 @@ const HomeCategories = () => {
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="flex h-full flex-col items-center justify-center gap-2 text-[#a38365]">
-                        <Armchair size={42} strokeWidth={1.2} />
-                        <span className="text-xs font-medium uppercase tracking-[0.16em]">Q Living</span>
+                      <div className="flex h-full items-center justify-center text-[#a38365]">
+                        <Armchair size={46} strokeWidth={1.2} />
                       </div>
                     )}
-                    <span className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#634d3b] transition group-hover:bg-[#351d0e] group-hover:text-white">
-                      <ArrowUpRight size={17} />
-                    </span>
                   </div>
-                  <div className="p-3.5 sm:p-4">
-                    <h3 className="line-clamp-1 text-sm font-semibold text-[#351d0e] sm:text-base">{category.name}</h3>
-                    <p className="mt-1 text-xs text-[#8b735e]">
-                      {subcategoryCount} {subcategoryCount === 1 ? "style" : "styles"}
-                    </p>
-                  </div>
+                  <h3 className="mt-2 line-clamp-1 text-center text-xs font-semibold text-[#351d0e] sm:text-sm">
+                    {category.name}
+                  </h3>
                 </article>
               );
             })}
