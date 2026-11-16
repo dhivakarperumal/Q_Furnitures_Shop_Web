@@ -9,31 +9,50 @@ const Home = () => {
   const [error, setError] = useState("");
   const sliderRef = useRef(null);
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      const response = await api.get("/products", {
-        params: { page: 1, limit: 10, search: "", status: "All" },
-      });
-      if (!Array.isArray(response.data?.products)) {
-        throw new Error("The products response did not contain a product list.");
-      }
-      setProducts(response.data.products.filter((product) => product.status === "Active"));
-      setError("");
-    } catch (requestError) {
-      console.error("Home products request failed:", requestError);
-      setError(requestError.response?.data?.message || requestError.message || "Could not load products.");
-    } finally {
-      setLoading(false);
+  const requestProducts = useCallback(async () => {
+    const response = await api.get("/products", {
+      params: { page: 1, limit: 10, search: "", status: "All" },
+    });
+    if (!Array.isArray(response.data?.products)) {
+      throw new Error("The products response did not contain a product list.");
     }
+    return response.data.products.filter((product) => product.status === "Active");
   }, []);
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    let active = true;
+    requestProducts()
+      .then((items) => {
+        if (active) {
+          setProducts(items);
+          setError("");
+        }
+      })
+      .catch((requestError) => {
+        if (active) {
+          console.error("Home products request failed:", requestError);
+          setError(requestError.response?.data?.message || requestError.message || "Could not load products.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [requestProducts]);
 
   const retryProducts = () => {
     setLoading(true);
-    fetchProducts();
+    setError("");
+    requestProducts()
+      .then(setProducts)
+      .catch((requestError) => {
+        console.error("Home products request failed:", requestError);
+        setError(requestError.response?.data?.message || requestError.message || "Could not load products.");
+      })
+      .finally(() => setLoading(false));
   };
 
   const scrollProducts = (direction) => {
