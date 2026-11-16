@@ -40,6 +40,20 @@ test("lists only published hero banners for the public home page", async () => {
   assert.match(query, /WHERE is_published = 1 AND target_section = 'hero'/);
 });
 
+test("lists only published offer banners for the public home page", async () => {
+  const banners = [{ id: 8, target_section: "offers", is_published: 1 }];
+  let query;
+  const service = createBannerService({
+    async execute(sql) {
+      query = sql;
+      return [banners];
+    },
+  });
+
+  assert.deepEqual(await service.listPublishedOffers(), banners);
+  assert.match(query, /WHERE is_published = 1 AND target_section = 'offers'/);
+});
+
 test("stores multiple destination buttons and mirrors the first legacy link", async () => {
   const destinationLinks = [
     { label: "Shop now", url: "/shop" },

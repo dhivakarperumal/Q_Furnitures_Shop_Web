@@ -201,6 +201,14 @@ function createPublicBannerRouter(bannerService) {
     }
   });
 
+  router.get("/offers", async (request, response, next) => {
+    try {
+      return response.json({ banners: await bannerService.listPublishedOffers() });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   return router;
 }
 
