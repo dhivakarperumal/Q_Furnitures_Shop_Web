@@ -91,7 +91,7 @@ app.use("/api/favorites", createFavoriteRouter(favoriteController));
 app.use("/api/cart", createCartRouter(cartController));
 app.use("/api/coupons", createCouponRouter(couponService));
 app.use("/api/offers", createOfferRouter(offerService));
-app.use("/api/orders", createOrderRouter(orderService));
+app.use("/api/orders", createOrderRouter(orderService, cartService));
 app.use("/api/dashboard", createDashboardRouter(dashboardService));
 app.use("/api/banners", createBannerRouter(bannerService));
 app.use("/api/admin/banners", createBannerRouter(bannerService));

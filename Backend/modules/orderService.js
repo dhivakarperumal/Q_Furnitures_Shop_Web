@@ -38,6 +38,15 @@ function readAmount(value, field, { fallback = 0, max = 9999999999.99 } = {}) {
   return roundCurrency(amount);
 }
 
+function readDateTime(value, field) {
+  if (value == null || value === "") return null;
+  if (typeof value !== "string") throw requestError(400, `${field} must be a valid date.`);
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw requestError(400, `${field} must be a valid date.`);
+  return date.toISOString().slice(0, 19).replace("T", " ");
+}
+
 function calculateOrderAmounts(subtotal, discountType, discountValue, gstRate) {
   const discountAmount = discountType === "percentage"
     ? roundCurrency(subtotal * discountValue / 100)
@@ -477,6 +486,49 @@ function createOrderService(pool) {
         normalizedStatus ? [normalizedStatus] : [],
       );
       return hydrateOrders(rows);
+    },
+
+    async updateStatus(id, body) {
+      if (!body || typeof body !== "object" || Array.isArray(body)) {
+        throw requestError(400, "Order status data must be an object.");
+      }
+
+      const status = readText(body.status, "Order status", { required: true });
+      if (!ORDER_STATUSES.has(status)) {
+        throw requestError(400, "Order status is invalid.");
+      }
+
+      const assignments = ["status = ?"];
+      const values = [status];
+      if (status === "Shipping") {
+        assignments.push("tracking_number = ?", "courier_name = ?");
+        values.push(
+          readText(body.tracking_number, "Tracking number", { required: true }),
+          readText(body.courier_name, "Courier name", { required: true }),
+        );
+        if (body.shipped_at != null && body.shipped_at !== "") {
+          assignments.push("shipped_at = ?");
+          values.push(readDateTime(body.shipped_at, "Shipped date"));
+        }
+      } else if (status === "Cancelled") {
+        assignments.push("cancellation_reason = ?");
+        values.push(readText(body.cancellation_reason, "Cancellation reason", {
+          required: true,
+          max: 5000,
+        }));
+        if (body.cancelled_at != null && body.cancelled_at !== "") {
+          assignments.push("cancelled_at = ?");
+          values.push(readDateTime(body.cancelled_at, "Cancellation date"));
+        }
+      }
+
+      await pool.execute(
+        `UPDATE orders SET ${assignments.join(", ")} WHERE id = ?`,
+        [...values, id],
+      );
+      const order = await getById(id);
+      if (!order) throw requestError(404, "Order was not found.");
+      return order;
     },
 
     getById,

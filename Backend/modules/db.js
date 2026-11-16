@@ -120,7 +120,7 @@ async function migrateFavoriteDetails(pool) {
   const [columnRows] = await pool.execute(
     `SELECT COLUMN_NAME, IS_NULLABLE
      FROM INFORMATION_SCHEMA.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_favorites'`,
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'wishlist'`,
   );
   const existingColumns = new Set(columnRows.map((column) => column.COLUMN_NAME));
   const favoriteColumns = [
@@ -137,7 +137,7 @@ async function migrateFavoriteDetails(pool) {
   );
   for (const [column, definition] of favoriteColumns) {
     if (!existingColumns.has(column)) {
-      await pool.query(`ALTER TABLE user_favorites ADD COLUMN ${column} ${definition}`);
+      await pool.query(`ALTER TABLE \`wishlist\` ADD COLUMN ${column} ${definition}`);
       migrationNeeded = true;
     }
   }
@@ -157,7 +157,7 @@ async function migrateFavoriteDetails(pool) {
               p.updated_at AS product_updated_at,
               ps.available_stock, ps.reserved_stock, ps.damaged_stock, ps.minimum_stock,
               ps.stock_type, ps.deduction_rule
-       FROM user_favorites favorites
+       FROM \`wishlist\` favorites
        INNER JOIN products p ON p.id = favorites.product_id
        LEFT JOIN product_stock ps ON ps.product_id = p.id`,
     );
@@ -171,7 +171,7 @@ async function migrateFavoriteDetails(pool) {
       const columns = PRODUCT_SNAPSHOT_FIELDS.map(([column]) => column);
       const assignments = columns.map((column) => `${column} = ?`).join(", ");
       await pool.execute(
-        `UPDATE user_favorites
+        `UPDATE \`wishlist\`
          SET ${assignments}, created_by = COALESCE(created_by, user_id),
              updated_by = COALESCE(updated_by, user_id)
          WHERE user_id = ? AND product_id = ?`,
@@ -181,12 +181,12 @@ async function migrateFavoriteDetails(pool) {
   }
 
   if (hasLegacyDetails) {
-    await pool.query("ALTER TABLE user_favorites DROP COLUMN product_details");
+    await pool.query("ALTER TABLE `wishlist` DROP COLUMN product_details");
   }
   const productNameColumn = columnRows.find((column) => column.COLUMN_NAME === "product_name");
   if (!productNameColumn || productNameColumn.IS_NULLABLE === "YES") {
     await pool.query(
-      "ALTER TABLE user_favorites MODIFY COLUMN product_name VARCHAR(191) NOT NULL",
+      "ALTER TABLE `wishlist` MODIFY COLUMN product_name VARCHAR(191) NOT NULL",
     );
   }
 }
@@ -212,7 +212,7 @@ async function migratePrimaryImages(pool) {
       if (migratedFavorites.has(key)) continue;
       migratedFavorites.add(key);
       await pool.execute(
-        `UPDATE user_favorites
+        `UPDATE \`wishlist\`
          SET image = COALESCE(image, ?)
          WHERE user_id = ? AND product_id = ?`,
         [image.image_url, image.user_id, image.product_id],
@@ -231,7 +231,7 @@ async function migratePrimaryImages(pool) {
       if (migratedCartItems.has(image.cart_item_id)) continue;
       migratedCartItems.add(image.cart_item_id);
       await pool.execute(
-        `UPDATE user_cart_items
+        `UPDATE \`cart\`
          SET image = COALESCE(image, ?), cart_image = COALESCE(cart_image, ?)
          WHERE id = ?`,
         [image.image_url, image.image_url, image.cart_item_id],
@@ -514,8 +514,21 @@ async function initializeDatabase(pool) {
       KEY products_name_idx (name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [wishlistTableRows] = await pool.execute(
+    `SELECT TABLE_NAME
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('user_favorites', 'wishlist')`,
+  );
+  const wishlistTableNames = new Set(wishlistTableRows.map((table) => table.TABLE_NAME));
+  if (wishlistTableNames.has("wishlist") && wishlistTableNames.has("user_favorites")) {
+    throw new Error("Both wishlist and user_favorites tables exist; resolve the duplicate tables before starting the backend.");
+  }
+  if (wishlistTableNames.has("user_favorites")) {
+    await pool.query("RENAME TABLE user_favorites TO `wishlist`");
+  }
+
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_favorites (
+    CREATE TABLE IF NOT EXISTS \`wishlist\` (
       user_id VARCHAR(255) NOT NULL,
       product_id BIGINT UNSIGNED NOT NULL,
       ${PRODUCT_SNAPSHOT_FIELDS.map(([column, type]) => `${column} ${type} ${column === "product_name" ? "NOT NULL" : "NULL"}`).join(",\n      ")},
@@ -531,8 +544,21 @@ async function initializeDatabase(pool) {
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [cartTableRows] = await pool.execute(
+    `SELECT TABLE_NAME
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('user_cart_items', 'cart')`,
+  );
+  const cartTableNames = new Set(cartTableRows.map((table) => table.TABLE_NAME));
+  if (cartTableNames.has("cart") && cartTableNames.has("user_cart_items")) {
+    throw new Error("Both cart and user_cart_items tables exist; resolve the duplicate tables before starting the backend.");
+  }
+  if (cartTableNames.has("user_cart_items")) {
+    await pool.query("RENAME TABLE user_cart_items TO `cart`");
+  }
+
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS user_cart_items (
+    CREATE TABLE IF NOT EXISTS \`cart\` (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id VARCHAR(255) NOT NULL,
       product_id BIGINT UNSIGNED NOT NULL,
@@ -556,14 +582,14 @@ async function initializeDatabase(pool) {
   const [cartColumnRows] = await pool.execute(
     `SELECT COLUMN_NAME
      FROM INFORMATION_SCHEMA.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_cart_items'`,
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cart'`,
   );
   const cartColumns = new Set(cartColumnRows.map((column) => column.COLUMN_NAME));
   if (!cartColumns.has("cart_image")) {
-    await pool.query("ALTER TABLE user_cart_items ADD COLUMN cart_image VARCHAR(2048) NULL");
+    await pool.query("ALTER TABLE `cart` ADD COLUMN cart_image VARCHAR(2048) NULL");
   }
   if (!cartColumns.has("image")) {
-    await pool.query("ALTER TABLE user_cart_items ADD COLUMN image VARCHAR(2048) NULL");
+    await pool.query("ALTER TABLE `cart` ADD COLUMN image VARCHAR(2048) NULL");
   }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS coupons (

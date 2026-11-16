@@ -65,6 +65,54 @@ test("calculates GST before percentage or fixed discounts", () => {
   assert.throws(() => calculateOrderAmounts(220, "fixed", 221, 3), { status: 400 });
 });
 
+test("updates order status and stores validated shipping details", async () => {
+  const orderRow = { id: 21, status: "Order Placed", total_amount: "226.60" };
+  let updateQuery;
+  let updateValues;
+  const pool = {
+    async execute(query, values) {
+      if (query.startsWith("UPDATE orders SET")) {
+        updateQuery = query;
+        updateValues = values;
+        orderRow.status = values[0];
+        return [{ affectedRows: 1 }];
+      }
+      if (query.startsWith("SELECT * FROM orders")) return [[orderRow]];
+      if (query.includes("FROM `address`")) return [[]];
+      if (query.includes("FROM order_items")) return [[]];
+      throw new Error(`Unexpected SQL in test: ${query}`);
+    },
+  };
+
+  const order = await createOrderService(pool).updateStatus(21, {
+    status: "Shipping",
+    tracking_number: "AWB-21",
+    courier_name: "Q Express",
+    shipped_at: "2026-11-16T10:00:00.000Z",
+  });
+
+  assert.match(updateQuery, /status = \?, tracking_number = \?, courier_name = \?, shipped_at = \?/);
+  assert.deepEqual(updateValues, ["Shipping", "AWB-21", "Q Express", "2026-11-16 10:00:00", 21]);
+  assert.equal(order.status, "Shipping");
+});
+
+test("rejects invalid order status details", async () => {
+  const service = createOrderService({ async execute() { assert.fail("Invalid updates must not reach the database."); } });
+
+  await assert.rejects(
+    service.updateStatus(21, { status: "Shipping", tracking_number: "AWB-21" }),
+    { status: 400, message: "Courier name is required." },
+  );
+  await assert.rejects(
+    service.updateStatus(21, { status: "Cancelled" }),
+    { status: 400, message: "Cancellation reason is required." },
+  );
+  await assert.rejects(
+    service.updateStatus(21, { status: "Unknown" }),
+    { status: 400, message: "Order status is invalid." },
+  );
+});
+
 test("creates an order, derives price, and decrements product and variant stock transactionally", async () => {
   const product = {
     id: 7,

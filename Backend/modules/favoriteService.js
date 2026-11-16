@@ -45,7 +45,7 @@ function createFavoriteService(pool) {
     async listByUser(userId) {
       const [favorites] = await pool.execute(
         `SELECT favorites.*
-         FROM user_favorites favorites
+         FROM \`wishlist\` favorites
          INNER JOIN products p ON p.id = favorites.product_id
          WHERE favorites.user_id = ? AND p.status = 'Active'
          ORDER BY favorites.created_at DESC, favorites.product_id DESC`,
@@ -90,7 +90,7 @@ function createFavoriteService(pool) {
       ];
 
       await pool.execute(
-        `INSERT INTO user_favorites (${insertColumns.join(", ")})
+        `INSERT INTO \`wishlist\` (${insertColumns.join(", ")})
          VALUES (${insertColumns.map(() => "?").join(", ")})
          ON DUPLICATE KEY UPDATE ${updates.join(", ")}`,
         values,
@@ -100,7 +100,7 @@ function createFavoriteService(pool) {
 
     async remove(userId, productId) {
       const [result] = await pool.execute(
-        "DELETE FROM user_favorites WHERE user_id = ? AND product_id = ?",
+        "DELETE FROM `wishlist` WHERE user_id = ? AND product_id = ?",
         [userId, productId],
       );
       return result.affectedRows > 0;

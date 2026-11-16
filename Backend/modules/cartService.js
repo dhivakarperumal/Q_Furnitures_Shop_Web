@@ -153,7 +153,7 @@ function createCartService(pool) {
   return {
     async list(userId) {
       const [rows] = await pool.execute(
-        `SELECT * FROM user_cart_items
+        `SELECT * FROM \`cart\`
          WHERE user_id = ? ORDER BY created_at DESC, id DESC`,
         [userId],
       );
@@ -186,7 +186,7 @@ function createCartService(pool) {
         const price = getUnitPrice(storedProduct, selectedVariant);
 
         const [existingRows] = await connection.execute(
-          `SELECT id, quantity FROM user_cart_items
+          `SELECT id, quantity FROM \`cart\`
            WHERE user_id = ? AND product_id = ? AND variant_color = ? AND variant_size = ?
            LIMIT 1 FOR UPDATE`,
           [userId, productId, canonicalColor, canonicalSize],
@@ -208,7 +208,7 @@ function createCartService(pool) {
         if (existing) {
           const setFields = fields.map((field) => `${field} = ?`).join(", ");
           const [updateResult] = await connection.execute(
-            `UPDATE user_cart_items
+            `UPDATE \`cart\`
              SET ${setFields}, variant_color = ?, variant_size = ?, cart_image = ?,
                  price = ?, quantity = ?, total_price = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP
              WHERE id = ? AND user_id = ?`,
@@ -229,7 +229,7 @@ function createCartService(pool) {
             ...fieldValues, price, nextQuantity, Number((price * nextQuantity).toFixed(2)), userId, userId,
           ];
           const [insertResult] = await connection.execute(
-            `INSERT INTO user_cart_items (${columns.join(", ")})
+            `INSERT INTO \`cart\` (${columns.join(", ")})
              VALUES (${columns.map(() => "?").join(", ")})`,
             values,
           );
@@ -253,7 +253,7 @@ function createCartService(pool) {
       try {
         await connection.beginTransaction();
         const [initialCartRows] = await connection.execute(
-          `SELECT * FROM user_cart_items
+          `SELECT * FROM \`cart\`
            WHERE id = ? AND user_id = ? LIMIT 1`,
           [cartItemId, userId],
         );
@@ -262,7 +262,7 @@ function createCartService(pool) {
 
         const { product } = await getProductForUpdate(connection, initialCartItem.product_id);
         const [cartRows] = await connection.execute(
-          `SELECT * FROM user_cart_items
+          `SELECT * FROM \`cart\`
            WHERE id = ? AND user_id = ? LIMIT 1 FOR UPDATE`,
           [cartItemId, userId],
         );
@@ -279,7 +279,7 @@ function createCartService(pool) {
         }
         const totalPrice = Number((Number(cartItem.price) * quantity).toFixed(2));
         await connection.execute(
-          `UPDATE user_cart_items
+          `UPDATE \`cart\`
            SET quantity = ?, total_price = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP
            WHERE id = ? AND user_id = ?`,
           [quantity, totalPrice, userId, cartItemId, userId],
@@ -297,7 +297,7 @@ function createCartService(pool) {
     async remove(userId, cartItemIdValue) {
       const cartItemId = normalizePositiveInteger(cartItemIdValue, "Cart item ID", Number.MAX_SAFE_INTEGER);
       const [result] = await pool.execute(
-        "DELETE FROM user_cart_items WHERE id = ? AND user_id = ?",
+        "DELETE FROM `cart` WHERE id = ? AND user_id = ?",
         [cartItemId, userId],
       );
       return result.affectedRows > 0;
@@ -305,7 +305,7 @@ function createCartService(pool) {
 
     async clear(userId) {
       const [result] = await pool.execute(
-        "DELETE FROM user_cart_items WHERE user_id = ?",
+        "DELETE FROM `cart` WHERE user_id = ?",
         [userId],
       );
       return result.affectedRows;
