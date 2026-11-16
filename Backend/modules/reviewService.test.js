@@ -2,6 +2,22 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createReviewService } = require("./reviewService");
 
+test("lists only public review fields for the latest published reviews", async () => {
+  const reviews = [{ id: 3, user_name: "Sana", rating: 5, comment: "Great", product_name: "Desk" }];
+  let query;
+  const service = createReviewService({
+    async execute(sql) {
+      query = sql;
+      return [reviews];
+    },
+  });
+
+  assert.deepEqual(await service.listPublished(), reviews);
+  assert.match(query, /WHERE reviews\.status = 'Published'/);
+  assert.match(query, /LIMIT 6/);
+  assert.doesNotMatch(query, /user_email/);
+});
+
 test("lists filtered reviews with unfiltered summary statistics", async () => {
   const review = { id: 3, user_name: "Sana", product_name: "Desk" };
   const stats = { total_reviews: 5, average_rating: 4.2, pending_count: 2 };

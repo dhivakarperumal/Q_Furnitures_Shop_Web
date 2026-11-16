@@ -70,6 +70,14 @@ function normalizeReview(body) {
 function createReviewRouter(reviewService) {
   const router = express.Router();
 
+  router.get("/published", async (request, response, next) => {
+    try {
+      return response.json({ reviews: await reviewService.listPublished() });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   router.get("/admin/all", requireAuthentication, requireAdmin, async (request, response, next) => {
     try {
       const status = typeof request.query.status === "string" && request.query.status !== "All"
