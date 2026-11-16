@@ -1,47 +1,30 @@
-import React from "react";
 import { Link } from "react-router-dom";
-import defaultBg from "/assets/purpleph.jpg";
 
 const PageHeader = ({ title, background }) => {
 
-  const bgImage = background || defaultBg;
+  const bgImage = background || "/images/welcome.png";
 
   return (
     <div
-      className="relative w-full h-[180px] sm:h-[200px] md:h-[210px] lg:h-[220px] flex items-center justify-center text-white"
-      style={{
-        backgroundImage: `url(${bgImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        // backgroundRepeat: "no-repeat"
-      }}
+      className="relative flex h-[180px] w-full items-center justify-start overflow-hidden bg-black px-5 text-left text-white sm:h-[200px] sm:px-8 md:h-[210px] lg:h-[220px]"
     >
-      {/* Overlay */}
-      <div className="absolute inset-0"></div>
-
-      {/* Content */}
-      <div className="relative text-center px-4">
-
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-3">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 scale-105 bg-cover bg-center blur-[1px]"
+        style={{ backgroundImage: `url(${bgImage})` }}
+      />
+      <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
+      <div className="relative">
+        <h1 className="mb-2 text-2xl font-bold sm:text-3xl md:mb-3 md:text-4xl lg:text-5xl">
           {title}
         </h1>
-
-        {/* Breadcrumb */}
-        <div className="text-xs sm:text-sm md:text-base flex justify-center items-center gap-2">
-
-          <Link
-            to="/"
-            className=" hover:text-white/80 transition"
-          >
+        <div className="flex items-center justify-start gap-2 text-xs sm:text-sm md:text-base">
+          <Link to="/" className="transition hover:text-white/80">
             Home
           </Link>
-
           <span>/</span>
-
           <span className="text-gray-200">{title}</span>
-
         </div>
-
       </div>
     </div>
   );
