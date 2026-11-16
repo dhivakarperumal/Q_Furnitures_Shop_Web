@@ -155,7 +155,7 @@ const Hero = () => {
               key={banner.id}
               src={desktopImage}
               alt=""
-              className="absolute inset-0 h-full w-full object-cover object-[62%_center] md:object-center"
+              className="absolute inset-0 h-full w-full object-cover object-top"
               onError={() => {
                 if (!imageFailed) {
                   console.error("Could not load hero banner image:", banner.desktop_image);
@@ -165,7 +165,7 @@ const Hero = () => {
             />
           </picture>
         )}
-        <div className="relative flex min-h-[460px] items-start pt-10 pb-16 sm:min-h-[520px] sm:pt-14 md:pb-20 lg:min-h-[580px]">
+        <div className="relative flex min-h-[460px] items-center py-14 sm:min-h-[520px] md:py-16 lg:min-h-[580px]">
           <PageContainer>
             {loading ? (
               <p role="status" className="text-sm font-semibold text-secondary-dark/75">Loading featured furniture...</p>
