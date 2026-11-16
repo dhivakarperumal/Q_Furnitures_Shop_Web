@@ -596,6 +596,7 @@ async function initializeDatabase(pool) {
       product_id BIGINT UNSIGNED NOT NULL,
       variant_color VARCHAR(100) NOT NULL DEFAULT '',
       variant_size VARCHAR(100) NOT NULL DEFAULT '',
+      cart_image VARCHAR(2048) NULL,
       ${PRODUCT_SNAPSHOT_FIELDS.map(([column, type]) => `${column} ${type} ${column === "product_name" ? "NOT NULL" : "NULL"}`).join(",\n      ")},
       price DECIMAL(12,2) NOT NULL,
       quantity INT UNSIGNED NOT NULL,
@@ -610,6 +611,15 @@ async function initializeDatabase(pool) {
       CONSTRAINT user_cart_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [cartColumnRows] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_cart_items'`,
+  );
+  const cartColumns = new Set(cartColumnRows.map((column) => column.COLUMN_NAME));
+  if (!cartColumns.has("cart_image")) {
+    await pool.query("ALTER TABLE user_cart_items ADD COLUMN cart_image VARCHAR(2048) NULL");
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS user_cart_images (
       cart_item_id BIGINT UNSIGNED NOT NULL,
