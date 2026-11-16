@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowLeft,
   ArrowRight,
   Award,
   CreditCard,
@@ -116,10 +117,10 @@ const Hero = () => {
   const headingLead = headingWords.join(" ");
   const imageFailed = banner && failedImageId === banner.id;
   const desktopImage = imageFailed
-    ? "/images/welcome.png"
+    ? ""
     : resolveMediaUrl(banner?.desktop_image || "");
   const mobileImage = imageFailed
-    ? desktopImage
+    ? ""
     : resolveMediaUrl(banner?.mobile_image || banner?.desktop_image || "");
 
   const renderLink = (link, index) => {
@@ -151,7 +152,7 @@ const Hero = () => {
           if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false);
         }}
       >
-        {banner && (
+        {banner && !imageFailed && (
           <picture>
             {banner.mobile_image && <source media="(max-width: 640px)" srcSet={mobileImage} />}
             <img
@@ -171,7 +172,7 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-secondary-dark/75 via-secondary-dark/40 to-secondary-dark/5" />
         <div className="absolute inset-0 bg-gradient-to-t from-secondary-dark/15 via-transparent to-black/5" />
 
-        <div className="relative flex min-h-[490px] items-center py-16 md:min-h-[540px]">
+        <div className="relative flex min-h-[360px] items-center py-12 md:min-h-[420px] md:py-16">
           <PageContainer>
             {loading ? (
               <p role="status" className="text-sm font-semibold text-white/80">Loading featured furniture...</p>
@@ -222,6 +223,27 @@ const Hero = () => {
             )}
           </PageContainer>
         </div>
+
+        {!loading && !loadError && banners.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setCurrentIndex((index) => (index - 1 + banners.length) % banners.length)}
+              aria-label="Show previous hero banner"
+              className="absolute left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-black/70 sm:left-6"
+            >
+              <ArrowLeft size={19} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentIndex((index) => (index + 1) % banners.length)}
+              aria-label="Show next hero banner"
+              className="absolute right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-black/70 sm:right-6"
+            >
+              <ArrowRight size={19} />
+            </button>
+          </>
+        )}
 
         {!loading && !loadError && banners.length > 1 && (
           <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2">
