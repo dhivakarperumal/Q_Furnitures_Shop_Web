@@ -1,7 +1,13 @@
 import axios from "axios";
 
+const configuredBaseURL = import.meta.env.VITE_API_URL?.trim();
+const isLocalBaseURL = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(configuredBaseURL || "");
+const baseURL = import.meta.env.PROD && isLocalBaseURL
+  ? "/api"
+  : configuredBaseURL || (import.meta.env.DEV ? "http://localhost:5000/api" : "/api");
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+  baseURL,
 });
 
 api.interceptors.request.use((config) => {

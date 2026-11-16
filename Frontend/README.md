@@ -1,5 +1,11 @@
 # React + Vite
 
+## API configuration
+
+The frontend uses the shared Axios client in `src/api.js`. In production, its default API base is `/api`, so configure the hosting server or reverse proxy to forward `/api` requests to the backend. If the backend is hosted on a different origin, set `VITE_API_URL` to the backend API base URL (including `/api`) in the frontend build environment.
+
+For local development, the default API base is `http://localhost:5000/api`.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
