@@ -62,7 +62,7 @@ function Register() {
   };
 
   return (
-    <main className="relative isolate grid min-h-dvh bg-white selection:bg-primary selection:text-white md:grid-cols-[0.8fr_1fr]">
+    <main className="relative isolate grid min-h-dvh bg-white selection:bg-primary selection:text-white md:grid-cols-[0.9fr_0.6fr]">
       <div className="absolute inset-0 -z-10 overflow-hidden md:hidden">
         <img
           src="/images/register.png"
@@ -88,16 +88,6 @@ function Register() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-secondary-dark/65 via-transparent to-primary/10" />
         <div className="relative flex min-h-dvh flex-col justify-between p-6 xl:p-10">
-          <Link to="/" className="inline-flex items-center gap-3 text-secondary-dark">
-            <span className="text-5xl font-black leading-none text-primary">Q</span>
-            <span>
-              <span className="block text-3xl font-black leading-none tracking-tight">Furnitures</span>
-              <span className="mt-1 block text-sm font-semibold tracking-wide text-secondary-dark/80">
-                Furniture Store Management
-              </span>
-            </span>
-          </Link>
-
           <div className="mt-auto pt-12 text-center">
             <h2 className="text-3xl font-black tracking-tight text-white xl:text-4xl">
               Join Q Furnitures
@@ -120,13 +110,13 @@ function Register() {
         </div>
       </section>
 
-      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-white/65 px-4 py-8 sm:px-8 md:bg-transparent md:px-6">
+      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-white/65 px-4 py-8 sm:px-8 md:bg-transparent md:px-2">
         <div
           aria-hidden="true"
           className="absolute inset-0 hidden bg-white md:block"
           style={{ borderTopLeftRadius: "80px", borderBottomLeftRadius: "80px" }}
         />
-        <section className="relative z-10 w-full min-w-0 max-w-xl rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-6 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+        <section className="relative z-10 w-full min-w-0 max-w-sm rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-6 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
           <header className="mb-5 text-center">
             <h1 className="text-3xl font-black tracking-tight text-secondary-dark sm:text-4xl">
               Create an <span className="text-primary">Account</span>
