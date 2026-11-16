@@ -394,7 +394,7 @@ const Shop = () => {
 
           <section
             aria-label="Furniture products"
-            className={`min-w-0 ${filterOpen ? "lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1" : ""}`}
+            className="min-w-0"
           >
             <form onSubmit={handleSearch} className="flex items-center gap-2 rounded-lg border border-[#dccfc1] bg-white p-1.5 shadow-sm">
               <Search size={18} className="ml-2 shrink-0 text-[#4c392a]" />
@@ -478,7 +478,7 @@ const Shop = () => {
             )}
 
             {loading ? (
-              <div className={`mt-4 grid gap-3 ${productGridClass}`}>
+              <div className={`mt-4 grid gap-3 ${productGridClass} ${filterOpen ? "lg:max-h-[calc(100vh-26rem)] lg:min-h-[280px] lg:overflow-y-auto lg:overscroll-contain lg:p-1" : ""}`}>
                 {Array.from({ length: productsPerPage }, (_, index) => (
                   <div key={index} className="overflow-hidden rounded-xl border border-[#eee4d8] bg-white">
                     <div className="aspect-[4/3] animate-pulse bg-[#f1e9df]" />
@@ -498,7 +498,7 @@ const Shop = () => {
               </div>
             ) : products.length ? (
               <>
-                <div className={`mt-4 grid gap-3 ${productGridClass}`}>
+                <div className={`mt-4 grid gap-3 ${productGridClass} ${filterOpen ? "lg:max-h-[calc(100vh-26rem)] lg:min-h-[280px] lg:overflow-y-auto lg:overscroll-contain lg:p-1" : ""}`}>
                   {products.map((product) => <ProductCard key={product.id} product={product} compact />)}
                 </div>
 
