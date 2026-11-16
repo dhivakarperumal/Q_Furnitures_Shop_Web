@@ -177,8 +177,9 @@ const Dashboard = () => {
             data: revenueTrends.length > 0
                 ? revenueTrends.map(t => t.revenue)
                 : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            backgroundColor: '#D4AF37',
-            borderColor: '#B8941F',
+            backgroundColor: '#F07816',
+            borderColor: '#D9650B',
+            hoverBackgroundColor: '#D9650B',
             borderWidth: 1,
             borderRadius: 6,
             borderSkipped: false,
