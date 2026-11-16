@@ -55,32 +55,54 @@ function Login() {
   };
 
   return (
-    <main className="relative isolate flex min-h-dvh items-center overflow-hidden bg-[#faf5ef] px-4 py-4 selection:bg-primary selection:text-white sm:px-8 sm:py-5">
-      <img
-        src="/images/loginbg.png"
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover object-[left_center]"
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white/40 lg:to-[#faf5ef]/80" />
+    <main className="relative isolate grid min-h-dvh overflow-hidden bg-[#faf5ef] selection:bg-primary selection:text-white lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="absolute inset-0 -z-10 lg:hidden">
+        <img src="/images/loginbg.png" alt="" className="h-full w-full object-cover object-[35%_center]" />
+        <div className="absolute inset-0 bg-secondary-dark/20" />
+      </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1500px] items-center justify-center lg:justify-end lg:px-16">
-        <section className="w-full max-w-[430px] rounded-[28px] border border-white/80 bg-white/90 p-6 shadow-[0_24px_70px_rgba(53,29,14,0.18)] backdrop-blur-xl sm:p-9">
-          <div className="mb-7 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-primary-dark ring-8 ring-orange-50/60">
-              <LockKeyhole size={28} strokeWidth={1.8} aria-hidden="true" />
+      <section aria-label="Q Living Furniture" className="relative hidden min-h-dvh overflow-hidden lg:block">
+        <img src="/images/loginbg.png" alt="" className="absolute inset-0 h-full w-full object-cover object-left" />
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-secondary-dark/10" />
+        <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#faf5ef]/45 to-transparent" />
+        <div className="relative flex min-h-dvh items-start p-12 xl:p-16">
+          <div className="max-w-xl pl-14 pt-6 sm:pl-16 xl:pl-20 xl:pt-10">
+            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/75 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-secondary-dark shadow-sm backdrop-blur">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Q Living Furniture
+            </p>
+            <h2 className="max-w-lg text-4xl font-black leading-[1.12] tracking-tight text-secondary-dark xl:text-[3.5rem]">
+              Make your home feel like <span className="text-primary-dark">home.</span>
+            </h2>
+            <p className="mt-4 max-w-md text-base leading-7 text-stone-700 xl:text-lg">
+              Thoughtful furniture, everyday comfort, and timeless style for the place you love most.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-secondary-dark">
+              <span className="rounded-full border border-orange-200/80 bg-white/75 px-3 py-2 shadow-sm backdrop-blur">Made for comfort</span>
+              <span className="rounded-full border border-orange-200/80 bg-white/75 px-3 py-2 shadow-sm backdrop-blur">Quality you can trust</span>
             </div>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-primary-dark">
+          </div>
+        </div>
+      </section>
+
+      <div className="relative z-10 flex min-h-dvh items-center justify-center bg-[#faf5ef]/65 px-4 py-5 sm:px-8 lg:bg-gradient-to-br lg:from-[#fffdfa] lg:via-[#faf5ef] lg:to-[#f5e8d9] lg:px-10">
+        <section className="w-full min-w-0 max-w-[430px] rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-8">
+          <div className="mb-5 text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-primary-dark ring-1 ring-orange-100">
+              <LockKeyhole size={25} strokeWidth={1.8} aria-hidden="true" />
+            </div>
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-dark">
               Q Living Furniture
             </p>
             <h1 className="text-3xl font-black tracking-tight text-secondary-dark">
               Welcome <span className="text-primary">back</span>
             </h1>
-            <p className="mt-2 text-sm text-stone-600">
+            <p className="mt-1.5 text-sm text-stone-600">
               Sign in to continue to your furniture account.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="login-identifier" className="mb-1.5 block text-sm font-semibold text-secondary-dark">
                 Username, email, or mobile number
@@ -95,7 +117,7 @@ function Login() {
                   placeholder="Enter your username, email, or mobile"
                   value={form.identifier}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-stone-200 bg-white py-3.5 pl-12 pr-4 text-sm text-secondary-dark outline-none transition placeholder:text-stone-400 focus:border-primary focus:ring-4 focus:ring-orange-100"
+                  className="w-full rounded-xl border border-stone-200 bg-white py-3 pl-12 pr-4 text-sm text-secondary-dark outline-none transition placeholder:text-stone-400 focus:border-primary focus:ring-4 focus:ring-orange-100"
                   required
                 />
               </div>
@@ -115,7 +137,7 @@ function Login() {
                   placeholder="Enter your password"
                   value={form.password}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-stone-200 bg-white py-3.5 pl-12 pr-12 text-sm text-secondary-dark outline-none transition placeholder:text-stone-400 focus:border-primary focus:ring-4 focus:ring-orange-100"
+                  className="w-full rounded-xl border border-stone-200 bg-white py-3 pl-12 pr-12 text-sm text-secondary-dark outline-none transition placeholder:text-stone-400 focus:border-primary focus:ring-4 focus:ring-orange-100"
                   required
                 />
                 <button
@@ -142,7 +164,7 @@ function Login() {
             <button
               type="submit"
               disabled={submitting}
-              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark py-3.5 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LockKeyhole size={17} aria-hidden="true" />
               {submitting ? "Signing in..." : "Sign in"}
@@ -154,7 +176,7 @@ function Login() {
               <span className="h-px flex-1 bg-stone-200" />
             </div>
 
-            <div className="flex w-full justify-center [&>div]:w-full [&>div]:justify-center">
+            <div className="flex w-full min-w-0 justify-center [&>div]:justify-center">
               <GoogleLogin
                 onSuccess={handleSuccess}
                 onError={() => toast.error("Google sign-in could not be completed.")}
@@ -162,7 +184,7 @@ function Login() {
                 theme="outline"
                 size="large"
                 shape="rectangular"
-                width="100%"
+                width="250"
                 logo_alignment="center"
               />
             </div>
