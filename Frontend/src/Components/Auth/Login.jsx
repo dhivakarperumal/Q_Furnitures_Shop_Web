@@ -86,7 +86,12 @@ function Login() {
       </section>
 
       <div className="relative z-10 flex min-h-dvh items-center justify-center bg-[#faf5ef]/65 px-4 py-5 sm:px-8 lg:bg-gradient-to-br lg:from-[#fffdfa] lg:via-[#faf5ef] lg:to-[#f5e8d9] lg:px-10">
-        <section className="w-full min-w-0 max-w-[430px] rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-8">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <span className="absolute -right-20 top-16 h-72 w-72 rounded-full bg-orange-200/35 blur-3xl" />
+          <span className="absolute bottom-8 left-8 h-56 w-56 rounded-full bg-amber-100/70 blur-3xl" />
+        </div>
+        <section className="relative z-10 w-full min-w-0 max-w-[430px] rounded-[28px] border border-white/90 bg-white/95 p-4 shadow-[0_24px_70px_rgba(53,29,14,0.16)] backdrop-blur-xl sm:p-8">
+          <div aria-hidden="true" className="absolute inset-x-10 top-0 h-1 rounded-b-full bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
           <div className="mb-5 text-center">
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-primary-dark ring-1 ring-orange-100">
               <LockKeyhole size={25} strokeWidth={1.8} aria-hidden="true" />
