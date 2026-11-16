@@ -315,7 +315,10 @@ function createProductService(pool) {
       }
     },
 
-    async list({ page, limit, search, status, category, material, minPrice, maxPrice, availability, sort }) {
+    async list({
+      page, limit, search, status, category, material, color, minPrice, maxPrice,
+      minRating, onSale, availability, sort,
+    }) {
       const filters = [];
       const parameters = [];
 
@@ -335,6 +338,10 @@ function createProductService(pool) {
         filters.push("JSON_UNQUOTE(JSON_EXTRACT(p.product_data, '$.material_type')) = ?");
         parameters.push(material);
       }
+      if (color) {
+        filters.push("JSON_UNQUOTE(JSON_EXTRACT(p.product_data, '$.colour')) = ?");
+        parameters.push(color);
+      }
       if (Number.isFinite(minPrice)) {
         filters.push("COALESCE(p.offer_price, p.selling_price, p.mrp) >= ?");
         parameters.push(minPrice);
@@ -342,6 +349,13 @@ function createProductService(pool) {
       if (Number.isFinite(maxPrice)) {
         filters.push("COALESCE(p.offer_price, p.selling_price, p.mrp) <= ?");
         parameters.push(maxPrice);
+      }
+      if (Number.isFinite(minRating)) {
+        filters.push("p.rating >= ?");
+        parameters.push(minRating);
+      }
+      if (onSale) {
+        filters.push("p.offer > 0");
       }
       if (availability === "in-stock") {
         filters.push("COALESCE(ps.available_stock, p.total_stock) > 0");

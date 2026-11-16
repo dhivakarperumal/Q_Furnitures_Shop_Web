@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Search,
   SlidersHorizontal,
+  Star,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import api from "../../api";
@@ -19,6 +20,14 @@ import ProductCard from "../ProductCard";
 const PRODUCTS_PER_PAGE = 8;
 const MAX_PRICE = 600000;
 const MATERIALS = ["Solid Wood", "Engineered Wood", "Upholstered", "Plywood", "Metal"];
+const COLORS = [
+  ["Natural Teak", "#e7c090"],
+  ["Brown", "#86502e"],
+  ["Black", "#30241e"],
+  ["White", "#ffffff"],
+  ["Grey", "#929292"],
+  ["Beige", "#e9d8bd"],
+];
 
 function getProductImage(product) {
   let images = product?.images;
@@ -54,7 +63,10 @@ const Shop = () => {
     || "";
   const category = searchParams.get("category") || "";
   const material = searchParams.get("material") || "";
+  const color = searchParams.get("color") || "";
   const availability = searchParams.get("availability") || "";
+  const minRating = searchParams.get("minRating") || "";
+  const onSale = searchParams.get("onSale") === "true";
   const maxPrice = Math.min(MAX_PRICE, Math.max(0, Number(searchParams.get("maxPrice")) || MAX_PRICE));
   const sort = searchParams.get("sort") || "featured";
   const requestedPage = Number(searchParams.get("page"));
@@ -67,6 +79,8 @@ const Shop = () => {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [listView, setListView] = useState(false);
+  const [priceEdit, setPriceEdit] = useState(null);
+  const priceDraft = priceEdit?.query === searchParams.toString() ? priceEdit.value : maxPrice;
 
   useEffect(() => {
     let active = true;
@@ -100,7 +114,10 @@ const Shop = () => {
     };
     if (category) params.category = category;
     if (material) params.material = material;
+    if (color) params.color = color;
     if (availability) params.availability = availability;
+    if (minRating) params.minRating = minRating;
+    if (onSale) params.onSale = "true";
     if (maxPrice < MAX_PRICE) params.maxPrice = maxPrice;
 
     api.get("/products", { params })
@@ -127,7 +144,7 @@ const Shop = () => {
     return () => {
       active = false;
     };
-  }, [availability, category, currentPage, maxPrice, material, reloadKey, searchTerm, sort]);
+  }, [availability, category, color, currentPage, maxPrice, material, minRating, onSale, reloadKey, searchTerm, sort]);
 
   const heroImage = useMemo(() => getProductImage(products[0]), [products]);
 
@@ -163,7 +180,10 @@ const Shop = () => {
   const clearFilters = () => updateParams({
     category: "",
     material: "",
+    color: "",
     availability: "",
+    minRating: "",
+    onSale: "",
     maxPrice: "",
     sort: "",
   });
@@ -184,7 +204,10 @@ const Shop = () => {
   const filterChips = [
     category && { label: category, key: "category" },
     material && { label: material, key: "material" },
+    color && { label: color, key: "color" },
     availability && { label: availability === "in-stock" ? "In stock" : "Out of stock", key: "availability" },
+    minRating && { label: `${minRating} stars & up`, key: "minRating" },
+    onSale && { label: "On sale", key: "onSale" },
     maxPrice < MAX_PRICE && { label: `Up to ₹${maxPrice.toLocaleString("en-IN")}`, key: "maxPrice" },
   ].filter(Boolean);
 
@@ -256,16 +279,21 @@ const Shop = () => {
 
             <FilterSection title="Price range">
               <div className="mb-2 flex justify-between text-[11px] text-[#594b3d]">
-                <span>₹0</span><span>{maxPrice >= MAX_PRICE ? "₹6,00,000+" : `₹${maxPrice.toLocaleString("en-IN")}`}</span>
+                <span>₹0</span><span>{priceDraft >= MAX_PRICE ? "₹6,00,000+" : `₹${priceDraft.toLocaleString("en-IN")}`}</span>
               </div>
               <input
                 type="range"
                 min="10000"
                 max={MAX_PRICE}
                 step="5000"
-                value={maxPrice}
+                value={priceDraft}
                 aria-label="Maximum price"
-                onChange={(event) => updateParams({ maxPrice: Number(event.target.value) >= MAX_PRICE ? "" : event.target.value })}
+                onChange={(event) => setPriceEdit({
+                  query: searchParams.toString(),
+                  value: Number(event.target.value),
+                })}
+                onPointerUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
+                onKeyUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
                 className="h-1.5 w-full cursor-pointer accent-[#e87500]"
               />
             </FilterSection>
@@ -286,6 +314,44 @@ const Shop = () => {
               </div>
             </FilterSection>
 
+            <FilterSection title="Color">
+              <div className="flex flex-wrap gap-2">
+                {COLORS.map(([name, swatch]) => (
+                  <button
+                    key={name}
+                    type="button"
+                    title={name}
+                    aria-label={`Filter by ${name}`}
+                    aria-pressed={color === name}
+                    onClick={() => updateParams({ color: color === name ? "" : name })}
+                    className={`h-5 w-5 rounded-full border transition ${color === name ? "border-[#e87500] ring-2 ring-[#e87500]/30 ring-offset-1" : "border-[#d7cabe] hover:scale-110"}`}
+                    style={{ backgroundColor: swatch }}
+                  />
+                ))}
+              </div>
+            </FilterSection>
+
+            <FilterSection title="Customer rating">
+              <div className="space-y-2">
+                {[4, 3].map((rating) => (
+                  <label key={rating} className="flex cursor-pointer items-center gap-2 text-xs text-[#47382b]">
+                    <input
+                      type="checkbox"
+                      checked={minRating === String(rating)}
+                      onChange={() => updateParams({ minRating: minRating === String(rating) ? "" : rating })}
+                      className="h-3.5 w-3.5 accent-[#e87500]"
+                    />
+                    <span className="inline-flex text-[#ed9b00]">
+                      {Array.from({ length: 5 }, (_, index) => (
+                        <Star key={index} size={12} className={index < rating ? "fill-current" : "text-[#d7cabe]"} />
+                      ))}
+                    </span>
+                    <span>&amp; above</span>
+                  </label>
+                ))}
+              </div>
+            </FilterSection>
+
             <FilterSection title="Availability">
               <div className="space-y-2 pb-1">
                 {[["in-stock", "In stock"], ["out-of-stock", "Out of stock"]].map(([value, label]) => (
@@ -300,6 +366,18 @@ const Shop = () => {
                   </label>
                 ))}
               </div>
+            </FilterSection>
+
+            <FilterSection title="Offers">
+              <label className="flex cursor-pointer items-center gap-2 pb-1 text-xs text-[#47382b]">
+                <input
+                  type="checkbox"
+                  checked={onSale}
+                  onChange={() => updateParams({ onSale: onSale ? "" : "true" })}
+                  className="h-3.5 w-3.5 accent-[#e87500]"
+                />
+                On sale
+              </label>
             </FilterSection>
           </aside>
 

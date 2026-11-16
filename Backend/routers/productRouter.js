@@ -142,12 +142,19 @@ function createProductRouter(productService) {
       const status = typeof request.query.status === "string" ? request.query.status : "All";
       const category = typeof request.query.category === "string" ? request.query.category.trim() : "";
       const material = typeof request.query.material === "string" ? request.query.material.trim() : "";
+      const color = typeof request.query.color === "string" ? request.query.color.trim() : "";
       const availability = typeof request.query.availability === "string" ? request.query.availability : "";
       const sort = typeof request.query.sort === "string" ? request.query.sort : "featured";
       const minPrice = parseOptionalQueryNumber(request.query.minPrice, "Minimum price");
       const maxPrice = parseOptionalQueryNumber(request.query.maxPrice, "Maximum price");
+      const minRating = parseOptionalQueryNumber(request.query.minRating, "Minimum rating");
+      if (minRating !== undefined && minRating > 5) {
+        throw badRequest("Minimum rating must be between zero and five.");
+      }
+      const onSale = request.query.onSale === "true";
       return response.json(await productService.list({
-        page, limit, search, status, category, material, minPrice, maxPrice, availability, sort,
+        page, limit, search, status, category, material, color, minPrice, maxPrice,
+        minRating, onSale, availability, sort,
       }));
     } catch (error) {
       return next(error);
