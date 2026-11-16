@@ -79,8 +79,13 @@ function Register() {
           alt=""
           className="absolute inset-0 h-full w-full object-cover object-left"
         />
+        <div
+          className="absolute inset-0"
+          style={{ backdropFilter: "blur(1px)", backgroundColor: "rgba(0, 0, 0, 0.10)" }}
+        />
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-secondary-dark/10" />
-        <div className="relative min-h-dvh p-8 xl:p-14">
+        <div className="relative flex min-h-dvh items-center p-8 xl:p-14">
+          <div className="w-full max-w-lg" style={{ marginLeft: "32px" }}>
           <Link to="/" className="inline-flex items-center gap-3 text-secondary-dark">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-orange-200">
               <House size={27} strokeWidth={2} aria-hidden="true" />
@@ -95,7 +100,14 @@ function Register() {
             </span>
           </Link>
 
-          <div className="mt-12 space-y-4">
+          <h2 className="mt-8 max-w-md text-3xl font-black leading-tight tracking-tight text-secondary-dark xl:text-4xl">
+            Furniture store management, made simple.
+          </h2>
+          <p className="mt-3 max-w-md text-base leading-7 text-secondary-dark/80">
+            Keep your products, orders, and business insights organized in one place.
+          </p>
+
+          <div className="mt-8 space-y-4">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-orange-200">
                 <PackageCheck size={20} aria-hidden="true" />
@@ -114,6 +126,7 @@ function Register() {
               </span>
               <span className="text-sm font-semibold text-secondary-dark">Reports &amp; Insights</span>
             </div>
+          </div>
           </div>
         </div>
       </section>
