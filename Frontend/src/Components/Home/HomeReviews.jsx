@@ -45,6 +45,37 @@ const HomeReviews = () => {
     });
   };
 
+  useEffect(() => {
+    if (
+      loading ||
+      error ||
+      reviews.length < 2 ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      const slider = sliderRef.current;
+      const firstCard = slider?.firstElementChild;
+      if (!slider || !firstCard) return;
+
+      const maxScroll = slider.scrollWidth - slider.clientWidth;
+      if (slider.scrollLeft >= maxScroll - 2) {
+        slider.scrollTo({ left: 0, behavior: "smooth" });
+        return;
+      }
+
+      const gap = Number.parseFloat(window.getComputedStyle(slider).columnGap) || 0;
+      slider.scrollBy({
+        left: firstCard.getBoundingClientRect().width + gap,
+        behavior: "smooth",
+      });
+    }, 4000);
+
+    return () => window.clearInterval(timer);
+  }, [error, loading, reviews.length]);
+
   if (!loading && !error && !reviews.length) return null;
 
   return (
