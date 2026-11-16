@@ -200,7 +200,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
           <img
             src="/images/logo2.png"
             alt="Q Living Furniture"
-            className={collapsed ? "h-8 w-12 object-contain" : "h-20 w-[85%] object-fill"}
+            className={collapsed ? "h-8 w-12 object-contain" : "h-20 w-[70%] object-fill"}
           />
           <div className="relative flex w-full items-center justify-center">
             <button
