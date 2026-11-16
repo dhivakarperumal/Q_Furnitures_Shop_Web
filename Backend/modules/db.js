@@ -1,7 +1,7 @@
 const { randomUUID } = require("node:crypto");
 const mysql = require("mysql2/promise");
 const { getDatabaseConfig } = require("../config/db");
-const { FAVORITE_PRODUCT_FIELDS } = require("./favoriteProductFields");
+const { PRODUCT_SNAPSHOT_FIELDS } = require("./productSnapshotFields");
 
 function createPool() {
   return mysql.createPool(getDatabaseConfig());
@@ -120,7 +120,7 @@ async function migrateFavoriteDetails(pool) {
   const existingColumns = new Set(columnRows.map((column) => column.COLUMN_NAME));
   const favoriteColumns = [
     ["product_name", "VARCHAR(191) NULL"],
-    ...FAVORITE_PRODUCT_FIELDS.filter(([column]) => column !== "product_name")
+    ...PRODUCT_SNAPSHOT_FIELDS.filter(([column]) => column !== "product_name")
       .map(([column, type]) => [column, `${type} NULL`]),
     ["created_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"],
     ["updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
@@ -158,11 +158,11 @@ async function migrateFavoriteDetails(pool) {
 
     for (const row of rows) {
       const product = getFavoriteProductData(row);
-      const values = FAVORITE_PRODUCT_FIELDS.map(([, , key]) => {
+      const values = PRODUCT_SNAPSHOT_FIELDS.map(([, , key]) => {
         const value = product[key];
         return value === "" || value == null ? null : value;
       });
-      const columns = FAVORITE_PRODUCT_FIELDS.map(([column]) => column);
+      const columns = PRODUCT_SNAPSHOT_FIELDS.map(([column]) => column);
       const assignments = columns.map((column) => `${column} = ?`).join(", ");
       await pool.execute(
         `UPDATE user_favorites
@@ -516,7 +516,7 @@ async function initializeDatabase(pool) {
     CREATE TABLE IF NOT EXISTS user_favorites (
       user_id VARCHAR(255) NOT NULL,
       product_id BIGINT UNSIGNED NOT NULL,
-      ${FAVORITE_PRODUCT_FIELDS.map(([column, type]) => `${column} ${type} ${column === "product_name" ? "NOT NULL" : "NULL"}`).join(",\n      ")},
+      ${PRODUCT_SNAPSHOT_FIELDS.map(([column, type]) => `${column} ${type} ${column === "product_name" ? "NOT NULL" : "NULL"}`).join(",\n      ")},
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       created_by VARCHAR(255) NULL,
@@ -587,6 +587,83 @@ async function initializeDatabase(pool) {
         PRIMARY KEY (user_id, product_id, customization_index),
         CONSTRAINT user_favorite_customizations_favorite_fk
           FOREIGN KEY (user_id, product_id) REFERENCES user_favorites(user_id, product_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_cart_items (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      product_id BIGINT UNSIGNED NOT NULL,
+      variant_color VARCHAR(100) NOT NULL DEFAULT '',
+      variant_size VARCHAR(100) NOT NULL DEFAULT '',
+      ${PRODUCT_SNAPSHOT_FIELDS.map(([column, type]) => `${column} ${type} ${column === "product_name" ? "NOT NULL" : "NULL"}`).join(",\n      ")},
+      price DECIMAL(12,2) NOT NULL,
+      quantity INT UNSIGNED NOT NULL,
+      total_price DECIMAL(14,2) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      created_by VARCHAR(255) NULL,
+      updated_by VARCHAR(255) NULL,
+      UNIQUE KEY user_cart_product_variant_unique (user_id, product_id, variant_color, variant_size),
+      KEY user_cart_user_created_idx (user_id, created_at),
+      CONSTRAINT user_cart_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+      CONSTRAINT user_cart_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_cart_images (
+      cart_item_id BIGINT UNSIGNED NOT NULL,
+      image_index INT UNSIGNED NOT NULL,
+      image_url VARCHAR(2048) NOT NULL,
+      image_role VARCHAR(100) NULL,
+      PRIMARY KEY (cart_item_id, image_index),
+      CONSTRAINT user_cart_images_item_fk
+        FOREIGN KEY (cart_item_id) REFERENCES user_cart_items(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_cart_variants (
+      cart_item_id BIGINT UNSIGNED NOT NULL,
+      variant_index INT UNSIGNED NOT NULL,
+      color VARCHAR(100) NULL,
+      size VARCHAR(100) NULL,
+      material VARCHAR(100) NULL,
+      sku VARCHAR(128) NULL,
+      mrp DECIMAL(12,2) NULL,
+      offer_type VARCHAR(32) NULL,
+      offer DECIMAL(12,2) NULL,
+      selling_price DECIMAL(12,2) NULL,
+      stock INT NULL,
+      image VARCHAR(2048) NULL,
+      PRIMARY KEY (cart_item_id, variant_index),
+      CONSTRAINT user_cart_variants_item_fk
+        FOREIGN KEY (cart_item_id) REFERENCES user_cart_items(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_cart_variant_images (
+      cart_item_id BIGINT UNSIGNED NOT NULL,
+      variant_index INT UNSIGNED NOT NULL,
+      image_index INT UNSIGNED NOT NULL,
+      image_url VARCHAR(2048) NOT NULL,
+      PRIMARY KEY (cart_item_id, variant_index, image_index),
+      CONSTRAINT user_cart_variant_images_variant_fk
+        FOREIGN KEY (cart_item_id, variant_index)
+        REFERENCES user_cart_variants(cart_item_id, variant_index) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_cart_customizations (
+      cart_item_id BIGINT UNSIGNED NOT NULL,
+      customization_index INT UNSIGNED NOT NULL,
+      name VARCHAR(191) NULL,
+      type VARCHAR(100) NULL,
+      options TEXT NULL,
+      additional_price DECIMAL(12,2) NULL,
+      required TINYINT(1) NULL,
+      PRIMARY KEY (cart_item_id, customization_index),
+      CONSTRAINT user_cart_customizations_item_fk
+        FOREIGN KEY (cart_item_id) REFERENCES user_cart_items(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`

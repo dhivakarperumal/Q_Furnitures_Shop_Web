@@ -1,5 +1,5 @@
 const { toProduct } = require("./productService");
-const { FAVORITE_PRODUCT_FIELDS } = require("./favoriteProductFields");
+const { PRODUCT_SNAPSHOT_FIELDS } = require("./productSnapshotFields");
 
 function getFavoriteProduct(product) {
   const specifications = product.specifications || {};
@@ -202,12 +202,12 @@ function createFavoriteService(pool) {
       if (!products.length) return false;
 
       const product = getFavoriteProduct(toProduct(products[0]));
-      const fieldNames = FAVORITE_PRODUCT_FIELDS.map(([column]) => column);
+      const fieldNames = PRODUCT_SNAPSHOT_FIELDS.map(([column]) => column);
       const insertColumns = ["user_id", "product_id", ...fieldNames, "created_by", "updated_by"];
       const values = [
         userId,
         productId,
-        ...FAVORITE_PRODUCT_FIELDS.map(([, , key]) => getFieldValue(product[key])),
+        ...PRODUCT_SNAPSHOT_FIELDS.map(([, , key]) => getFieldValue(product[key])),
         userId,
         userId,
       ];

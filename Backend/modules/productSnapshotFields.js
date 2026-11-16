@@ -1,4 +1,4 @@
-const FAVORITE_PRODUCT_FIELDS = [
+const PRODUCT_SNAPSHOT_FIELDS = [
   ["product_name", "VARCHAR(191)", "name"],
   ["product_code", "VARCHAR(128)", "product_code"],
   ["category", "VARCHAR(191)", "category"],
@@ -59,4 +59,4 @@ const FAVORITE_PRODUCT_FIELDS = [
   ["main_image_index", "INT", "main_image_index"],
 ];
 
-module.exports = { FAVORITE_PRODUCT_FIELDS };
+module.exports = { PRODUCT_SNAPSHOT_FIELDS };
