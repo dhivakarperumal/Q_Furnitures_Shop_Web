@@ -57,8 +57,13 @@ function Login() {
   return (
     <main className="relative isolate grid min-h-dvh overflow-hidden bg-[#faf5ef] selection:bg-primary selection:text-white lg:grid-cols-[1.08fr_0.60fr]">
       <div className="absolute inset-0 -z-10 lg:hidden">
-        <img src="/images/register.png" alt="" className="h-full w-full object-cover object-[35%_center]" />
-        <div className="absolute inset-0 bg-secondary-dark/20" />
+        <img
+          src="/images/register.png"
+          alt=""
+          className="h-full w-full object-cover object-[35%_center]"
+          style={{ filter: "blur(1.5px)", transform: "scale(1.015)" }}
+        />
+        <div className="absolute inset-0 bg-black/25" />
       </div>
 
       <section
@@ -66,7 +71,13 @@ function Login() {
         className="relative hidden min-h-dvh overflow-hidden lg:block"
         style={{ width: "calc(100% + 100px)" }}
       >
-        <img src="/images/register.png" alt="" className="absolute inset-0 h-full w-full object-cover object-left" />
+        <img
+          src="/images/register.png"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-left"
+          style={{ filter: "blur(1.5px)", transform: "scale(1.015)" }}
+        />
+        <div className="absolute inset-0 bg-black/25" />
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-secondary-dark/10" />
         <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#faf5ef]/45 to-transparent" />
         <div

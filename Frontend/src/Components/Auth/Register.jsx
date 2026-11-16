@@ -69,7 +69,7 @@ function Register() {
           alt=""
           className="h-full w-full object-cover object-[35%_center]"
         />
-        <div className="absolute inset-0 bg-white/70" />
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
       <section
@@ -84,7 +84,7 @@ function Register() {
         />
         <div
           className="absolute inset-0"
-          style={{ backdropFilter: "blur(1px)", backgroundColor: "rgba(0, 0, 0, 0.06)" }}
+          style={{ backdropFilter: "blur(1px)", backgroundColor: "rgba(0, 0, 0, 0.20)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-secondary-dark/65 via-transparent to-primary/10" />
         <div
