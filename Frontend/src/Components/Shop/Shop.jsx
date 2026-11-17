@@ -389,31 +389,34 @@ const Shop = () => {
             aria-label="Furniture products"
             className="min-w-0"
           >
-            <form onSubmit={handleSearch} className="flex items-center gap-2 rounded-lg border border-[#dccfc1] bg-white p-1.5 shadow-sm">
-              <Search size={18} className="ml-2 shrink-0 text-[#4c392a]" />
-              <input
-                key={searchTerm}
-                type="search"
-                name="search"
-                defaultValue={searchTerm}
-                placeholder="Search furniture, e.g., sofa, bed, dining..."
-                aria-label="Search furniture"
-                className="min-w-0 flex-1 bg-transparent px-1 py-2 text-xs text-[#351d0e] outline-none placeholder:text-[#998b7e] sm:text-sm"
-              />
-              <button type="submit" className="rounded-md bg-[#e87500] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ca6100] sm:px-6 sm:text-sm">
-                Search
-              </button>
+            <div className="flex items-center justify-between gap-3">
+              <form onSubmit={handleSearch} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[#dccfc1] bg-white p-1.5 shadow-sm sm:max-w-[560px]">
+                <Search size={18} className="ml-2 shrink-0 text-[#4c392a]" />
+                <input
+                  key={searchTerm}
+                  type="search"
+                  name="search"
+                  defaultValue={searchTerm}
+                  placeholder="Search furniture, e.g., sofa, bed, dining..."
+                  aria-label="Search furniture"
+                  className="min-w-0 flex-1 bg-transparent px-1 py-2 text-xs text-[#351d0e] outline-none placeholder:text-[#998b7e] sm:text-sm"
+                />
+                <button type="submit" className="rounded-md bg-[#e87500] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ca6100] sm:px-6 sm:text-sm">
+                  Search
+                </button>
+              </form>
               <button
                 type="button"
                 onClick={toggleFilters}
                 aria-expanded={filterOpen}
                 aria-controls={filterOpen ? "shop-filter-sidebar" : undefined}
+                aria-label={filterOpen ? "Hide filters" : "Show filters"}
                 className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${filterOpen ? "bg-[#e87500] text-white" : "border border-[#efc18d] bg-[#fff8ef] text-[#8b4b12] hover:border-[#e87500] hover:bg-[#fff0df]"}`}
               >
                 <SlidersHorizontal size={15} />
                 <span className="hidden sm:inline">{filterOpen ? "Hide filters" : "Filters"}</span>
               </button>
-            </form>
+            </div>
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-[#58483a]">
