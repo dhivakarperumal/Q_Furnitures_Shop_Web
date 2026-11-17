@@ -4,6 +4,7 @@ import FeaturedCombos from "./FeaturedCombos";
 import HomeCategories from "./HomeCategories";
 import CustomFurnitureBanner from "./CustomFurnitureBanner";
 import FestiveSaleBanner from "./FestiveSaleBanner";
+import ShopByRoom from "./ShopByRoom";
 import OfferProducts from "./OfferProducts";
 import OfferBanners from "./OfferBanners";
 import HomeReviews from "./HomeReviews";
@@ -20,6 +21,7 @@ const Home = () => (
     <CustomFurnitureBanner />
     <FeaturedCombos />
     <OfferProducts />
+    <ShopByRoom />
     <FestiveSaleBanner />
     <HomeReviews />
   </main>
