@@ -22,6 +22,22 @@ import {
 import { toast, Toaster } from "react-hot-toast";
 
 const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
+const getOrderType = (order) => {
+  const items = Array.isArray(order.items) ? order.items : [];
+  const hasCombos = items.some((item) => item.item_type === "combo" || item.combo_id != null);
+  const hasProducts = items.some((item) =>
+    item.item_type !== "combo" && item.combo_id == null && item.product_id != null,
+  );
+  if (hasCombos && hasProducts) return "Mixed";
+  if (hasCombos) return "Combo";
+  if (hasProducts) return "Single";
+  return "Unknown";
+};
+const getOrderTypeClasses = (type) => ({
+  Single: "bg-sky-50 text-sky-700 border-sky-200",
+  Combo: "bg-violet-50 text-violet-700 border-violet-200",
+  Mixed: "bg-amber-50 text-amber-700 border-amber-200",
+}[type] || "bg-gray-50 text-gray-500 border-gray-200");
 const isOnLocalDate = (timestamp, date) => {
   const orderDate = new Date(timestamp);
   return !Number.isNaN(orderDate.getTime()) &&
@@ -160,13 +176,14 @@ const Orders = ({ statusFilter = "All" }) => {
         <td>${formatOrderId(order)}</td>
         <td>${order.customer_name || "Guest Customer"}</td>
         <td>₹${Number(order.total_amount || 0).toFixed(2)}</td>
+        <td>${getOrderType(order)}</td>
         <td>${order.payment_method || "-"}</td>
         <td>${order.status || "-"}</td>
         <td>${order.created_at ? new Date(order.created_at).toLocaleDateString() : "-"}</td>
       </tr>
     `).join("");
 
-    printWindow.document.write(`<!doctype html><html><head><title>Orders Report</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#1e293b}h1{color:#350866;margin:0 0 6px}p{color:#64748b;margin:0 0 24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #dbe1ea;padding:10px;text-align:left;font-size:12px}th{background:#350866;color:#fcd34d;text-transform:uppercase;font-size:11px}tr:nth-child(even){background:#f8fafc}</style></head><body><h1>Orders Report</h1><p>${filteredOrders.length} order${filteredOrders.length === 1 ? "" : "s"}</p><table><thead><tr><th>S No</th><th>Order ID</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Status</th><th>Order Date</th></tr></thead><tbody>${rows || `<tr><td colspan="7">${isNewOrdersPage ? "No new orders placed today" : "No orders found"}</td></tr>`}</tbody></table></body></html>`);
+    printWindow.document.write(`<!doctype html><html><head><title>Orders Report</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#1e293b}h1{color:#350866;margin:0 0 6px}p{color:#64748b;margin:0 0 24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #dbe1ea;padding:10px;text-align:left;font-size:12px}th{background:#350866;color:#fcd34d;text-transform:uppercase;font-size:11px}tr:nth-child(even){background:#f8fafc}</style></head><body><h1>Orders Report</h1><p>${filteredOrders.length} order${filteredOrders.length === 1 ? "" : "s"}</p><table><thead><tr><th>S No</th><th>Order ID</th><th>Customer</th><th>Amount</th><th>Order Type</th><th>Payment</th><th>Status</th><th>Order Date</th></tr></thead><tbody>${rows || `<tr><td colspan="8">${isNewOrdersPage ? "No new orders placed today" : "No orders found"}</td></tr>`}</tbody></table></body></html>`);
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
@@ -354,12 +371,13 @@ const Orders = ({ statusFilter = "All" }) => {
         {viewMode === "table" ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-left border-collapse whitespace-nowrap">
+            <table className="w-full min-w-[1200px] text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr className="bg-gradient-to-r from-secondary-dark to-secondary-light border-b border-secondary-dark">
                   <th scope="col" className="w-28 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order ID</th>
                   <th scope="col" className="min-w-[220px] px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Customer</th>
                   <th scope="col" className="w-32 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Amount</th>
+                  <th scope="col" className="w-28 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order Type</th>
                   <th scope="col" className="w-28 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Payment</th>
                   <th scope="col" className="w-40 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Status</th>
                   <th scope="col" className="w-36 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order Date</th>
@@ -369,11 +387,11 @@ const Orders = ({ statusFilter = "All" }) => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">Loading orders...</td>
+                    <td colSpan="8" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">Loading orders...</td>
                   </tr>
                 ) : currentItems.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">{isNewOrdersPage ? "No new orders placed today." : "No orders found."}</td>
+                    <td colSpan="8" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">{isNewOrdersPage ? "No new orders placed today." : "No orders found."}</td>
                   </tr>
                 ) : (
                   currentItems.map((order, idx) => {
@@ -399,6 +417,11 @@ const Orders = ({ statusFilter = "All" }) => {
                         <td className="w-32 px-4 py-4">
                           <div className="text-[13px] font-black text-[#2B3674]">₹{parseFloat(order.total_amount || 0).toLocaleString()}</div>
                           <div className="text-[11px] text-gray-400 font-medium mt-0.5">1 Item</div>
+                        </td>
+                        <td className="w-28 px-4 py-4">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getOrderTypeClasses(getOrderType(order))}`}>
+                            {getOrderType(order)}
+                          </span>
                         </td>
                         <td className="w-28 px-4 py-4">
                           <div className="flex flex-col items-start gap-1">
@@ -532,6 +555,12 @@ const Orders = ({ statusFilter = "All" }) => {
                           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Payment</p>
                           <p className="text-xs font-bold text-[#2B3674] mt-1">{paymentMethod} · {paymentStatus}</p>
                         </div>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order Type</p>
+                        <span className={`mt-1 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getOrderTypeClasses(getOrderType(order))}`}>
+                          {getOrderType(order)}
+                        </span>
                       </div>
                       <div>
                         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order Date</p>
