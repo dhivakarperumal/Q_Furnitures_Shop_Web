@@ -15,7 +15,7 @@ const Header = () => {
 
   useEffect(() => {
     let active = true;
-    api.get("/offers/header")
+    api.get("/offers")
       .then(({ data }) => {
         if (active) setHeaderOffers(Array.isArray(data.offers) ? data.offers : []);
       })
@@ -48,31 +48,37 @@ const Header = () => {
 
           {/* Center - Marquee Offers */}
           <div className="flex-1 overflow-hidden px-10 text-center">
-            <marquee className="w-full">
-              <div className="flex items-center justify-center gap-12 font-medium">
-                {headerOffers.length > 0 ? headerOffers.map((offer) => (
-                  <span key={offer.id} className="flex items-center gap-2 whitespace-nowrap">
-                    <Tag size={16} />
-                    {offer.title} — {Number(offer.offer_percentage)}% OFF
-                  </span>
-                )) : (
-                  <>
-                    <span className="flex items-center gap-2">
+            <div className="header-offer-track flex w-max items-center">
+              {[0, 1].map((copy) => (
+                <div
+                  key={copy}
+                  aria-hidden={copy === 1}
+                  className="flex shrink-0 items-center gap-12 pr-12 font-medium"
+                >
+                  {headerOffers.length > 0 ? headerOffers.map((offer) => (
+                    <span key={offer.id} className="flex items-center gap-2 whitespace-nowrap">
                       <Tag size={16} />
-                      Make your home feel like yours with Q Furnitures
+                      {offer.title} — {Number(offer.offer_percentage)}% OFF
                     </span>
-                    <span className="flex items-center gap-2">
-                      <Truck size={16} />
-                      Furniture for every room and every routine
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <ShoppingBag size={16} />
-                      Explore home and office furniture
-                    </span>
-                  </>
-                )}
-              </div>
-            </marquee>
+                  )) : (
+                    <>
+                      <span className="flex items-center gap-2 whitespace-nowrap">
+                        <Tag size={16} />
+                        Make your home feel like yours with Q Furnitures
+                      </span>
+                      <span className="flex items-center gap-2 whitespace-nowrap">
+                        <Truck size={16} />
+                        Furniture for every room and every routine
+                      </span>
+                      <span className="flex items-center gap-2 whitespace-nowrap">
+                        <ShoppingBag size={16} />
+                        Explore home and office furniture
+                      </span>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Right - Social Icons */}

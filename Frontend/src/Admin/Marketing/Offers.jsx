@@ -64,7 +64,7 @@ function Offers() {
 
   const fetchOffers = async () => {
     try {
-      const { data } = await api.get("/offers");
+      const { data } = await api.get("/offers/admin");
       setOffers(Array.isArray(data.offers) ? data.offers : []);
     } catch (error) {
       console.error("Could not load offers:", error);
@@ -75,7 +75,7 @@ function Offers() {
 
   useEffect(() => {
     let active = true;
-    api.get("/offers")
+    api.get("/offers/admin")
       .then(({ data }) => {
         if (active) setOffers(Array.isArray(data.offers) ? data.offers : []);
       })
