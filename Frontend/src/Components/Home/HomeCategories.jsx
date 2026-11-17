@@ -159,7 +159,10 @@ const HomeCategories = () => {
               const image = getCategoryImage(category.images);
 
               return (
-                <article key={category.catId || category.id || category.name} className="w-28 shrink-0 snap-start sm:w-32 lg:w-36">
+                <article
+                  key={category.catId || category.id || category.name}
+                  className="basis-[calc((100%_-_24px)/3)] shrink-0 snap-start sm:basis-[calc((100%_-_80px)/6)] lg:basis-[calc((100%_-_128px)/9)]"
+                >
                   <Link
                     to={`/shop?category=${encodeURIComponent(category.name)}`}
                     className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
