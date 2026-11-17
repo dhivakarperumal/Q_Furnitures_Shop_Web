@@ -191,7 +191,7 @@ export function ProductListCard({ product }) {
       <div className="relative w-[38%] shrink-0 overflow-hidden bg-[#f7f1e9]">
         <Link to={`/products/${productId}`} aria-label={`View ${product.name} details`} className="block h-full w-full">
           {image ? (
-            <img src={image} alt={product.name} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+            <img src={image} alt={product.name} loading="lazy" className="h-full w-full object-contain transition duration-300" />
           ) : (
             <div className="flex h-full items-center justify-center text-[#c7b5a2]">
               <Armchair size={34} strokeWidth={1.2} />
