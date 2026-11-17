@@ -67,13 +67,14 @@ function normalizeReview(body) {
   };
 }
 
-function normalizeCustomerReview(body) {
-  const productId = Number(body.product_id);
+function normalizeCustomerReviewTarget(body, targetField, targetLabel, allowImage = false) {
+  const targetId = Number(body[targetField]);
   const rating = Number(body.rating);
   const comment = typeof body.comment === "string" ? body.comment.trim() : "";
+  const reviewImage = typeof body.review_image === "string" ? body.review_image.trim() : "";
 
-  if (!Number.isSafeInteger(productId) || productId < 1) {
-    throw badRequest("Select a valid product.");
+  if (!Number.isSafeInteger(targetId) || targetId < 1) {
+    throw badRequest(`Select a valid ${targetLabel}.`);
   }
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     throw badRequest("Rating must be between 1 and 5.");
@@ -81,8 +82,24 @@ function normalizeCustomerReview(body) {
   if (!comment || comment.length > 5000) {
     throw badRequest("Review comment is required and must be 5,000 characters or fewer.");
   }
+  if (allowImage && (reviewImage.length > 512 || !isSafeReviewImage(reviewImage))) {
+    throw badRequest("Review image must be a relative path or an http(s) URL.");
+  }
 
-  return { product_id: productId, rating, comment };
+  return {
+    [targetField]: targetId,
+    rating,
+    comment,
+    ...(allowImage ? { review_image: reviewImage || null } : {}),
+  };
+}
+
+function normalizeCustomerReview(body) {
+  return normalizeCustomerReviewTarget(body, "product_id", "product");
+}
+
+function normalizeCustomerComboReview(body) {
+  return normalizeCustomerReviewTarget(body, "combo_id", "combo", true);
 }
 
 function createReviewRouter(reviewService) {
@@ -106,6 +123,30 @@ function createReviewRouter(reviewService) {
         return response.status(401).json({ message: "Sign in again to check your review." });
       }
       return response.json({ review: await reviewService.getCustomerReview(productId, userId) });
+    } catch (error) {
+      if (error.status === 400) return response.status(400).json({ message: error.message });
+      return next(error);
+    }
+  });
+
+  router.get("/combo/:comboId", async (request, response, next) => {
+    try {
+      const comboId = parseId(request.params.comboId);
+      return response.json({ reviews: await reviewService.listPublishedForCombo(comboId) });
+    } catch (error) {
+      if (error.status === 400) return response.status(400).json({ message: error.message });
+      return next(error);
+    }
+  });
+
+  router.get("/combo/:comboId/mine", requireAuthentication, async (request, response, next) => {
+    try {
+      const comboId = parseId(request.params.comboId);
+      const userId = Number(request.auth?.id);
+      if (!Number.isSafeInteger(userId) || userId < 1) {
+        return response.status(401).json({ message: "Sign in again to check your review." });
+      }
+      return response.json({ review: await reviewService.getCustomerComboReview(comboId, userId) });
     } catch (error) {
       if (error.status === 400) return response.status(400).json({ message: error.message });
       return next(error);
@@ -181,6 +222,30 @@ function createReviewRouter(reviewService) {
     }
   });
 
+  router.post("/combo/customer", requireAuthentication, async (request, response, next) => {
+    try {
+      const userId = Number(request.auth?.id);
+      if (!Number.isSafeInteger(userId) || userId < 1) {
+        return response.status(401).json({ message: "Sign in again to submit a review." });
+      }
+      const review = await reviewService.createCustomerCombo(
+        normalizeCustomerComboReview(request.body || {}),
+        userId,
+      );
+      if (!review) return response.status(401).json({ message: "Your account could not be found. Sign in again." });
+      return response.status(201).json({ review });
+    } catch (error) {
+      if (error.status === 400) return response.status(400).json({ message: error.message });
+      if (error.code === "ER_DUP_ENTRY") {
+        return response.status(409).json({ message: "You have already reviewed this combo." });
+      }
+      if (error.code === "ER_NO_REFERENCED_ROW_2") {
+        return response.status(400).json({ message: "Selected combo was not found." });
+      }
+      return next(error);
+    }
+  });
+
   router.put("/admin/:id/status", requireAuthentication, requireAdmin, async (request, response, next) => {
     try {
       const id = parseId(request.params.id);
@@ -231,3 +296,4 @@ function createReviewRouter(reviewService) {
 module.exports = createReviewRouter;
 module.exports.normalizeReview = normalizeReview;
 module.exports.normalizeCustomerReview = normalizeCustomerReview;
+module.exports.normalizeCustomerComboReview = normalizeCustomerComboReview;

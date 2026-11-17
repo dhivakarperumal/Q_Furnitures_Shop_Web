@@ -734,6 +734,7 @@ async function initializeDatabase(pool) {
     CREATE TABLE IF NOT EXISTS reviews (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       product_id BIGINT UNSIGNED NULL,
+      combo_id BIGINT UNSIGNED NULL,
       user_name VARCHAR(191) NOT NULL,
       user_email VARCHAR(191) NULL,
       reviewer_user_id BIGINT UNSIGNED NULL,
@@ -747,12 +748,40 @@ async function initializeDatabase(pool) {
       KEY reviews_status_created_idx (status, created_at),
       KEY reviews_rating_idx (rating),
       UNIQUE KEY reviews_customer_product_unique (reviewer_user_id, product_id),
+      UNIQUE KEY reviews_customer_combo_unique (reviewer_user_id, combo_id),
       CONSTRAINT reviews_reviewer_fk
         FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE SET NULL,
       CONSTRAINT reviews_product_fk
-        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+      CONSTRAINT reviews_combo_fk
+        FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [comboReviewColumnRows] = await pool.execute(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews' AND COLUMN_NAME = 'combo_id'`,
+  );
+  if (!comboReviewColumnRows.length) {
+    await pool.query("ALTER TABLE reviews ADD COLUMN combo_id BIGINT UNSIGNED NULL AFTER product_id");
+  }
+  const [comboReviewIndexRows] = await pool.execute(
+    `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews'
+       AND INDEX_NAME = 'reviews_customer_combo_unique'`,
+  );
+  if (!comboReviewIndexRows.length) {
+    await pool.query("CREATE UNIQUE INDEX reviews_customer_combo_unique ON reviews (reviewer_user_id, combo_id)");
+  }
+  const [comboReviewConstraintRows] = await pool.execute(
+    `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews'
+       AND CONSTRAINT_NAME = 'reviews_combo_fk'`,
+  );
+  if (!comboReviewConstraintRows.length) {
+    await pool.query(
+      "ALTER TABLE reviews ADD CONSTRAINT reviews_combo_fk FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE SET NULL",
+    );
+  }
   const [reviewerColumnRows] = await pool.execute(
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews' AND COLUMN_NAME = 'reviewer_user_id'`,

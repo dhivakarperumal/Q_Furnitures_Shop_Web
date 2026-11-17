@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const createReviewRouter = require("./reviewRouter");
-const { normalizeReview, normalizeCustomerReview } = createReviewRouter;
+const { normalizeReview, normalizeCustomerReview, normalizeCustomerComboReview } = createReviewRouter;
 
 const validReview = {
   product_id: "12",
@@ -45,6 +45,29 @@ test("normalizes customer reviews without accepting customer identity fields", (
   });
   assert.throws(() => normalizeCustomerReview({ product_id: "12", rating: "6", comment: "Nice" }), { status: 400 });
   assert.throws(() => normalizeCustomerReview({ product_id: "12", rating: "5", comment: " " }), { status: 400 });
+});
+
+test("normalizes combo customer reviews without accepting customer identity fields", () => {
+  assert.deepEqual(normalizeCustomerComboReview({
+    combo_id: "12",
+    rating: "4",
+    comment: "  Comfortable and well made.  ",
+    review_image: "/uploads/reviews/combo.webp",
+    user_name: "Impersonated user",
+  }), {
+    combo_id: 12,
+    rating: 4,
+    comment: "Comfortable and well made.",
+    review_image: "/uploads/reviews/combo.webp",
+  });
+  assert.throws(() => normalizeCustomerComboReview({ combo_id: "0", rating: "5", comment: "Nice" }), { status: 400 });
+  assert.throws(() => normalizeCustomerComboReview({ combo_id: "12", rating: "6", comment: "Nice" }), { status: 400 });
+  assert.throws(() => normalizeCustomerComboReview({
+    combo_id: "12",
+    rating: "5",
+    comment: "Nice",
+    review_image: "javascript:alert(1)",
+  }), { status: 400 });
 });
 
 test("serves published reviews publicly", async (t) => {
@@ -150,4 +173,32 @@ test("rejects a second customer review for the same product", async (t) => {
 
   assert.equal(response.status, 409);
   assert.deepEqual(await response.json(), { message: "You have already reviewed this product." });
+});
+
+test("rejects a second customer review for the same combo", async (t) => {
+  process.env.JWT_SECRET = "review-router-test-secret";
+  const app = express();
+  app.use(express.json());
+  app.use("/api/reviews", createReviewRouter({
+    async createCustomerCombo() {
+      const error = new Error("Duplicate review");
+      error.code = "ER_DUP_ENTRY";
+      throw error;
+    },
+  }));
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
+  t.after(() => new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  }));
+
+  const token = jwt.sign({ id: 42, role: "customer" }, process.env.JWT_SECRET);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/reviews/combo/customer`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify({ combo_id: 12, rating: 5, comment: "Great combo." }),
+  });
+
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), { message: "You have already reviewed this combo." });
 });

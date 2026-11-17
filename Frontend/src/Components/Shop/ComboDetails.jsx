@@ -1,7 +1,10 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import {
   Armchair,
+  Camera,
+  CheckCircle2,
   Heart,
+  LoaderCircle,
   Minus,
   Plus,
   RotateCcw,
@@ -9,6 +12,7 @@ import {
   ShoppingBag,
   Star,
   Truck,
+  X,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -70,6 +74,16 @@ function ComboDetails() {
   const [quantity, setQuantity] = useState(1);
   const [componentResult, setComponentResult] = useState({ key: "", components: [], error: "" });
   const [relatedResult, setRelatedResult] = useState({ key: "", combos: [], error: "" });
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewsError, setReviewsError] = useState("");
+  const [myReview, setMyReview] = useState(null);
+  const [myReviewError, setMyReviewError] = useState("");
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [reviewImage, setReviewImage] = useState(null);
+  const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
   const requestKey = `${id}:${reloadKey}`;
   const comboLoading = comboResult.key !== requestKey;
   const combo = comboLoading ? null : comboResult.combo;
@@ -159,6 +173,51 @@ function ComboDetails() {
     };
   }, [combo, requestKey]);
 
+  useEffect(() => {
+    let active = true;
+    setReviews([]);
+    setReviewsLoading(true);
+    setReviewsError("");
+    api.get(`/reviews/combo/${id}`)
+      .then(({ data }) => {
+        if (!Array.isArray(data?.reviews)) {
+          throw new Error("The server returned an invalid review list.");
+        }
+        if (active) setReviews(data.reviews);
+      })
+      .catch((error) => {
+        console.error("Combo reviews request failed:", error);
+        if (active) {
+          setReviewsError(error.response?.data?.message || error.message || "Could not load combo reviews.");
+        }
+      })
+      .finally(() => {
+        if (active) setReviewsLoading(false);
+      });
+
+    if (user?.id || user?.user_id) {
+      setMyReview(null);
+      setMyReviewError("");
+      api.get(`/reviews/combo/${id}/mine`)
+        .then(({ data }) => {
+          if (active) setMyReview(data?.review || null);
+        })
+        .catch((error) => {
+          console.error("Combo review status request failed:", error);
+          if (active) {
+            setMyReviewError(error.response?.data?.message || error.message || "Could not check your review status.");
+          }
+        });
+    } else {
+      setMyReview(null);
+      setMyReviewError("");
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [id, user?.id, user?.user_id]);
+
   const gallery = useMemo(() => {
     const images = parseImages(combo?.images);
     if (images.length) return images;
@@ -199,6 +258,77 @@ function ComboDetails() {
   const selectedQuantity = availableStock > 0 ? Math.min(quantity, availableStock) : 1;
   const specifications = parseRecords(combo?.specifications)
     .filter((specification) => specification?.name && specification?.value);
+  const averageReviewRating = reviews.length
+    ? reviews.reduce((total, review) => total + Number(review.rating || 0), 0) / reviews.length
+    : Number(combo?.rating || 0);
+
+  const handleReviewSubmit = async (event) => {
+    event.preventDefault();
+    if (!user?.user_id) {
+      toast.error("Please login to write a review");
+      navigate("/login");
+      return;
+    }
+    if (!comment.trim()) {
+      toast.error("Please enter your review");
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      const { data } = await api.post("/reviews/combo/customer", {
+        combo_id: Number(combo.id),
+        rating,
+        comment: comment.trim(),
+        review_image: reviewImage,
+      });
+      setMyReview(data.review);
+      setComment("");
+      setReviewImage(null);
+      toast.success("Your review was submitted for approval");
+    } catch (error) {
+      console.error("Combo review submission failed:", error);
+      toast.error(error.response?.data?.message || "Could not submit your review");
+      if (error.response?.status === 409) {
+        api.get(`/reviews/combo/${id}/mine`)
+          .then(({ data }) => setMyReview(data?.review || null))
+          .catch((statusError) => {
+            console.error("Combo review status request failed:", statusError);
+            setMyReviewError(statusError.response?.data?.message || statusError.message || "Could not check your review status.");
+          });
+      }
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleReviewImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image file to upload");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Review image is too large. Maximum size is 5 MB.");
+      return;
+    }
+
+    setUploadingReviewImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const { data } = await api.post("/reviews/upload", formData);
+      setReviewImage(data.url);
+      toast.success("Review image uploaded");
+    } catch (error) {
+      console.error("Combo review image upload failed:", error);
+      toast.error(error.response?.data?.message || "Review image upload failed");
+    } finally {
+      setUploadingReviewImage(false);
+    }
+  };
 
   const handleBuyNow = async () => {
     if (!user?.user_id) {
@@ -309,7 +439,10 @@ function ComboDetails() {
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#493522]">
                       <Star size={16} className="fill-[#d49a46] text-[#d49a46]" />
-                      {Number(combo.rating || 0).toFixed(1)}
+                      {averageReviewRating.toFixed(1)}
+                    </span>
+                    <span className="text-sm text-[#9a8979]">
+                      {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
                     </span>
                     <span className="text-sm text-[#9a8979]">
                       Includes {comboItems.length} {comboItems.length === 1 ? "product" : "products"}
@@ -489,6 +622,178 @@ function ComboDetails() {
                     )}
                   </dl>
                 )}
+              </section>
+
+              <section aria-labelledby="combo-reviews-heading" className="mt-10 overflow-hidden rounded-3xl border border-[#eee4d8] bg-white p-5 sm:p-8">
+                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                  <div>
+                    <h2 id="combo-reviews-heading" className="text-xl font-semibold text-[#351d0e]">Customer reviews</h2>
+                    <p className="mt-1 text-sm text-[#8b735e]">Reviews are for this combo and can be submitted once per account.</p>
+                  </div>
+                  {reviews.length > 0 && (
+                    <p className="text-sm font-semibold text-[#493522]">{averageReviewRating.toFixed(1)} / 5 average</p>
+                  )}
+                </div>
+
+                {reviewsLoading ? (
+                  <div className="mt-5 space-y-3">
+                    {Array.from({ length: 2 }, (_, index) => (
+                      <div key={index} className="h-28 animate-pulse rounded-2xl bg-[#f1e9df]" />
+                    ))}
+                  </div>
+                ) : reviewsError ? (
+                  <p role="alert" className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-800">{reviewsError}</p>
+                ) : reviews.length ? (
+                  <div className="mt-5 space-y-4">
+                    {reviews.map((review) => (
+                      <article key={review.id} className="rounded-2xl border border-[#eee4d8] bg-[#fcfaf7] p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-[#351d0e]">{review.user_name}</p>
+                            {review.created_at && (
+                              <p className="mt-1 text-xs text-[#9a8979]">
+                                {new Date(review.created_at).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5 stars`}>
+                            {Array.from({ length: 5 }, (_, index) => (
+                              <Star
+                                key={index}
+                                size={15}
+                                className={index < Number(review.rating) ? "fill-[#d49a46] text-[#d49a46]" : "text-[#d9cfc4]"}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#634d3b]">{review.comment}</p>
+                        {review.review_image && (
+                          <img
+                            src={resolveMediaUrl(review.review_image)}
+                            alt={`Photo for ${combo.name} review`}
+                            loading="lazy"
+                            className="mt-4 max-h-56 rounded-xl object-cover"
+                          />
+                        )}
+                        {review.admin_reply && (
+                          <div className="mt-4 rounded-xl border-l-2 border-[#d49a46] bg-white px-4 py-3">
+                            <p className="text-xs font-bold uppercase tracking-wide text-[#8b5a35]">Q Living reply</p>
+                            <p className="mt-1 text-sm leading-6 text-[#634d3b]">{review.admin_reply}</p>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-5 rounded-xl bg-[#fcfaf7] px-4 py-6 text-center text-sm text-[#8b735e]">
+                    No published reviews yet. Be the first to share your experience.
+                  </p>
+                )}
+
+                <div className="mt-7 border-t border-[#eee4d8] pt-6">
+                  <h3 className="text-lg font-semibold text-[#351d0e]">Write a review</h3>
+                  {myReviewError ? (
+                    <p role="alert" className="mt-3 text-sm text-red-700">{myReviewError}</p>
+                  ) : myReview ? (
+                    <p className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                      <CheckCircle2 size={18} />
+                      {myReview.status === "Published" ? "You have reviewed this combo." : "Your review is awaiting approval."}
+                    </p>
+                  ) : user?.user_id ? (
+                    <form onSubmit={handleReviewSubmit} className="mt-4 max-w-2xl space-y-4">
+                      <p className="text-sm text-[#8b735e]">
+                        Reviewing as <span className="font-semibold text-[#493522]">{user.username || user.name || "your account"}</span>
+                      </p>
+                      <fieldset>
+                        <legend className="mb-2 text-sm font-medium text-[#634d3b]">Your rating</legend>
+                        <div className="flex gap-1">
+                          {Array.from({ length: 5 }, (_, index) => {
+                            const value = index + 1;
+                            return (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => setRating(value)}
+                                aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                                aria-pressed={rating === value}
+                                className="rounded p-1 transition hover:scale-110"
+                              >
+                                <Star size={23} className={value <= rating ? "fill-[#d49a46] text-[#d49a46]" : "text-[#d9cfc4]"} />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </fieldset>
+                      <label className="block text-sm font-medium text-[#634d3b]">
+                        Your review
+                        <textarea
+                          value={comment}
+                          onChange={(event) => setComment(event.target.value)}
+                          maxLength={5000}
+                          rows={4}
+                          required
+                          placeholder="Tell us what you think about this combo..."
+                          className="mt-2 w-full resize-y rounded-xl border border-[#e5d8ca] bg-white px-4 py-3 text-sm text-[#351d0e] outline-none transition focus:border-[#a34720] focus:ring-2 focus:ring-[#a34720]/10"
+                        />
+                      </label>
+                      <div>
+                        <label htmlFor="combo-review-image" className="mb-2 block text-sm font-medium text-[#634d3b]">
+                          Add a photo (optional)
+                        </label>
+                        <input
+                          id="combo-review-image"
+                          type="file"
+                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          onChange={handleReviewImageUpload}
+                          disabled={uploadingReviewImage || submittingReview}
+                          className="sr-only"
+                        />
+                        <label
+                          htmlFor="combo-review-image"
+                          className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#e5d8ca] px-4 text-sm font-semibold text-[#634d3b] transition hover:border-[#a34720] hover:bg-[#fcfaf7]"
+                        >
+                          {uploadingReviewImage ? (
+                            <LoaderCircle size={16} className="animate-spin" />
+                          ) : (
+                            <Camera size={16} />
+                          )}
+                          {uploadingReviewImage ? "Uploading image…" : "Upload review image"}
+                        </label>
+                        <p className="mt-1 text-xs text-[#9a8979]">JPG, PNG, GIF or WEBP up to 5 MB.</p>
+                        {reviewImage && (
+                          <div className="mt-3 flex items-start gap-3">
+                            <img
+                              src={resolveMediaUrl(reviewImage)}
+                              alt="Selected review upload"
+                              className="h-24 w-24 rounded-xl border border-[#eee4d8] object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setReviewImage(null)}
+                              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50"
+                            >
+                              <X size={14} />
+                              Remove image
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={submittingReview || uploadingReviewImage || !comment.trim()}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#351d0e] px-5 text-sm font-semibold text-white transition hover:bg-[#a34720] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {submittingReview && <LoaderCircle size={16} className="animate-spin" />}
+                        Submit review
+                      </button>
+                      <p className="text-xs text-[#9a8979]">You can submit one review for this combo. Reviews are published after approval.</p>
+                    </form>
+                  ) : (
+                    <p className="mt-3 text-sm text-[#8b735e]">
+                      <Link to="/login" className="font-semibold text-[#a34720] hover:underline">Log in</Link> to write a review.
+                    </p>
+                  )}
+                </div>
               </section>
 
               <section aria-labelledby="related-combos-heading" className="mt-10 rounded-3xl border border-[#eee4d8] bg-white p-5 sm:p-8">

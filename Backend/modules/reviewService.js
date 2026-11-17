@@ -1,9 +1,10 @@
 function createReviewService(pool) {
   async function getById(id) {
     const [rows] = await pool.execute(
-      `SELECT reviews.*, products.name AS product_name
+      `SELECT reviews.*, products.name AS product_name, combos.name AS combo_name
        FROM reviews
        LEFT JOIN products ON products.id = reviews.product_id
+       LEFT JOIN combos ON combos.id = reviews.combo_id
        WHERE reviews.id = ? LIMIT 1`,
       [id],
     );
@@ -13,11 +14,12 @@ function createReviewService(pool) {
   return {
     async listPublished() {
       const [reviews] = await pool.execute(
-        `SELECT reviews.id, reviews.product_id, reviews.user_name, reviews.rating,
+        `SELECT reviews.id, reviews.product_id, reviews.combo_id, reviews.user_name, reviews.rating,
                 reviews.comment, reviews.review_image, reviews.admin_reply, reviews.created_at,
-                products.name AS product_name
+                products.name AS product_name, combos.name AS combo_name
          FROM reviews
          LEFT JOIN products ON products.id = reviews.product_id
+         LEFT JOIN combos ON combos.id = reviews.combo_id
          WHERE reviews.status = 'Published'
          ORDER BY reviews.created_at DESC, reviews.id DESC
          LIMIT 6`,
@@ -37,6 +39,18 @@ function createReviewService(pool) {
       return reviews;
     },
 
+    async listPublishedForCombo(comboId) {
+      const [reviews] = await pool.execute(
+        `SELECT reviews.id, reviews.combo_id, reviews.user_name, reviews.rating,
+                reviews.comment, reviews.review_image, reviews.admin_reply, reviews.created_at
+         FROM reviews
+         WHERE reviews.status = 'Published' AND reviews.combo_id = ?
+         ORDER BY reviews.created_at DESC, reviews.id DESC`,
+        [comboId],
+      );
+      return reviews;
+    },
+
     async getCustomerReview(productId, userId) {
       const [reviews] = await pool.execute(
         `SELECT reviews.id, reviews.status
@@ -44,6 +58,17 @@ function createReviewService(pool) {
          WHERE reviews.product_id = ? AND reviews.reviewer_user_id = ?
          LIMIT 1`,
         [productId, userId],
+      );
+      return reviews[0] || null;
+    },
+
+    async getCustomerComboReview(comboId, userId) {
+      const [reviews] = await pool.execute(
+        `SELECT reviews.id, reviews.status
+         FROM reviews
+         WHERE reviews.combo_id = ? AND reviews.reviewer_user_id = ?
+         LIMIT 1`,
+        [comboId, userId],
       );
       return reviews[0] || null;
     },
@@ -62,15 +87,16 @@ function createReviewService(pool) {
       }
       if (search) {
         const searchTerm = `%${search}%`;
-        filters.push("(reviews.user_name LIKE ? OR reviews.user_email LIKE ? OR reviews.comment LIKE ? OR products.name LIKE ?)");
-        parameters.push(searchTerm, searchTerm, searchTerm, searchTerm);
+        filters.push("(reviews.user_name LIKE ? OR reviews.user_email LIKE ? OR reviews.comment LIKE ? OR products.name LIKE ? OR combos.name LIKE ?)");
+        parameters.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
       const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
       const [reviews] = await pool.execute(
-        `SELECT reviews.*, products.name AS product_name
+        `SELECT reviews.*, products.name AS product_name, combos.name AS combo_name
          FROM reviews
          LEFT JOIN products ON products.id = reviews.product_id
+         LEFT JOIN combos ON combos.id = reviews.combo_id
          ${whereClause}
          ORDER BY reviews.created_at DESC, reviews.id DESC`,
         parameters,
@@ -110,6 +136,19 @@ function createReviewService(pool) {
          FROM users
          WHERE users.id = ?`,
         [review.product_id, review.rating, review.comment, userId],
+      );
+      if (!result.affectedRows) return null;
+      return getById(result.insertId);
+    },
+
+    async createCustomerCombo(review, userId) {
+      const [result] = await pool.execute(
+        `INSERT INTO reviews
+           (combo_id, reviewer_user_id, user_name, user_email, rating, comment, review_image)
+         SELECT ?, users.id, users.username, users.email, ?, ?, ?
+         FROM users
+         WHERE users.id = ?`,
+        [review.combo_id, review.rating, review.comment, review.review_image, userId],
       );
       if (!result.affectedRows) return null;
       return getById(result.insertId);

@@ -342,7 +342,7 @@ const Reviews = () => {
                   <tr className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light">
                     <th className="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">S No</th>
                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Reviewer</th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Product</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Product / Combo</th>
                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Rating</th>
                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Status</th>
                     <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Actions</th>
@@ -356,7 +356,9 @@ const Reviews = () => {
                         <p className="font-bold text-slate-800">{item.user_name}</p>
                         <p className="text-xs text-gray-400">{new Date(item.created_at).toLocaleDateString()}</p>
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-600">{item.product_name || "Product Deleted"}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-600">
+                        {item.combo_id ? item.combo_name || "Combo Deleted" : item.product_name || "Product Deleted"}
+                      </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center gap-1 font-bold text-amber-500">
                           {item.rating}<Star className="h-3.5 w-3.5 fill-current" />
@@ -448,12 +450,12 @@ const Reviews = () => {
                     <div className="flex items-center gap-2 min-w-0">
                       <Package className="h-3.5 w-3.5 text-primary-dark" />
                       <p className="text-[10px] font-black text-slate-700 truncate">
-                        {item.product_name || "Product Deleted"}
+                        {item.combo_id ? item.combo_name || "Combo Deleted" : item.product_name || "Product Deleted"}
                       </p>
                     </div>
-                    {item.product_id && (
+                    {(item.product_id || item.combo_id) && (
                       <span className="text-[8px] font-black bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded shrink-0">
-                        ID: {item.product_id}
+                        {item.combo_id ? "Combo" : "Product"} ID: {item.combo_id || item.product_id}
                       </span>
                     )}
                   </div>
