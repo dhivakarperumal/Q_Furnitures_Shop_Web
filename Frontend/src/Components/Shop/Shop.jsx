@@ -236,7 +236,9 @@ const Shop = () => {
   const pageStart = pagination.total ? (currentPage - 1) * productsPerPage + 1 : 0;
   const pageEnd = Math.min(currentPage * productsPerPage, pagination.total);
   const productGridClass = listView
-    ? "grid-cols-1 sm:grid-cols-2"
+    ? filterOpen
+      ? "grid-cols-1 sm:grid-cols-2"
+      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
     : filterOpen
       ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
       : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
@@ -472,7 +474,7 @@ const Shop = () => {
               listView ? (
                 <div className={`mt-4 grid gap-3 ${productGridClass}`}>
                   {Array.from({ length: productsPerPage }, (_, index) => (
-                    <div key={index} className="flex min-h-[116px] overflow-hidden rounded-xl border border-[#eee4d8] bg-white">
+                    <div key={index} className="flex min-h-[96px] overflow-hidden rounded-xl border border-[#eee4d8] bg-white">
                       <div className="w-[38%] animate-pulse bg-[#f1e9df]" />
                       <div className="flex-1 space-y-2 p-3">
                         <div className="h-3 w-1/3 animate-pulse rounded bg-[#f1e9df]" />

@@ -187,7 +187,7 @@ export function ProductListCard({ product }) {
   );
 
   return (
-    <article className="group flex min-h-[116px] overflow-hidden rounded-xl border border-[#eee4d8] bg-white shadow-[0_3px_12px_rgba(53,29,14,0.05)] transition hover:border-[#e6c6a9] hover:shadow-[0_8px_20px_rgba(53,29,14,0.1)]">
+    <article className="group flex min-h-[96px] overflow-hidden rounded-xl border border-[#eee4d8] bg-white shadow-[0_3px_12px_rgba(53,29,14,0.05)] transition hover:border-[#e6c6a9] hover:shadow-[0_8px_20px_rgba(53,29,14,0.1)]">
       <div className="relative w-[38%] shrink-0 overflow-hidden bg-[#f7f1e9]">
         <Link to={`/products/${productId}`} aria-label={`View ${product.name} details`} className="block h-full w-full">
           {image ? (
@@ -199,7 +199,7 @@ export function ProductListCard({ product }) {
           )}
         </Link>
         {stock <= 0 && (
-          <span className="absolute bottom-1.5 left-1.5 rounded-full bg-[#351d0e]/90 px-2 py-0.5 text-[9px] font-semibold text-white">
+          <span className="absolute bottom-1 left-1 rounded-full bg-[#351d0e]/90 px-1.5 py-0.5 text-[8px] font-semibold text-white">
             Out of stock
           </span>
         )}
@@ -211,43 +211,43 @@ export function ProductListCard({ product }) {
           }}
           aria-label={isWishlisted ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
           aria-pressed={isWishlisted}
-          className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:scale-105 ${isWishlisted ? "text-rose-600" : "text-[#634d3b] hover:text-rose-600"}`}
+          className={`absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:scale-105 ${isWishlisted ? "text-rose-600" : "text-[#634d3b] hover:text-rose-600"}`}
         >
-          <Heart size={15} fill={isWishlisted ? "currentColor" : "none"} />
+          <Heart size={13} fill={isWishlisted ? "currentColor" : "none"} />
         </button>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-2.5 py-2 sm:px-3">
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-2 py-1 sm:px-2.5">
         <div className="flex min-w-0 items-center gap-1.5">
           {discount > 0 && (
-            <span className="shrink-0 rounded-full bg-[#fff0e2] px-2 py-0.5 text-[9px] font-bold text-[#c33b17]">
+            <span className="shrink-0 rounded-full bg-[#fff0e2] px-1.5 py-px text-[8px] font-bold leading-3 text-[#c33b17]">
               {discount}% OFF
             </span>
           )}
         </div>
-        <Link to={`/products/${productId}`} className="line-clamp-2 text-[11px] font-bold leading-4 text-[#251c15] hover:text-[#a34720] sm:text-xs">
+        <Link to={`/products/${productId}`} className="line-clamp-1 text-[10px] font-bold leading-3 text-[#251c15] hover:text-[#a34720] sm:text-[11px]">
           {product.name}
         </Link>
-        <p className="truncate text-[10px] text-[#73604f]">
+        <p className="truncate text-[9px] leading-3 text-[#73604f]">
           <span className="font-semibold text-[#a34720]">{product.category || "Furniture"}</span>
           <span className="mx-1">|</span>
           {defaultVariant?.material || product.material_type || product.material || "Furniture"}
         </p>
-        <div className="flex items-center gap-1 text-[10px]">
+        <div className="flex items-center gap-1 text-[9px] leading-3">
           <span className="inline-flex text-[#ed9b00]" aria-label={`Rated ${rating.toFixed(1)} out of 5`}>
             {Array.from({ length: 5 }, (_, index) => (
-              <Star key={index} size={11} className={index < Math.round(rating) ? "fill-current" : "text-[#d7cabe]"} />
+              <Star key={index} size={9} className={index < Math.round(rating) ? "fill-current" : "text-[#d7cabe]"} />
             ))}
           </span>
           <span className="text-[#75685d]">{rating.toFixed(1)}</span>
         </div>
-        <div className="mt-0.5 flex flex-wrap items-center justify-between gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-1">
           <div className="flex min-w-0 items-baseline gap-1.5">
-            <span className="whitespace-nowrap text-xs font-extrabold text-[#251c15]">{formatPrice(price)}</span>
-            {mrp > price && <span className="whitespace-nowrap text-[10px] text-[#96897e] line-through">{formatPrice(mrp)}</span>}
+            <span className="whitespace-nowrap text-[11px] font-extrabold text-[#251c15]">{formatPrice(price)}</span>
+            {mrp > price && <span className="whitespace-nowrap text-[9px] text-[#96897e] line-through">{formatPrice(mrp)}</span>}
           </div>
           {cartItem ? (
-            <div className="inline-flex h-7 shrink-0 items-center overflow-hidden rounded-md border border-[#e87500]/30 bg-white">
+            <div className="inline-flex h-6 shrink-0 items-center overflow-hidden rounded-md border border-[#e87500]/30 bg-white">
               <button
                 type="button"
                 onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) - 1)}
@@ -257,7 +257,7 @@ export function ProductListCard({ product }) {
               >
                 <Minus size={12} />
               </button>
-              <span aria-live="polite" className="min-w-5 text-center text-[10px] font-semibold">{cartItem.quantity}</span>
+              <span aria-live="polite" className="min-w-4 text-center text-[9px] font-semibold">{cartItem.quantity}</span>
               <button
                 type="button"
                 onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) + 1)}
@@ -274,9 +274,9 @@ export function ProductListCard({ product }) {
               onClick={() => addToCart(product)}
               disabled={stock <= 0}
               aria-label={`Add ${product.name} to cart`}
-              className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-md bg-[#e87500] px-2 text-[9px] font-bold text-white transition hover:bg-[#ca6100] disabled:cursor-not-allowed disabled:bg-[#c7b5a2] sm:px-2.5"
+              className="inline-flex h-6 shrink-0 items-center justify-center gap-1 rounded-md bg-[#e87500] px-1.5 text-[8px] font-bold text-white transition hover:bg-[#ca6100] disabled:cursor-not-allowed disabled:bg-[#c7b5a2] sm:px-2"
             >
-              <ShoppingBag size={12} />
+              <ShoppingBag size={11} />
               <span>Add to Cart</span>
             </button>
           )}
