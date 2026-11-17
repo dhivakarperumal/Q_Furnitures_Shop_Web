@@ -293,9 +293,23 @@ function createComboService(pool) {
       );
       const [countRows] = await pool.execute(`SELECT COUNT(*) AS total FROM combos ${where}`, parameters);
       const total = Number(countRows[0]?.total || 0);
+      const [statsRows] = await pool.execute(
+        `SELECT COUNT(*) AS total,
+                COALESCE(SUM(status = 'Active'), 0) AS active,
+                COALESCE(SUM(status = 'Inactive'), 0) AS inactive,
+                COALESCE(SUM(total_stock > 0 AND total_stock <= 5), 0) AS lowStock
+         FROM combos`,
+      );
+      const stats = statsRows[0] || {};
       return {
         combos: rows.map(toCombo),
         pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) },
+        stats: {
+          total: Number(stats.total || 0),
+          active: Number(stats.active || 0),
+          inactive: Number(stats.inactive || 0),
+          lowStock: Number(stats.lowStock || 0),
+        },
       };
     },
     getById,
