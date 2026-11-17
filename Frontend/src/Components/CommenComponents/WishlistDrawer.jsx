@@ -54,6 +54,7 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
     <div
       className={`fixed inset-0 z-[60] overflow-hidden transition-opacity duration-300 ${isOpen ? "visible opacity-100" : "invisible opacity-0"}`}
       aria-hidden={!isOpen}
+      inert={!isOpen}
     >
       <button
         type="button"

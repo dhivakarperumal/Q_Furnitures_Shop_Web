@@ -15,6 +15,8 @@ import Loader from "./Components/CommenComponents/Loader.jsx";
 const Home = React.lazy(() => import("./Components/Home/Home.jsx"));
 const Shop = React.lazy(() => import("./Components/Shop/Shop.jsx"));
 const About = React.lazy(() => import("./Components/About/About.jsx"));
+const Checkout = React.lazy(() => import("./Components/Checkout.jsx"));
+const MyOrders = React.lazy(() => import("./Components/MyOrders.jsx"));
 
 const Login = React.lazy(() => import("./Components/Auth/Login.jsx"));
 const Register = React.lazy(() => import("./Components/Auth/Register.jsx"));
@@ -29,6 +31,7 @@ const ProductDetail = React.lazy(() => import("./Admin/Products/ProductDetail.js
 const Users = React.lazy(() => import("./Admin/Customers/Users.jsx"));
 const Billing = React.lazy(() => import("./Admin/Billings/Billing.jsx"));
 const CreateOrder = React.lazy(() => import("./Admin/Billings/CreateOrder.jsx"));
+const Orders = React.lazy(() => import("./Admin/Orders/Orders.jsx"));
 const OrderDetail = React.lazy(() => import("./Admin/Orders/OrderDetail.jsx"));
 const Banners = React.lazy(() => import("./Admin/Banners/Banners.jsx"));
 const Reviews = React.lazy(() => import("./Admin/Reviews/Reviews.jsx"));
@@ -40,6 +43,8 @@ const AddStock = React.lazy(() => import("./Admin/Stocks/AddStock.jsx"));
 const Dealers = React.lazy(() => import("./Admin/Dealers/Dealers.jsx"));
 const AddInvoice = React.lazy(() => import("./Admin/Dealers/AddInvoice.jsx"));
 const StockMovementHistory = React.lazy(() => import("./Admin/Stocks/StockMovementHistory.jsx"));
+const SettingsPage = React.lazy(() => import("./Admin/Settings/Settings.jsx"));
+const Profile = React.lazy(() => import("./Admin/Settings/Profile.jsx"));
 
 const ErrorPage = React.lazy(() => import("./Admin/Pages/ErrorPage.jsx"));
 
@@ -52,6 +57,22 @@ const router = createBrowserRouter([
       { path: "/", element: <Home /> },
       { path: "shop", element: <Shop /> },
       { path: "about", element: <About /> },
+      {
+        path: "ordersmain",
+        element: (
+          <PrivateRoute>
+            <MyOrders />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "checkout",
+        element: (
+          <PrivateRoute>
+            <Checkout />
+          </PrivateRoute>
+        ),
+      },
 
     ],
   },
@@ -85,9 +106,15 @@ const router = createBrowserRouter([
       { path: "offers", element: <Offers /> },
       { path: "orders/billing", element: <Billing /> },
       { path: "orders/shop-create", element: <CreateOrder /> },
+      { path: "orders/new", element: <Orders statusFilter="Order Placed" /> },
+      { path: "orders/all", element: <Orders /> },
+      { path: "orders/delivery", element: <Orders statusFilter="Delivered" /> },
+      { path: "orders/cancelled", element: <Orders statusFilter="Cancelled" /> },
       { path: "orders/:id", element: <OrderDetail /> },
       { path: "dealers", element: <Dealers /> },
       { path: "invoices/add", element: <AddInvoice /> },
+      { path: "settings", element: <SettingsPage /> },
+      { path: "profile", element: <Profile /> },
     ],
   },
 ]);

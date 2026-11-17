@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
+import { formatCurrency } from "../../utils/currency";
 import {
     FiPlus,
     FiEye,
@@ -15,9 +16,18 @@ import {
     FiDollarSign,
     FiShoppingBag,
     FiChevronLeft,
-    FiChevronRight
+    FiChevronRight,
+    FiPrinter
 } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
+
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+}[character]));
 
 const Billing = () => {
     const navigate = useNavigate();
@@ -106,6 +116,57 @@ const Billing = () => {
         }
     };
 
+    const handlePrint = () => {
+        const printWindow = window.open("", "", "width=1000,height=700");
+        if (!printWindow) {
+            window.alert("Allow pop-ups to print billing orders.");
+            return;
+        }
+
+        const rows = filteredInvoices.map((invoice, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(invoice.id)}</td>
+                <td>${escapeHtml(invoice.customer)}</td>
+                <td>${escapeHtml(formatCurrency(invoice.amount))}</td>
+                <td>${escapeHtml(invoice.method)}</td>
+                <td>${escapeHtml(invoice.status)}</td>
+                <td>${escapeHtml(invoice.date)}</td>
+            </tr>
+        `).join("");
+
+        printWindow.document.write(`<!doctype html>
+            <html>
+                <head>
+                    <title>Billing Orders</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 32px; color: #1e293b; }
+                        h1 { color: #3b1a0b; margin: 0 0 6px; }
+                        p { color: #64748b; margin: 0 0 24px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #dbe1ea; padding: 10px; text-align: left; font-size: 12px; }
+                        th { background: #3b1a0b; color: #fcd34d; text-transform: uppercase; font-size: 11px; }
+                        tr:nth-child(even) { background: #f8fafc; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <h1>Q Furnitures Billing Orders</h1>
+                    <p>${filteredInvoices.length} order${filteredInvoices.length === 1 ? "" : "s"} · Printed ${escapeHtml(new Date().toLocaleString())}</p>
+                    <table>
+                        <thead>
+                            <tr><th>S. No.</th><th>Order ID</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Status</th><th>Order Date</th></tr>
+                        </thead>
+                        <tbody>${rows || '<tr><td colspan="7">No orders found.</td></tr>'}</tbody>
+                    </table>
+                </body>
+            </html>`);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    };
+
     return (
         <div className="space-y-6 pb-8 font-sans">
             {/* Billing Stats */}
@@ -117,7 +178,7 @@ const Billing = () => {
                     </div>
                     <div className="relative z-10 min-w-0">
                         <p className="mb-1 text-xs font-bold tracking-wide text-orange-800">Total Amount</p>
-                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : `₹${totalAmount.toLocaleString("en-IN")}`}</h2>
+                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : formatCurrency(totalAmount)}</h2>
                         <p className="mt-1 text-[10px] font-medium text-stone-500">Shop orders only</p>
                     </div>
                     <FiCreditCard className="pointer-events-none absolute -right-1 bottom-1 text-orange-300/20" size={60} />
@@ -129,7 +190,7 @@ const Billing = () => {
                     </div>
                     <div className="relative z-10 min-w-0">
                         <p className="mb-1 text-xs font-bold tracking-wide text-emerald-800">Today Amount</p>
-                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : `₹${totalAmountToday.toLocaleString("en-IN")}`}</h2>
+                        <h2 className="text-2xl font-black leading-none text-slate-900">{loading || loadError ? "—" : formatCurrency(totalAmountToday)}</h2>
                         <p className="mt-1 text-[10px] font-medium text-stone-500">Shop orders only</p>
                     </div>
                     <FiDollarSign className="pointer-events-none absolute -right-1 bottom-1 text-emerald-300/20" size={60} />
@@ -211,6 +272,17 @@ const Billing = () => {
                             </button>
                         </div>
                         <button
+                            type="button"
+                            onClick={handlePrint}
+                            disabled={loading || Boolean(loadError) || filteredInvoices.length === 0}
+                            title="Print filtered billing orders"
+                            aria-label="Print filtered billing orders"
+                            className="inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-white px-4 py-3 text-sm font-bold text-orange-800 transition-colors hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <FiPrinter size={16} /> Print
+                        </button>
+                        <button
+                        type="button"
                         onClick={() => navigate("/admin/orders/shop-create")}
                         className="flex items-center gap-2 rounded-md bg-gradient-to-r from-primary to-primary-dark px-5 py-3 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95"
                         >
@@ -251,7 +323,7 @@ const Billing = () => {
                                 <tr key={inv.id} className="group border-b border-gray-100 transition-colors hover:bg-orange-50/40">
                                     <td className="px-5 py-4 text-xs font-bold text-orange-800">{inv.id}</td>
                                     <td className="px-5 py-4 text-xs font-bold text-slate-700">{inv.customer}</td>
-                                    <td className="px-5 py-4 text-xs font-bold text-slate-800">₹{inv.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="px-5 py-4 text-xs font-bold text-slate-800">{formatCurrency(inv.amount)}</td>
                                     <td className="px-5 py-4">
                                         <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
                                             <FiCreditCard className="text-orange-700" /> {inv.method}
@@ -320,7 +392,7 @@ const Billing = () => {
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Amount</p>
-                                        <p className="text-lg font-black text-slate-800 mt-0.5">₹{inv.amount.toFixed(2)}</p>
+                                        <p className="text-lg font-black text-slate-800 mt-0.5">{formatCurrency(inv.amount)}</p>
                                     </div>
                                 </div>
                                 <div className="mt-5 flex justify-end gap-2 border-t border-gray-100 pt-4">

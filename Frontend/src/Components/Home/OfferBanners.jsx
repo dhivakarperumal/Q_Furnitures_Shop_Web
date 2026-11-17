@@ -98,7 +98,7 @@ const OfferBanners = () => {
                   />
                   <div className="relative z-10 flex min-h-40 w-[40%] flex-col items-start justify-center p-3 sm:min-h-48 sm:p-4">
                     {banner.offer && (
-                      <span className="mb-1.5 rounded-full bg-[#f07816] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white sm:mb-2 sm:px-2.5 sm:text-xs">
+                      <span className="mb-1.5 rounded-full bg-emerald-700 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white sm:mb-2 sm:px-2.5 sm:text-xs">
                         {banner.offer}
                       </span>
                     )}
@@ -110,7 +110,7 @@ const OfferBanners = () => {
                         {banner.subtitle || banner.description}
                       </p>
                     )}
-                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#e87516] px-2 py-1 text-[10px] font-semibold text-white transition group-hover:bg-[#c95f0a] sm:mt-3 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-700 px-2 py-1 text-[10px] font-semibold text-white transition group-hover:bg-emerald-800 sm:mt-3 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
                       {banner.destination_links?.[0]?.label || "Shop now"}
                       <ArrowRight size={12} />
                     </span>

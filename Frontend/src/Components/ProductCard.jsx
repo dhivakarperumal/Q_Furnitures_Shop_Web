@@ -1,7 +1,8 @@
 import { useContext } from "react";
-import { Armchair, Heart, ShoppingBag, Star } from "lucide-react";
+import { Armchair, Heart, Minus, Plus, ShoppingBag, Star } from "lucide-react";
 import { StoreContext } from "../PrivateRouter/StoreContext";
 import { resolveMediaUrl } from "../utils/media";
+import { getProductStock } from "../utils/stock";
 
 function getProductImage(product) {
   let images = product.images;
@@ -28,20 +29,26 @@ function formatPrice(value) {
   }).format(Number(value) || 0);
 }
 
-export default function ProductCard({ product, compact = false }) {
-  const { cart, wishlist, addToCart, toggleWishlist } = useContext(StoreContext);
+export default function ProductCard({ product }) {
+  const { cart, wishlist, addToCart, updateCartQuantity, toggleWishlist } = useContext(StoreContext);
   const productId = product.id ?? product.product_id;
   const image = getProductImage(product);
+  const defaultVariant = product.variants?.[0] || null;
+  const defaultVariantColor = String(defaultVariant?.colorName || defaultVariant?.color || defaultVariant?.colour || "Default");
+  const defaultVariantSize = String(defaultVariant?.size || defaultVariant?.selectedSizes?.[0] || "Free Size");
   const price = Number(product.offer_price ?? product.selling_price ?? product.mrp) || 0;
   const mrp = Number(product.mrp) || 0;
   const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const stock = Number(product.total_stock) || 0;
+  const availableStock = getProductStock(product, defaultVariant, defaultVariantSize);
   const rating = Number(product.rating) || 0;
-  const isWishlisted = wishlist.some(
-    (item) => String(item.product_id ?? item.productId ?? item.id) === String(productId),
+  const isWishlisted = wishlist.some((item) =>
+    String(item.product_id ?? item.productId ?? item.id) === String(productId),
   );
-  const isInCart = cart.some(
-    (item) => String(item.product_id ?? item.productId ?? item.id) === String(productId),
+  const cartItem = cart.find((item) =>
+    String(item.product_id ?? item.productId ?? item.id) === String(productId) &&
+    String(item.colorName || item.variant_color || "Default").trim().toLowerCase() === defaultVariantColor.trim().toLowerCase() &&
+    String(item.size || item.variant_size || "Free Size").trim().toLowerCase() === defaultVariantSize.trim().toLowerCase(),
   );
 
   return (
@@ -60,7 +67,7 @@ export default function ProductCard({ product, compact = false }) {
           </div>
         )}
         {discount > 0 && (
-          <span className={`absolute left-2 top-2 rounded-md bg-[#e87500] px-2 py-1 font-bold text-white ${compact ? "text-[10px]" : "text-[11px]"}`}>
+          <span className="absolute left-3 top-3 rounded-full bg-emerald-700 px-3 py-1 text-[11px] font-bold tracking-wide text-white">
             {discount}% OFF
           </span>
         )}
@@ -98,16 +105,42 @@ export default function ProductCard({ product, compact = false }) {
             <p className={`font-bold text-[#351d0e] ${compact ? "text-sm" : "text-lg"}`}>{formatPrice(price)}</p>
             {mrp > price && <p className="text-[10px] text-[#9a8979] line-through sm:text-xs">{formatPrice(mrp)}</p>}
           </div>
-          <button
-            type="button"
-            onClick={() => addToCart(product)}
-            disabled={stock <= 0}
-            aria-label={`${isInCart ? "Add another" : "Add"} ${product.name} to cart`}
-            className={`inline-flex items-center justify-center gap-2 bg-[#e87500] text-xs font-semibold text-white transition hover:bg-[#c85f00] disabled:cursor-not-allowed disabled:bg-[#c7b5a2] ${compact ? "h-8 w-8 shrink-0 rounded-lg" : "h-10 rounded-xl px-3"}`}
-          >
-            <ShoppingBag size={compact ? 15 : 16} />
-            {!compact && <span>{isInCart ? "Add more" : "Add to cart"}</span>}
-          </button>
+          {cartItem ? (
+            <div className="inline-flex h-10 items-center overflow-hidden rounded-xl border border-primary/30 bg-white">
+              <button
+                type="button"
+                onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) - 1)}
+                disabled={Number(cartItem.quantity) <= 1}
+                aria-label={`Decrease ${product.name} quantity`}
+                className="flex h-full w-9 items-center justify-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Minus size={15} />
+              </button>
+              <span aria-live="polite" className="min-w-7 text-center text-sm font-semibold text-[#351d0e]">
+                {cartItem.quantity}
+              </span>
+              <button
+                type="button"
+                onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) + 1)}
+                disabled={Number(cartItem.quantity) >= availableStock}
+                aria-label={`Increase ${product.name} quantity`}
+                className="flex h-full w-9 items-center justify-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => addToCart(product)}
+              disabled={stock <= 0}
+              aria-label={`Add ${product.name} to cart`}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-[#c7b5a2]"
+            >
+              <ShoppingBag size={16} />
+              <span>Add to cart</span>
+            </button>
+          )}
         </div>
       </div>
     </article>
