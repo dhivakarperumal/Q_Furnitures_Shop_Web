@@ -3,7 +3,7 @@ import PageContainer from "./PageContainer";
 
 const PageHeader = ({ title, background }) => {
 
-  const bgImage = background || "/images/pageheader.png";
+  const bgImage = background || "/images/pageheader1.png";
 
   return (
     <div
