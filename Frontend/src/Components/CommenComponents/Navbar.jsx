@@ -151,8 +151,8 @@ const Navbar = () => {
   const navClass = ({ isActive }) =>
     `whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold transition-colors ${
       isActive
-        ? "relative text-orange-600 after:absolute after:bottom-0 after:left-1.5 after:right-1.5 after:h-0.5 after:rounded after:bg-orange-600"
-        : "text-slate-700 hover:text-orange-600"
+        ? "text-[#e87500]"
+        : "text-[#351d0e] hover:text-[#e87500]"
     }`;
 
   const handleSearch = (event) => {
@@ -166,22 +166,24 @@ const Navbar = () => {
 
   return (
 
-    <nav className="sticky top-0 z-50 border-b border-orange-100 bg-white/95 shadow-sm">
+    <nav className="sticky top-0 z-50 rounded-b-[28px] border-b border-[#f0dfc9] bg-[#fffaf5]/95 shadow-[0_8px_24px_rgba(74,42,19,0.13)] backdrop-blur-md lg:rounded-b-[38px]">
       <PageContainer>
-        <div className="flex min-h-[72px] items-center justify-between gap-3">
+        <div className="flex min-h-[76px] items-center justify-between gap-2 sm:min-h-[84px] sm:gap-3">
           <Link
             to="/"
             className="flex shrink-0 items-center"
             aria-label="Q Living Furniture home"
           >
             <img
-              src="/images/logo.png"
-              alt="Q Furnitures"
-              className="h-auto max-h-14 w-40 object-contain sm:w-44"
+              src="/images/logo123.png"
+              alt="Q Living Furniture"
+              className="h-auto max-h-14 w-40 object-contain sm:max-h-16 sm:w-52 xl:w-56"
             />
           </Link>
 
-          <div className="hidden flex-1 items-center justify-center gap-3 lg:flex xl:gap-5">
+          <span aria-hidden="true" className="hidden h-10 w-px shrink-0 bg-[#dfcbb5] xl:block" />
+
+          <div className="hidden flex-1 items-center justify-center gap-1.5 lg:flex xl:gap-3">
             <NavLink to="/" end className={navClass}>Home</NavLink>
             <NavLink to="/shop" className={({ isActive }) => `${navClass({ isActive })} inline-flex items-center gap-1`}>
               Shop 
@@ -194,7 +196,7 @@ const Navbar = () => {
                   setCategoryMenu(!categoryMenu);
                   setRoomsMenu(false);
                 }}
-                className="inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold text-slate-700 transition-colors hover:text-orange-600"
+                className="inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold text-[#351d0e] transition-colors hover:text-[#e87500]"
                 aria-expanded={categoryMenu}
               >
                 Collections
@@ -230,7 +232,7 @@ const Navbar = () => {
                   setRoomsMenu(!roomsMenu);
                   setCategoryMenu(false);
                 }}
-                className="inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold text-slate-700 transition-colors hover:text-orange-600"
+                className="inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold text-[#351d0e] transition-colors hover:text-[#e87500]"
                 aria-expanded={roomsMenu}
               >
                 Rooms
@@ -260,18 +262,27 @@ const Navbar = () => {
             </NavLink>
             <NavLink to="/about" className={navClass}>Interior Ideas</NavLink>
             <NavLink to="/about" className={navClass}>About Us</NavLink>
-            <NavLink to="/contactus" className={navClass}>Contact Us</NavLink>
+            <NavLink
+              to="/contactus"
+              className={({ isActive }) =>
+                `whitespace-nowrap rounded-full bg-[#ed720a] px-4 py-2.5 text-[13px] font-bold text-white shadow-sm transition hover:bg-[#d65e00] xl:px-5 ${
+                  isActive ? "ring-2 ring-[#ed720a]/25 ring-offset-2" : ""
+                }`
+              }
+            >
+              Contact Us
+            </NavLink>
           </div>
 
-          <div className="flex shrink-0 items-center gap-3 text-slate-800 sm:gap-4">
-            <div className="hidden items-center gap-3 sm:flex">
+          <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 lg:border-l lg:border-[#dfcbb5] lg:pl-3 xl:gap-3 xl:pl-5">
+            <div className="hidden items-center gap-1 sm:flex xl:gap-2">
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setSearchOpen(!searchOpen)}
                 aria-label="Search furniture"
                 aria-expanded={searchOpen}
-                className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
+                className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500]"
               >
                 <Search size={21} />
               </button>
@@ -297,7 +308,7 @@ const Navbar = () => {
               type="button"
               onClick={openWishlist}
               aria-label="Open wishlist"
-              className="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500]"
             >
               <Heart size={21} />
               {wishlist.length > 0 && (
@@ -311,7 +322,7 @@ const Navbar = () => {
               type="button"
               onClick={openCart}
               aria-label="Open cart"
-              className="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500]"
             >
               <ShoppingCart size={21} />
               {cart.length > 0 && (
@@ -327,9 +338,9 @@ const Navbar = () => {
                   type="button"
                   onClick={() => setUserMenu(!userMenu)}
                   aria-label={`Open account menu for ${profileName}`}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700 transition hover:bg-orange-200"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac]"
                 >
-                  {profileInitial}
+                  <User size={20} />
                 </button>
                 {userMenu && (
                   <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-orange-100 bg-white py-1 shadow-xl">
@@ -352,7 +363,7 @@ const Navbar = () => {
                 )}
               </div>
             ) : (
-              <Link to="/login" aria-label="Sign in" className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-orange-50 hover:text-orange-600">
+              <Link to="/login" aria-label="Sign in" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] transition hover:bg-[#f1d3ac] hover:text-[#e87500]">
                 <User size={21} />
               </Link>
             )}
@@ -362,7 +373,7 @@ const Navbar = () => {
               <Link
                 to="/account"
                 aria-label="My account"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700 transition hover:bg-orange-200 sm:hidden"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] sm:hidden"
               >
                 {profileInitial}
               </Link>
@@ -372,7 +383,7 @@ const Navbar = () => {
               type="button"
               onClick={() => mobileMenu ? closeMobileMenu() : setMobileMenu(true)}
               aria-label={mobileMenu ? "Close menu" : "Open menu"}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-slate-800 transition hover:bg-orange-50 hover:text-orange-600 lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] lg:hidden"
             >
               {mobileMenu ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -420,7 +431,7 @@ const Navbar = () => {
 
       )}
       {mobileMenu && (
-        <div className="fixed inset-x-0 bottom-0 top-[72px] z-50 lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 top-[76px] z-50 sm:top-[84px] lg:hidden">
 
           {/* Overlay */}
           <div
