@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import {
   Armchair,
+  Camera,
   CheckCircle2,
   Heart,
   LoaderCircle,
@@ -11,6 +12,7 @@ import {
   ShoppingBag,
   Star,
   Truck,
+  X,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -93,6 +95,8 @@ function ProductDetails() {
   const [myReviewError, setMyReviewError] = useState("");
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [reviewImage, setReviewImage] = useState(null);
+  const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
@@ -322,9 +326,11 @@ function ProductDetails() {
         product_id: Number(productId),
         rating,
         comment: comment.trim(),
+        review_image: reviewImage,
       });
       setMyReview(data.review);
       setComment("");
+      setReviewImage(null);
       toast.success("Your review was submitted for approval");
     } catch (error) {
       console.error("Customer review submission failed:", error);
@@ -339,6 +345,34 @@ function ProductDetails() {
       }
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const handleReviewImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image file to upload");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Review image is too large. Maximum size is 5 MB.");
+      return;
+    }
+
+    setUploadingReviewImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const { data } = await api.post("/reviews/upload", formData);
+      setReviewImage(data.url);
+      toast.success("Review image uploaded");
+    } catch (error) {
+      console.error("Product review image upload failed:", error);
+      toast.error(error.response?.data?.message || "Review image upload failed");
+    } finally {
+      setUploadingReviewImage(false);
     }
   };
 
@@ -740,6 +774,9 @@ function ProductDetails() {
                         </p>
                       ) : user?.user_id ? (
                         <form onSubmit={handleReviewSubmit} className="mt-4 max-w-2xl space-y-4">
+                          <p className="text-sm text-[#8b735e]">
+                            Reviewing as <span className="font-semibold text-[#493522]">{user.username || user.name || "your account"}</span>
+                          </p>
                           <fieldset>
                             <legend className="mb-2 text-sm font-medium text-[#634d3b]">Your rating</legend>
                             <div className="flex gap-1">
@@ -772,9 +809,51 @@ function ProductDetails() {
                               className="mt-2 w-full resize-y rounded-xl border border-[#e5d8ca] bg-white px-4 py-3 text-sm text-[#351d0e] outline-none transition focus:border-[#a34720] focus:ring-2 focus:ring-[#a34720]/10"
                             />
                           </label>
+                          <div>
+                            <label htmlFor="product-review-image" className="mb-2 block text-sm font-medium text-[#634d3b]">
+                              Add a photo (optional)
+                            </label>
+                            <input
+                              id="product-review-image"
+                              type="file"
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              onChange={handleReviewImageUpload}
+                              disabled={uploadingReviewImage || submittingReview}
+                              className="sr-only"
+                            />
+                            <label
+                              htmlFor="product-review-image"
+                              className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#e5d8ca] px-4 text-sm font-semibold text-[#634d3b] transition hover:border-[#a34720] hover:bg-[#fcfaf7]"
+                            >
+                              {uploadingReviewImage ? (
+                                <LoaderCircle size={16} className="animate-spin" />
+                              ) : (
+                                <Camera size={16} />
+                              )}
+                              {uploadingReviewImage ? "Uploading image…" : "Upload review image"}
+                            </label>
+                            <p className="mt-1 text-xs text-[#9a8979]">JPG, PNG, GIF or WEBP up to 5 MB.</p>
+                            {reviewImage && (
+                              <div className="mt-3 flex items-start gap-3">
+                                <img
+                                  src={resolveMediaUrl(reviewImage)}
+                                  alt="Selected review upload"
+                                  className="h-24 w-24 rounded-xl border border-[#eee4d8] object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setReviewImage(null)}
+                                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50"
+                                >
+                                  <X size={14} />
+                                  Remove image
+                                </button>
+                              </div>
+                            )}
+                          </div>
                           <button
                             type="submit"
-                            disabled={submittingReview || !comment.trim()}
+                            disabled={submittingReview || uploadingReviewImage || !comment.trim()}
                             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#351d0e] px-5 text-sm font-semibold text-white transition hover:bg-[#a34720] disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {submittingReview && <LoaderCircle size={16} className="animate-spin" />}

@@ -95,9 +95,11 @@ test("creates a customer review using the account identity from the database", a
     product_id: 12,
     rating: 5,
     comment: "Great quality.",
+    review_image: "/uploads/reviews/product.webp",
   }, 42), expectedReview);
   assert.match(calls[0].sql, /SELECT \?, users\.id, users\.username, users\.email/);
-  assert.deepEqual(calls[0].parameters, [12, 5, "Great quality.", 42]);
+  assert.match(calls[0].sql, /\(product_id, reviewer_user_id, user_name, user_email, rating, comment, review_image\)/);
+  assert.deepEqual(calls[0].parameters, [12, 5, "Great quality.", "/uploads/reviews/product.webp", 42]);
   assert.deepEqual(calls[1].parameters, [10]);
 });
 

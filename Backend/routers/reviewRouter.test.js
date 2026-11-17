@@ -37,14 +37,22 @@ test("normalizes customer reviews without accepting customer identity fields", (
     product_id: "12",
     rating: "4",
     comment: "  Comfortable and well made.  ",
+    review_image: "/uploads/reviews/product.webp",
     user_name: "Impersonated user",
   }), {
     product_id: 12,
     rating: 4,
     comment: "Comfortable and well made.",
+    review_image: "/uploads/reviews/product.webp",
   });
   assert.throws(() => normalizeCustomerReview({ product_id: "12", rating: "6", comment: "Nice" }), { status: 400 });
   assert.throws(() => normalizeCustomerReview({ product_id: "12", rating: "5", comment: " " }), { status: 400 });
+  assert.throws(() => normalizeCustomerReview({
+    product_id: "12",
+    rating: "5",
+    comment: "Nice",
+    review_image: "javascript:alert(1)",
+  }), { status: 400 });
 });
 
 test("normalizes combo customer reviews without accepting customer identity fields", () => {
@@ -144,6 +152,7 @@ test("creates a customer review from the authenticated account", async (t) => {
     product_id: 12,
     rating: 5,
     comment: "Great quality.",
+    review_image: null,
   });
 });
 

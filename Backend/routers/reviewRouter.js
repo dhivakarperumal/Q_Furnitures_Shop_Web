@@ -95,7 +95,7 @@ function normalizeCustomerReviewTarget(body, targetField, targetLabel, allowImag
 }
 
 function normalizeCustomerReview(body) {
-  return normalizeCustomerReviewTarget(body, "product_id", "product");
+  return normalizeCustomerReviewTarget(body, "product_id", "product", true);
 }
 
 function normalizeCustomerComboReview(body) {

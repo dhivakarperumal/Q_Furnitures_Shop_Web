@@ -131,11 +131,11 @@ function createReviewService(pool) {
     async createCustomer(review, userId) {
       const [result] = await pool.execute(
         `INSERT INTO reviews
-           (product_id, reviewer_user_id, user_name, user_email, rating, comment)
-         SELECT ?, users.id, users.username, users.email, ?, ?
+           (product_id, reviewer_user_id, user_name, user_email, rating, comment, review_image)
+         SELECT ?, users.id, users.username, users.email, ?, ?, ?
          FROM users
          WHERE users.id = ?`,
-        [review.product_id, review.rating, review.comment, userId],
+        [review.product_id, review.rating, review.comment, review.review_image, userId],
       );
       if (!result.affectedRows) return null;
       return getById(result.insertId);
