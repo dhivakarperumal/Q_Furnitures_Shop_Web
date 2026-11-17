@@ -136,6 +136,9 @@ function createAuthService(pool) {
       if (typeof newPassword !== "string" || newPassword.length < 8 || newPassword.length > 72) {
         throw accountError(400, "New password must be between 8 and 72 characters.");
       }
+      if (!/[A-Z]/.test(newPassword) || !/\d/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+        throw accountError(400, "New password must include an uppercase letter, a number, and a special character.");
+      }
 
       const [users] = await pool.execute(
         "SELECT password_hash FROM users WHERE id = ? LIMIT 1",

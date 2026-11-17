@@ -1,19 +1,25 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
-  CalendarDays,
   Camera,
   Check,
-  Clock3,
+  CheckCircle2,
   CreditCard,
+  Building2,
+  Eye,
+  EyeOff,
   Home,
   KeyRound,
   LoaderCircle,
   LogOut,
   MapPin,
   PackageCheck,
+  Pencil,
+  Plus,
   ShoppingBag,
+  Trash2,
   UserRound,
   Upload,
+  X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -30,10 +36,19 @@ const tabs = [
   { id: "addresses", label: "Addresses", icon: MapPin },
   { id: "orders", label: "Orders", icon: PackageCheck },
   { id: "password", label: "Set Password", icon: KeyRound },
+  { id: "logout", label: "Logout", icon: LogOut },
 ];
 
 const accountHeroImage = resolveMediaUrl("/uploads/banners/1a4fd15f-b369-42f2-9d40-47fcb5d305a2.png");
 const MAX_BIRTH_DATE = new Date().toISOString().slice(0, 10);
+const ORDER_FILTERS = ["All Orders", "Processing", "Shipped", "Delivered", "Cancelled"];
+const PASSWORD_REQUIREMENTS = [
+  { label: "At least 8 characters", test: (value) => value.length >= 8 },
+  { label: "One uppercase letter", test: (value) => /[A-Z]/.test(value) },
+  { label: "One number", test: (value) => /\d/.test(value) },
+  { label: "One special character", test: (value) => /[^A-Za-z0-9]/.test(value) },
+  { label: "No more than 72 characters", test: (value) => value.length > 0 && value.length <= 72 },
+];
 
 function dateInputValue(value) {
   if (!value) return "";
@@ -61,24 +76,15 @@ function formatDate(value) {
 function statusClass(status) {
   if (status === "Delivered") return "bg-emerald-50 text-emerald-700";
   if (status === "Cancelled") return "bg-red-50 text-red-700";
-  if (status === "Shipping") return "bg-blue-50 text-blue-700";
+  if (status === "Shipping" || status === "Shipped") return "bg-blue-50 text-blue-700";
   return "bg-amber-50 text-amber-800";
 }
 
-function getOrderAddress(order) {
-  const address = order.shipping_address && typeof order.shipping_address === "object"
-    ? order.shipping_address
-    : order;
-  return {
-    customer_name: address.customer_name || order.customer_name || "",
-    customer_phone: address.customer_phone || order.customer_phone || "",
-    street_address: address.street_address || address.address || "",
-    city: address.city || "",
-    district: address.district || "",
-    state: address.state || "",
-    country: address.country || "",
-    zip_code: address.zip_code || "",
-  };
+function orderFilterStatus(status) {
+  if (status === "Delivered" || status === "Cancelled" || status === "Shipping" || status === "Shipped") {
+    return status === "Shipping" ? "Shipped" : status;
+  }
+  return "Processing";
 }
 
 function Account() {
@@ -100,13 +106,35 @@ function Account() {
     profile_image: user?.profile_image || "",
   });
   const [orders, setOrders] = useState([]);
+  const [addresses, setAddresses] = useState([]);
+  const [selectedOrderFilter, setSelectedOrderFilter] = useState("All Orders");
   const [profileLoading, setProfileLoading] = useState(true);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [addressesLoading, setAddressesLoading] = useState(true);
   const [profileError, setProfileError] = useState("");
   const [ordersError, setOrdersError] = useState("");
+  const [addressesError, setAddressesError] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [addressSaving, setAddressSaving] = useState(false);
+  const [addressActionId, setAddressActionId] = useState(null);
+  const [addressFormOpen, setAddressFormOpen] = useState(false);
+  const [addressFormError, setAddressFormError] = useState("");
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [addressDraft, setAddressDraft] = useState({
+    label: "Home",
+    customer_name: user?.name || user?.username || "",
+    customer_phone: user?.phone || "",
+    street_address: "",
+    city: "",
+    district: "",
+    state: "",
+    country: "India",
+    zip_code: "",
+    is_default: false,
+  });
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [profileFormError, setProfileFormError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [passwords, setPasswords] = useState({
@@ -116,6 +144,7 @@ function Account() {
   });
   const [reloadProfile, setReloadProfile] = useState(0);
   const [reloadOrders, setReloadOrders] = useState(0);
+  const [reloadAddresses, setReloadAddresses] = useState(0);
   const userId = user?.id;
   const userProfileImage = user?.profile_image;
 
@@ -180,23 +209,35 @@ function Account() {
     };
   }, [user?.id, reloadOrders]);
 
-  const addresses = useMemo(() => {
-    const uniqueAddresses = new Map();
-    orders.forEach((order) => {
-      const address = getOrderAddress(order);
-      if (!address.street_address) return;
-      const key = [
-        address.street_address,
-        address.city,
-        address.district,
-        address.state,
-        address.country,
-        address.zip_code,
-      ].map((part) => String(part).trim().toLowerCase().replace(/\s+/g, " ")).join("|");
-      if (!uniqueAddresses.has(key)) uniqueAddresses.set(key, address);
-    });
-    return [...uniqueAddresses.values()];
-  }, [orders]);
+  useEffect(() => {
+    let active = true;
+
+    async function loadAddresses() {
+      setAddressesLoading(true);
+      setAddressesError("");
+      try {
+        const { data } = await api.get("/users/me/addresses");
+        if (!Array.isArray(data)) throw new Error("The server returned an invalid address list.");
+        if (active) setAddresses(data);
+      } catch (error) {
+        console.error("Could not load account addresses:", error);
+        if (active) {
+          setAddressesError(error.response?.data?.message || "Could not load your saved addresses. Please try again.");
+        }
+      } finally {
+        if (active) setAddressesLoading(false);
+      }
+    }
+
+    loadAddresses();
+    return () => {
+      active = false;
+    };
+  }, [user?.id, reloadAddresses]);
+
+  const visibleOrders = useMemo(() => orders.filter(
+    (order) => selectedOrderFilter === "All Orders" || orderFilterStatus(order.status) === selectedOrderFilter,
+  ), [orders, selectedOrderFilter]);
 
   async function saveProfile(event) {
     event.preventDefault();
@@ -227,6 +268,91 @@ function Account() {
   function cancelProfileChanges() {
     setProfile(savedProfile);
     setProfileFormError("");
+  }
+
+  function startNewAddress() {
+    setEditingAddressId(null);
+    setAddressFormError("");
+    setAddressDraft({
+      label: "Home",
+      customer_name: profile.name || user?.name || user?.username || "",
+      customer_phone: profile.phone || user?.phone || "",
+      street_address: "",
+      city: "",
+      district: "",
+      state: "",
+      country: "India",
+      zip_code: "",
+      is_default: addresses.length === 0,
+    });
+    setAddressFormOpen(true);
+  }
+
+  function startEditAddress(address) {
+    setEditingAddressId(address.id);
+    setAddressFormError("");
+    setAddressDraft({
+      label: address.label || "Home",
+      customer_name: address.customer_name || "",
+      customer_phone: address.customer_phone || "",
+      street_address: address.street_address || "",
+      city: address.city || "",
+      district: address.district || "",
+      state: address.state || "",
+      country: address.country || "India",
+      zip_code: address.zip_code || "",
+      is_default: Boolean(Number(address.is_default)),
+    });
+    setAddressFormOpen(true);
+  }
+
+  async function saveAddress(event) {
+    event.preventDefault();
+    setAddressSaving(true);
+    setAddressFormError("");
+    try {
+      const request = editingAddressId
+        ? api.put(`/users/me/addresses/${editingAddressId}`, addressDraft)
+        : api.post("/users/me/addresses", addressDraft);
+      await request;
+      setAddressFormOpen(false);
+      setEditingAddressId(null);
+      setReloadAddresses((count) => count + 1);
+      toast.success(editingAddressId ? "Address updated." : "Address saved.");
+    } catch (error) {
+      const message = error.response?.data?.message || "Could not save your address.";
+      setAddressFormError(message);
+      toast.error(message);
+    } finally {
+      setAddressSaving(false);
+    }
+  }
+
+  async function makeDefaultAddress(id) {
+    setAddressActionId(id);
+    try {
+      await api.put(`/users/me/addresses/${id}/default`);
+      setReloadAddresses((count) => count + 1);
+      toast.success("Default address updated.");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not update the default address.");
+    } finally {
+      setAddressActionId(null);
+    }
+  }
+
+  async function deleteAddress(address) {
+    if (!window.confirm(`Delete the ${address.label || "saved"} address?`)) return;
+    setAddressActionId(address.id);
+    try {
+      await api.delete(`/users/me/addresses/${address.id}`);
+      setReloadAddresses((count) => count + 1);
+      toast.success("Address deleted.");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not delete the address.");
+    } finally {
+      setAddressActionId(null);
+    }
   }
 
   async function uploadProfilePhoto(event) {
@@ -275,8 +401,11 @@ function Account() {
       setPasswordError("The new passwords do not match.");
       return;
     }
-    if (passwords.newPassword.length < 8 || passwords.newPassword.length > 72) {
-      setPasswordError("Password must be between 8 and 72 characters.");
+    if (
+      passwords.newPassword.length > 72
+      || PASSWORD_REQUIREMENTS.some((requirement) => !requirement.test(passwords.newPassword))
+    ) {
+      setPasswordError("Meet all password requirements before continuing.");
       return;
     }
 
@@ -369,16 +498,6 @@ function Account() {
                 </button>
               ))}
             </nav>
-            <div className="mt-3 border-t border-[#e7d8c8] pt-2">
-              <button
-                type="button"
-                onClick={logout}
-                className="inline-flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-bold text-[#5b4839] transition hover:bg-white/70 hover:text-[#a34720] sm:text-sm"
-              >
-                <LogOut size={18} className="text-[#e87500]" />
-                Logout
-              </button>
-            </div>
           </aside>
 
           <section
@@ -530,58 +649,70 @@ function Account() {
                   </span>
                   <div>
                     <h2 className="text-xl font-bold">Set Password</h2>
-                    <p className="text-sm text-[#806d5d]">Choose a strong password to protect your account.</p>
+                    <p className="text-sm text-[#806d5d]">Create a strong password to keep your account secure.</p>
                   </div>
                 </div>
-                <form onSubmit={changePassword} className="max-w-xl space-y-5">
-                  <label className="block text-sm font-semibold">
-                    Current password
-                    <input
-                      className={inputClass}
-                      type="password"
-                      autoComplete="current-password"
-                      value={passwords.currentPassword}
-                      onChange={(event) => setPasswords((current) => ({ ...current, currentPassword: event.target.value }))}
-                      required
-                    />
-                  </label>
-                  <label className="block text-sm font-semibold">
-                    New password
-                    <input
-                      className={inputClass}
-                      type="password"
-                      autoComplete="new-password"
-                      minLength={8}
-                      maxLength={72}
-                      value={passwords.newPassword}
-                      onChange={(event) => setPasswords((current) => ({ ...current, newPassword: event.target.value }))}
-                      required
-                    />
-                    <span className="mt-1 block text-xs font-normal text-[#8b735e]">Use 8–72 characters.</span>
-                  </label>
-                  <label className="block text-sm font-semibold">
-                    Confirm new password
-                    <input
-                      className={inputClass}
-                      type="password"
-                      autoComplete="new-password"
-                      minLength={8}
-                      maxLength={72}
-                      value={passwords.confirmPassword}
-                      onChange={(event) => setPasswords((current) => ({ ...current, confirmPassword: event.target.value }))}
-                      required
-                    />
-                  </label>
-                  {passwordError && <p role="alert" className="text-sm text-red-700">{passwordError}</p>}
-                  <button
-                    type="submit"
-                    disabled={passwordSaving}
-                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-dark disabled:cursor-wait disabled:opacity-60"
-                  >
-                    {passwordSaving ? <LoaderCircle size={17} className="animate-spin" /> : <KeyRound size={17} />}
-                    {passwordSaving ? "Updating..." : "Update password"}
-                  </button>
-                </form>
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(230px,0.85fr)]">
+                  <form onSubmit={changePassword} className="space-y-4">
+                    {[
+                      { key: "currentPassword", label: "Current password", autoComplete: "current-password", visibilityKey: "current" },
+                      { key: "newPassword", label: "New password", autoComplete: "new-password", visibilityKey: "new" },
+                      { key: "confirmPassword", label: "Confirm new password", autoComplete: "new-password", visibilityKey: "confirm" },
+                    ].map(({ key, label, autoComplete, visibilityKey }) => (
+                      <label key={key} className="block text-sm font-semibold">
+                        {label}
+                        <span className="relative block">
+                          <input
+                            className={`${inputClass} pr-12`}
+                            type={showPasswords[visibilityKey] ? "text" : "password"}
+                            autoComplete={autoComplete}
+                            minLength={key === "currentPassword" ? undefined : 8}
+                            maxLength={key === "currentPassword" ? undefined : 72}
+                            value={passwords[key]}
+                            onChange={(event) => setPasswords((current) => ({ ...current, [key]: event.target.value }))}
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswords((current) => ({
+                              ...current,
+                              [visibilityKey]: !current[visibilityKey],
+                            }))}
+                            aria-label={`${showPasswords[visibilityKey] ? "Hide" : "Show"} ${label.toLowerCase()}`}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8b735e] hover:text-[#a34720]"
+                          >
+                            {showPasswords[visibilityKey] ? <EyeOff size={17} /> : <Eye size={17} />}
+                          </button>
+                        </span>
+                      </label>
+                    ))}
+                    {passwordError && <p role="alert" className="text-sm text-red-700">{passwordError}</p>}
+                    <button
+                      type="submit"
+                      disabled={passwordSaving}
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#f07816] to-[#df5d00] px-5 py-3 text-sm font-bold text-white transition hover:brightness-105 disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {passwordSaving ? <LoaderCircle size={17} className="animate-spin" /> : <KeyRound size={17} />}
+                      {passwordSaving ? "Updating..." : "Update password"}
+                    </button>
+                  </form>
+
+                  <aside className="h-fit rounded-xl border border-[#f1e7dd] bg-[#fffaf5] p-4">
+                    <h3 className="font-bold">Password requirements</h3>
+                    <p className="mt-1 text-xs text-[#806d5d]">Your password must include:</p>
+                    <ul className="mt-4 space-y-3">
+                      {PASSWORD_REQUIREMENTS.map(({ label, test }) => {
+                        const met = test(passwords.newPassword);
+                        return (
+                          <li key={label} className={`flex items-center gap-2 text-sm ${met ? "text-emerald-700" : "text-[#806d5d]"}`}>
+                            <CheckCircle2 size={17} className={met ? "text-emerald-600" : "text-[#c8b9aa]"} />
+                            {label}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </aside>
+                </div>
               </>
             )}
 
@@ -595,6 +726,24 @@ function Account() {
                     <h2 className="text-xl font-bold">Your Orders</h2>
                     <p className="text-sm text-[#806d5d]">Check the status and summary of your recent orders.</p>
                   </div>
+                </div>
+                <div role="tablist" aria-label="Filter orders" className="mb-5 flex gap-2 overflow-x-auto border-b border-[#eee4d8] pb-2">
+                  {ORDER_FILTERS.map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      role="tab"
+                      aria-selected={selectedOrderFilter === filter}
+                      onClick={() => setSelectedOrderFilter(filter)}
+                      className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition sm:text-sm ${
+                        selectedOrderFilter === filter
+                          ? "bg-[#fff0df] text-[#a34720]"
+                          : "text-[#806d5d] hover:bg-[#fcf7f1]"
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
                 </div>
                 {ordersLoading ? (
                   <div className="flex items-center gap-2 py-8 text-sm text-[#806d5d]">
@@ -614,38 +763,65 @@ function Account() {
                       Browse furniture
                     </Link>
                   </div>
+                ) : visibleOrders.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-[#d9c4aa] px-5 py-10 text-center">
+                    <PackageCheck className="mx-auto text-[#a34720]" size={32} />
+                    <h3 className="mt-3 font-bold">No {selectedOrderFilter.toLowerCase()} orders</h3>
+                    <p className="mt-1 text-sm text-[#806d5d]">Choose another filter to see more of your orders.</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    {orders.map((order) => (
-                      <article key={order.order_id || order.id} className="rounded-xl border border-[#eee4d8] p-4">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
+                    {visibleOrders.map((order) => {
+                      const firstItem = Array.isArray(order.items) ? order.items[0] : null;
+                      const status = orderFilterStatus(order.status);
+                      return (
+                      <article key={order.order_id || order.id} className="rounded-xl border border-[#eee4d8] p-4 transition hover:border-[#edc9a9]">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
-                            <p className="text-xs text-[#8b735e]">Order number</p>
-                            <h3 className="mt-0.5 font-bold">{order.order_id || `ORD${String(order.id).padStart(4, "0")}`}</h3>
+                            <h3 className="font-bold">{order.order_id || `ORD${String(order.id).padStart(4, "0")}`}</h3>
+                            <p className="mt-1 text-xs text-[#806d5d]">
+                              Placed {formatDate(order.created_at)} · {Array.isArray(order.items) ? order.items.length : 0} item(s)
+                            </p>
                           </div>
-                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>
-                            {order.status || "Order Placed"}
+                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass(status)}`}>
+                            {status}
                           </span>
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#725d4b]">
-                          <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} />{formatDate(order.created_at)}</span>
-                          <span className="inline-flex items-center gap-1.5"><CreditCard size={14} />{order.payment_method || "Payment not specified"}</span>
-                          <span className="inline-flex items-center gap-1.5"><Clock3 size={14} />{Array.isArray(order.items) ? order.items.length : 0} item(s)</span>
+                        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-[#f1e7dd] pt-4">
+                          <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#fff7ef]">
+                            {firstItem?.image ? (
+                              <img
+                                src={resolveMediaUrl(firstItem.image)}
+                                alt={firstItem.product_name || firstItem.name || "Ordered furniture"}
+                                className="h-full w-full object-contain p-1"
+                              />
+                            ) : <PackageCheck size={25} className="text-[#a34720]" />}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold">
+                              {firstItem?.product_name || firstItem?.name || "Furniture order"}
+                              {Number(firstItem?.quantity) > 1 ? ` × ${firstItem.quantity}` : ""}
+                            </p>
+                            {Array.isArray(order.items) && order.items.length > 1 && (
+                              <p className="mt-1 text-xs text-[#806d5d]">+ {order.items.length - 1} more item(s)</p>
+                            )}
+                            <p className="mt-1 inline-flex items-center gap-1 text-xs text-[#806d5d]">
+                              <CreditCard size={13} /> {order.payment_method || "Payment not specified"}
+                            </p>
+                          </div>
+                          <div className="ml-auto text-right">
+                            <p className="text-[11px] text-[#806d5d]">Order total</p>
+                            <p className="mt-1 font-extrabold">{formatAmount(order.total_amount)}</p>
+                          </div>
                         </div>
-                        {Array.isArray(order.items) && order.items.length > 0 && (
-                          <p className="mt-3 line-clamp-2 text-sm text-[#725d4b]">
-                            {order.items.map((item) => `${item.product_name || item.name || "Furniture"} × ${item.quantity}`).join(" · ")}
-                          </p>
-                        )}
-                        <div className="mt-3 flex items-center justify-between border-t border-[#eee4d8] pt-3">
-                          <span className="text-xs font-semibold text-[#806d5d]">Order total</span>
-                          <span className="font-bold">{formatAmount(order.total_amount)}</span>
+                        <div className="mt-3 flex justify-end border-t border-[#f1e7dd] pt-3">
+                          <Link to="/ordersmain" className="text-xs font-bold text-[#a34720] hover:underline">
+                            View Details
+                          </Link>
                         </div>
                       </article>
-                    ))}
-                    <Link to="/ordersmain" className="inline-flex text-sm font-bold text-[#a34720] hover:underline">
-                      View full order details
-                    </Link>
+                      );
+                    })}
                   </div>
                 )}
               </>
@@ -653,59 +829,290 @@ function Account() {
 
             {activeTab === "addresses" && (
               <>
-                <div className="mb-6 flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#fff0df] text-[#e87500]">
-                    <MapPin size={21} />
-                  </span>
-                  <div>
-                    <h2 className="text-xl font-bold">Saved Addresses</h2>
-                    <p className="text-sm text-[#806d5d]">Delivery addresses from your previous orders.</p>
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#fff0df] text-[#e87500]">
+                      <MapPin size={21} />
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-bold">Saved Addresses</h2>
+                      <p className="text-sm text-[#806d5d]">Manage where your furniture orders are delivered.</p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={startNewAddress}
+                    className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#f07816] to-[#df5d00] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:brightness-105"
+                  >
+                    <Plus size={16} /> Add New Address
+                  </button>
                 </div>
-                {ordersLoading ? (
+
+                {addressFormOpen && (
+                  <form onSubmit={saveAddress} className="mb-5 rounded-xl border border-[#edc9a9] bg-[#fffaf5] p-4 sm:p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <h3 className="font-bold">{editingAddressId ? "Edit Address" : "Add New Address"}</h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddressFormOpen(false);
+                          setAddressFormError("");
+                        }}
+                        aria-label="Close address form"
+                        className="rounded-md p-1 text-[#806d5d] hover:bg-[#f5e9dd]"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                      <label className="block text-xs font-bold">
+                        Address label
+                        <input
+                          className={inputClass}
+                          value={addressDraft.label}
+                          maxLength={40}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, label: event.target.value }))}
+                          placeholder="Home, Office..."
+                          required
+                        />
+                      </label>
+                      <label className="block text-xs font-bold">
+                        Full name
+                        <input
+                          className={inputClass}
+                          value={addressDraft.customer_name}
+                          maxLength={120}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, customer_name: event.target.value }))}
+                          autoComplete="name"
+                          required
+                        />
+                      </label>
+                      <label className="block text-xs font-bold">
+                        Phone number
+                        <input
+                          className={inputClass}
+                          type="tel"
+                          value={addressDraft.customer_phone}
+                          maxLength={32}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, customer_phone: event.target.value }))}
+                          autoComplete="tel"
+                          required
+                        />
+                      </label>
+                      <label className="block text-xs font-bold sm:col-span-2">
+                        Street address
+                        <input
+                          className={inputClass}
+                          value={addressDraft.street_address}
+                          maxLength={255}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, street_address: event.target.value }))}
+                          autoComplete="street-address"
+                          required
+                        />
+                      </label>
+                      <label className="block text-xs font-bold">
+                        City
+                        <input
+                          className={inputClass}
+                          value={addressDraft.city}
+                          maxLength={191}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, city: event.target.value }))}
+                          autoComplete="address-level2"
+                          required
+                        />
+                      </label>
+                      <label className="block text-xs font-bold">
+                        District <span className="font-normal text-[#8b735e]">(optional)</span>
+                        <input
+                          className={inputClass}
+                          value={addressDraft.district}
+                          maxLength={191}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, district: event.target.value }))}
+                        />
+                      </label>
+                      <label className="block text-xs font-bold">
+                        State
+                        <input
+                          className={inputClass}
+                          value={addressDraft.state}
+                          maxLength={191}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, state: event.target.value }))}
+                          autoComplete="address-level1"
+                          required
+                        />
+                      </label>
+                      <label className="block text-xs font-bold">
+                        Country
+                        <input
+                          className={inputClass}
+                          value={addressDraft.country}
+                          maxLength={191}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, country: event.target.value }))}
+                          autoComplete="country-name"
+                          required
+                        />
+                      </label>
+                      <label className="block text-xs font-bold">
+                        PIN code
+                        <input
+                          className={inputClass}
+                          value={addressDraft.zip_code}
+                          maxLength={32}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, zip_code: event.target.value }))}
+                          autoComplete="postal-code"
+                          required
+                        />
+                      </label>
+                      <label className="flex items-center gap-2 self-end pb-2 text-xs font-semibold text-[#5b4839]">
+                        <input
+                          type="checkbox"
+                          checked={addressDraft.is_default}
+                          onChange={(event) => setAddressDraft((current) => ({ ...current, is_default: event.target.checked }))}
+                          className="h-4 w-4 accent-[#e87500]"
+                        />
+                        Set as default address
+                      </label>
+                    </div>
+                    {addressFormError && <p role="alert" className="mt-3 text-sm text-red-700">{addressFormError}</p>}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="submit"
+                        disabled={addressSaving}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-dark disabled:opacity-60"
+                      >
+                        {addressSaving ? <LoaderCircle size={15} className="animate-spin" /> : <Check size={15} />}
+                        {addressSaving ? "Saving..." : "Save Address"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddressFormOpen(false);
+                          setAddressFormError("");
+                        }}
+                        disabled={addressSaving}
+                        className="rounded-lg border border-[#edc9a9] px-4 py-2.5 text-xs font-bold text-[#5b3821] hover:bg-white disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {addressesError ? (
+                  <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <span>{addressesError}</span>
+                    <button type="button" onClick={() => setReloadAddresses((count) => count + 1)} className="font-bold underline">Try again</button>
+                  </div>
+                ) : addressesLoading ? (
                   <div className="flex items-center gap-2 py-8 text-sm text-[#806d5d]">
                     <LoaderCircle size={18} className="animate-spin" /> Loading your addresses...
-                  </div>
-                ) : ordersError ? (
-                  <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    <span>{ordersError}</span>
-                    <button type="button" onClick={() => setReloadOrders((count) => count + 1)} className="font-bold underline">Try again</button>
                   </div>
                 ) : addresses.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-[#d9c4aa] px-5 py-12 text-center">
                     <MapPin className="mx-auto text-[#a34720]" size={34} />
                     <h3 className="mt-3 font-bold">No saved addresses yet</h3>
                     <p className="mx-auto mt-1 max-w-md text-sm text-[#806d5d]">
-                      Add a delivery address at checkout. It will be available here after you place your order.
+                      Add an address to save your delivery details for future orders.
                     </p>
-                    <Link to="/shop" className="mt-4 inline-flex rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary-dark">
-                      Shop furniture
-                    </Link>
+                    <button
+                      type="button"
+                      onClick={startNewAddress}
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary-dark"
+                    >
+                      <Plus size={16} /> Add an address
+                    </button>
                   </div>
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {addresses.map((address, index) => (
-                      <article key={`${address.street_address}-${address.zip_code}-${index}`} className="rounded-xl border border-[#eee4d8] p-4">
-                        <div className="flex items-center gap-2">
-                          <MapPin size={17} className="shrink-0 text-[#e87500]" />
-                          <h3 className="font-bold">{address.customer_name || `Address ${index + 1}`}</h3>
-                        </div>
-                        <p className="mt-2 pl-6 text-sm leading-6 text-[#725d4b]">
-                          {[
-                            address.street_address,
-                            address.city,
-                            address.district,
-                            address.state,
-                            address.zip_code,
-                            address.country,
-                          ].filter(Boolean).join(", ")}
-                        </p>
-                        {address.customer_phone && <p className="mt-2 pl-6 text-xs text-[#806d5d]">{address.customer_phone}</p>}
-                      </article>
-                    ))}
+                    {addresses.map((address) => {
+                      const AddressIcon = address.label?.toLowerCase() === "home" ? Home : Building2;
+                      const isDefault = Boolean(Number(address.is_default));
+                      return (
+                        <article key={address.id} className="rounded-xl border border-[#eee4d8] p-4 transition hover:border-[#edc9a9]">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#fff0df] text-[#a34720]">
+                                <AddressIcon size={18} />
+                              </span>
+                              <div className="min-w-0">
+                                <h3 className="truncate font-bold">{address.label || "Address"}</h3>
+                                {isDefault && (
+                                  <span className="mt-1 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => startEditAddress(address)}
+                                aria-label={`Edit ${address.label || "address"}`}
+                                className="rounded-md p-2 text-[#806d5d] hover:bg-[#fff0df] hover:text-[#a34720]"
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteAddress(address)}
+                                disabled={addressActionId === address.id}
+                                aria-label={`Delete ${address.label || "address"}`}
+                                className="rounded-md p-2 text-[#806d5d] hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                              >
+                                {addressActionId === address.id ? <LoaderCircle size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                              </button>
+                            </div>
+                          </div>
+                          <p className="mt-3 text-sm font-semibold">{address.customer_name}</p>
+                          <p className="mt-1 text-sm leading-6 text-[#725d4b]">
+                            {[address.street_address, address.city, address.district, address.state, address.zip_code, address.country]
+                              .filter(Boolean).join(", ")}
+                          </p>
+                          <p className="mt-2 text-xs text-[#806d5d]">{address.customer_phone}</p>
+                          {!isDefault && (
+                            <button
+                              type="button"
+                              onClick={() => makeDefaultAddress(address.id)}
+                              disabled={addressActionId === address.id}
+                              className="mt-3 text-xs font-bold text-[#a34720] hover:underline disabled:opacity-50"
+                            >
+                              Set as default
+                            </button>
+                          )}
+                        </article>
+                      );
+                    })}
                   </div>
                 )}
               </>
+            )}
+
+            {activeTab === "logout" && (
+              <div className="flex min-h-[300px] flex-col items-center justify-center py-8 text-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#fff0df] text-[#e87500]">
+                  <LogOut size={28} />
+                </span>
+                <h2 className="mt-5 text-2xl font-extrabold">Sign out of your account?</h2>
+                <p className="mt-2 max-w-md text-sm leading-6 text-[#806d5d]">
+                  You can sign back in anytime to view your profile, saved addresses, and orders.
+                </p>
+                <div className="mt-6 flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={logout}
+                    className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#f07816] to-[#df5d00] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:brightness-105"
+                  >
+                    <LogOut size={16} /> Yes, Log Out
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("profile")}
+                    className="rounded-lg border border-[#edc9a9] px-5 py-3 text-sm font-bold text-[#5b3821] transition hover:bg-[#fff5eb]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             )}
           </section>
         </div>

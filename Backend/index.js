@@ -4,6 +4,7 @@ const cors = require("cors");
 const express = require("express");
 const { createPool, initializeDatabase } = require("./modules/db");
 const { createAuthService } = require("./modules/authService");
+const { createUserAddressService } = require("./modules/userAddressService");
 const { createAuthController } = require("./controllers/authController");
 const { createFavoriteController } = require("./controllers/favoriteController");
 const { createCartController } = require("./controllers/cartController");
@@ -55,6 +56,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 const pool = createPool();
 const app = express();
 const authService = createAuthService(pool);
+const userAddressService = createUserAddressService(pool);
 const authController = createAuthController(authService);
 const categoryService = createCategoryService(pool);
 const productService = createProductService(pool);
@@ -107,8 +109,8 @@ app.use("/api/dealers", createDealerRouter(dealerService));
 app.use("/api/invoices", createInvoiceRouter(invoiceService));
 app.use("/api/stock", createStockRouter(stockService));
 app.use("/api/invoice-products", createInvoiceProductRouter(invoiceProductService));
-app.use("/api/users", createUserRouter(authService));
-app.use("/api/auth/users", createUserRouter(authService));
+app.use("/api/users", createUserRouter(authService, userAddressService));
+app.use("/api/auth/users", createUserRouter(authService, userAddressService));
 app.use("/api", createUploadRouter(authService));
 
 app.use((error, request, response, next) => {

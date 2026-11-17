@@ -81,13 +81,34 @@ const Checkout = () => {
     const loadSavedAddresses = async () => {
       setIsLoadingAddresses(true);
       try {
-        const { data } = await api.get("/orders/mine");
-        if (!Array.isArray(data)) {
-          throw new Error("The server returned an invalid order list.");
+        const [savedResponse, ordersResponse] = await Promise.all([
+          api.get("/users/me/addresses"),
+          api.get("/orders/mine"),
+        ]);
+        if (!Array.isArray(savedResponse.data) || !Array.isArray(ordersResponse.data)) {
+          throw new Error("The server returned invalid saved addresses or orders.");
         }
 
         const uniqueAddresses = new Map();
-        data.forEach((order) => {
+        savedResponse.data.forEach((address) => {
+          const savedAddress = {
+            ...address,
+            customer_email: "",
+            country: address.country || "India",
+          };
+          const signature = [
+            savedAddress.street_address,
+            savedAddress.city,
+            savedAddress.district,
+            savedAddress.state,
+            savedAddress.country,
+            savedAddress.zip_code,
+          ].map((value) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ")).join("|");
+          if (savedAddress.street_address && !uniqueAddresses.has(signature)) {
+            uniqueAddresses.set(signature, savedAddress);
+          }
+        });
+        ordersResponse.data.forEach((order) => {
           const address = order.shipping_address || order;
           const savedAddress = {
             id: order.order_id || order.id || "",
@@ -108,7 +129,7 @@ const Checkout = () => {
             savedAddress.state,
             savedAddress.country,
             savedAddress.zip_code,
-          ].map((value) => String(value).trim().toLowerCase().replace(/\s+/g, " ")).join("|");
+          ].map((value) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ")).join("|");
           if (savedAddress.street_address && !uniqueAddresses.has(signature)) {
             if (!savedAddress.id) savedAddress.id = signature;
             uniqueAddresses.set(signature, savedAddress);

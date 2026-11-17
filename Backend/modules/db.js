@@ -1496,6 +1496,101 @@ async function initializeDatabase(pool) {
   if (!userIdHasUniqueIndex) {
     await pool.query("ALTER TABLE users ADD UNIQUE KEY users_user_id_unique (user_id)");
   }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_addresses (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      label VARCHAR(40) NOT NULL DEFAULT 'Home',
+      customer_name VARCHAR(120) NOT NULL,
+      customer_phone VARCHAR(32) NOT NULL,
+      street_address VARCHAR(255) NOT NULL,
+      city VARCHAR(191) NOT NULL,
+      district VARCHAR(191) NULL,
+      state VARCHAR(191) NOT NULL,
+      country VARCHAR(191) NOT NULL DEFAULT 'India',
+      zip_code VARCHAR(32) NOT NULL,
+      is_default TINYINT(1) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY user_addresses_user_default_idx (user_id, is_default, id),
+      CONSTRAINT user_addresses_user_fk
+        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  const [legacyAddresses] = await pool.execute(`
+    SELECT a.user_id,
+           LEFT(COALESCE(NULLIF(a.customer_name, ''), u.username), 120) AS customer_name,
+           LEFT(COALESCE(NULLIF(a.customer_phone, ''), NULLIF(u.phone, '')), 32) AS customer_phone,
+           a.street_address,
+           a.city,
+           a.district,
+           a.state,
+           COALESCE(a.country, 'India') AS country,
+           a.zip_code,
+           MAX(a.order_id) AS latest_order_id
+    FROM \`address\` a
+    INNER JOIN users u ON u.user_id = a.user_id
+    WHERE a.user_id IS NOT NULL
+      AND a.street_address IS NOT NULL AND TRIM(a.street_address) <> ''
+      AND a.city IS NOT NULL AND TRIM(a.city) <> ''
+      AND a.state IS NOT NULL AND TRIM(a.state) <> ''
+      AND a.zip_code IS NOT NULL AND TRIM(a.zip_code) <> ''
+      AND CHAR_LENGTH(TRIM(COALESCE(NULLIF(a.customer_phone, ''), NULLIF(u.phone, '')))) >= 6
+      AND NOT EXISTS (
+        SELECT 1 FROM user_addresses saved WHERE saved.user_id = a.user_id
+      )
+    GROUP BY a.user_id, a.customer_name, a.customer_phone, a.street_address, a.city,
+             a.district, a.state, a.country, a.zip_code, u.username, u.phone
+    ORDER BY a.user_id, latest_order_id DESC
+  `);
+  const legacyAddressesByUser = new Map();
+  for (const address of legacyAddresses) {
+    if (!legacyAddressesByUser.has(address.user_id)) legacyAddressesByUser.set(address.user_id, []);
+    legacyAddressesByUser.get(address.user_id).push(address);
+  }
+
+  for (const [userId, addresses] of legacyAddressesByUser) {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      await connection.execute("SELECT user_id FROM users WHERE user_id = ? FOR UPDATE", [userId]);
+      const [savedAddresses] = await connection.execute(
+        "SELECT id FROM user_addresses WHERE user_id = ? FOR UPDATE",
+        [userId],
+      );
+      if (!savedAddresses.length) {
+        for (const [index, address] of addresses.entries()) {
+          await connection.execute(
+            `INSERT INTO user_addresses
+             (user_id, label, customer_name, customer_phone, street_address, city, district,
+              state, country, zip_code, is_default)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              userId,
+              index === 0 ? "Home" : `Address ${index + 1}`,
+              address.customer_name,
+              address.customer_phone,
+              address.street_address,
+              address.city,
+              address.district,
+              address.state,
+              address.country,
+              address.zip_code,
+              index === 0 ? 1 : 0,
+            ],
+          );
+        }
+      }
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 module.exports = { createPool, initializeDatabase };
