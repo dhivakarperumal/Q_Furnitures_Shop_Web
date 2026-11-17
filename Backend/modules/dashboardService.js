@@ -142,7 +142,7 @@ function createDashboardService(pool) {
       return {
         stats: [
           { label: "Products", value: Number(productCountRows[0]?.total || 0), icon: "bag", description: "Items in your catalog" },
-          { label: "Orders", value: Number(orderStats.order_count || 0), icon: "saree", description: "All recorded orders" },
+          { label: "Orders", value: Number(orderStats.order_count || 0), icon: "chair", description: "All recorded orders" },
           { label: "Revenue", value: Number(orderStats.revenue) || 0, icon: "rupee", description: "Excluding cancelled orders" },
           { label: "Pending Orders", value: Number(orderStats.pending_count || 0), icon: "pending", description: "Awaiting fulfillment" },
           { label: "Orders in Transit", value: Number(orderStats.transit_count || 0), icon: "truck", description: "Shipping or out for delivery" },
