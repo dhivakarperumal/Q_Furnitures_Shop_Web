@@ -6,7 +6,7 @@ const PageHeader = ({ title, background }) => {
 
   return (
     <div
-      className="relative flex h-[180px] w-full items-center justify-start overflow-hidden bg-black px-5 text-left text-[#351d0e] sm:h-[200px] sm:pl-[15%] sm:pr-8 md:h-[210px] md:pl-[15%] lg:h-[220px]"
+      className="relative flex h-[140px] w-full items-center justify-start overflow-hidden bg-black px-5 text-left text-[#351d0e] sm:h-[160px] sm:pl-[15%] sm:pr-8 md:h-[170px] md:pl-[15%] lg:h-[180px]"
     >
       <div
         aria-hidden="true"
