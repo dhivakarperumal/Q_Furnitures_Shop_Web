@@ -13,8 +13,12 @@ const PageHeader = ({ title, background }) => {
         className="absolute inset-0 scale-105 bg-cover bg-center"
         style={{ backgroundImage: `url(${bgImage})` }}
       />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#fff3e3]/70"
+      />
       <div className="relative">
-        <h1 className="mb-2 text-2xl font-bold sm:text-3xl md:mb-3 md:text-4xl lg:text-5xl">
+        <h1 className="mb-2 text-2xl font-bold text-[#ef7412] sm:text-3xl md:mb-3 md:text-4xl lg:text-5xl">
           {title}
         </h1>
         <div className="flex items-center justify-start gap-2 text-xs sm:text-sm md:text-base">
