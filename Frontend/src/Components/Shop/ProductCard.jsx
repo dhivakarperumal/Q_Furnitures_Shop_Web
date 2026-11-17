@@ -67,7 +67,7 @@ export default function ProductCard({ product, compact = false }) {
               src={image}
               alt={product.name}
               loading="lazy"
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+              className="h-full w-full object-contain"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-[#c7b5a2]">
