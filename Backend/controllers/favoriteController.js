@@ -9,6 +9,17 @@ function parseProductId(value) {
   return productId;
 }
 
+function parseComboId(value) {
+  const stringValue = String(value ?? "");
+  const comboId = Number(stringValue);
+  if (!/^\d+$/.test(stringValue) || !Number.isSafeInteger(comboId) || comboId < 1) {
+    const error = new Error("Combo ID must be a positive integer.");
+    error.status = 400;
+    throw error;
+  }
+  return comboId;
+}
+
 function createFavoriteController(favoriteService) {
   return {
     async list(request, response, next) {
@@ -46,6 +57,39 @@ function createFavoriteController(favoriteService) {
 
       try {
         await favoriteService.remove(request.auth.user_id, productId);
+        return response.status(204).end();
+      } catch (error) {
+        return next(error);
+      }
+    },
+
+    async addCombo(request, response, next) {
+      let comboId;
+      try {
+        comboId = parseComboId(request.params.comboId);
+      } catch (error) {
+        return response.status(error.status).json({ message: error.message });
+      }
+
+      try {
+        const added = await favoriteService.addCombo(request.auth.user_id, comboId);
+        if (!added) return response.status(404).json({ message: "Active combo was not found." });
+        return response.status(201).json({ message: "Combo added to favorites." });
+      } catch (error) {
+        return next(error);
+      }
+    },
+
+    async removeCombo(request, response, next) {
+      let comboId;
+      try {
+        comboId = parseComboId(request.params.comboId);
+      } catch (error) {
+        return response.status(error.status).json({ message: error.message });
+      }
+
+      try {
+        await favoriteService.removeCombo(request.auth.user_id, comboId);
         return response.status(204).end();
       } catch (error) {
         return next(error);

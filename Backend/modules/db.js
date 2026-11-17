@@ -540,6 +540,19 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS combo_favorites (
+      user_id VARCHAR(255) NOT NULL,
+      combo_id BIGINT UNSIGNED NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, combo_id),
+      KEY combo_favorites_combo_idx (combo_id),
+      CONSTRAINT combo_favorites_user_fk
+        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+      CONSTRAINT combo_favorites_combo_fk
+        FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS combo_legacy_migrations (
       legacy_product_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
       imported_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -610,7 +623,9 @@ async function initializeDatabase(pool) {
     CREATE TABLE IF NOT EXISTS \`cart\` (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id VARCHAR(255) NOT NULL,
-      product_id BIGINT UNSIGNED NOT NULL,
+      product_id BIGINT UNSIGNED NULL,
+      combo_id BIGINT UNSIGNED NULL,
+      combo_snapshot JSON NULL,
       variant_color VARCHAR(100) NOT NULL DEFAULT '',
       variant_size VARCHAR(100) NOT NULL DEFAULT '',
       cart_image VARCHAR(2048) NULL,
@@ -623,22 +638,52 @@ async function initializeDatabase(pool) {
       created_by VARCHAR(255) NULL,
       updated_by VARCHAR(255) NULL,
       UNIQUE KEY user_cart_product_variant_unique (user_id, product_id, variant_color, variant_size),
+      UNIQUE KEY user_cart_combo_unique (user_id, combo_id),
       KEY user_cart_user_created_idx (user_id, created_at),
       CONSTRAINT user_cart_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-      CONSTRAINT user_cart_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      CONSTRAINT user_cart_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+      CONSTRAINT user_cart_combo_fk FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   const [cartColumnRows] = await pool.execute(
-    `SELECT COLUMN_NAME
+    `SELECT COLUMN_NAME, IS_NULLABLE
      FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cart'`,
   );
   const cartColumns = new Set(cartColumnRows.map((column) => column.COLUMN_NAME));
+  if (!cartColumns.has("combo_id")) {
+    await pool.query("ALTER TABLE `cart` ADD COLUMN combo_id BIGINT UNSIGNED NULL AFTER product_id");
+  }
+  if (!cartColumns.has("combo_snapshot")) {
+    await pool.query("ALTER TABLE `cart` ADD COLUMN combo_snapshot JSON NULL AFTER combo_id");
+  }
+  const productIdColumn = cartColumnRows.find((column) => column.COLUMN_NAME === "product_id");
+  if (productIdColumn && productIdColumn.IS_NULLABLE !== "YES") {
+    await pool.query("ALTER TABLE `cart` MODIFY COLUMN product_id BIGINT UNSIGNED NULL");
+  }
   if (!cartColumns.has("cart_image")) {
     await pool.query("ALTER TABLE `cart` ADD COLUMN cart_image VARCHAR(2048) NULL");
   }
   if (!cartColumns.has("image")) {
     await pool.query("ALTER TABLE `cart` ADD COLUMN image VARCHAR(2048) NULL");
+  }
+  const [cartIndexes] = await pool.execute(
+    `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cart'`,
+  );
+  if (!cartIndexes.some((index) => index.INDEX_NAME === "user_cart_combo_unique")) {
+    await pool.query("ALTER TABLE `cart` ADD UNIQUE KEY user_cart_combo_unique (user_id, combo_id)");
+  }
+  const [cartComboForeignKeys] = await pool.execute(
+    `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cart'
+       AND COLUMN_NAME = 'combo_id' AND REFERENCED_TABLE_NAME = 'combos'`,
+  );
+  if (!cartComboForeignKeys.length) {
+    await pool.query(
+      `ALTER TABLE \`cart\` ADD CONSTRAINT user_cart_combo_fk
+       FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE CASCADE`,
+    );
   }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS coupons (
@@ -854,6 +899,8 @@ async function initializeDatabase(pool) {
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       order_id BIGINT UNSIGNED NOT NULL,
       product_id BIGINT UNSIGNED NULL,
+      combo_id BIGINT UNSIGNED NULL,
+      combo_snapshot JSON NULL,
       product_name VARCHAR(191) NOT NULL,
       price DECIMAL(12,2) NOT NULL,
       quantity INT UNSIGNED NOT NULL,
@@ -864,10 +911,42 @@ async function initializeDatabase(pool) {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       KEY order_items_order_idx (order_id, id),
       KEY order_items_product_idx (product_id),
+      KEY order_items_combo_idx (combo_id),
       CONSTRAINT order_items_order_fk
-        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+      CONSTRAINT order_items_combo_fk
+        FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [orderItemColumnRows] = await pool.execute(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'order_items'`,
+  );
+  const orderItemColumns = new Set(orderItemColumnRows.map((column) => column.COLUMN_NAME));
+  if (!orderItemColumns.has("combo_id")) {
+    await pool.query("ALTER TABLE order_items ADD COLUMN combo_id BIGINT UNSIGNED NULL AFTER product_id");
+  }
+  if (!orderItemColumns.has("combo_snapshot")) {
+    await pool.query("ALTER TABLE order_items ADD COLUMN combo_snapshot JSON NULL AFTER combo_id");
+  }
+  const [orderItemIndexes] = await pool.execute(
+    `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'order_items'`,
+  );
+  if (!orderItemIndexes.some((index) => index.INDEX_NAME === "order_items_combo_idx")) {
+    await pool.query("ALTER TABLE order_items ADD KEY order_items_combo_idx (combo_id)");
+  }
+  const [orderItemComboForeignKeys] = await pool.execute(
+    `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'order_items'
+       AND COLUMN_NAME = 'combo_id' AND REFERENCED_TABLE_NAME = 'combos'`,
+  );
+  if (!orderItemComboForeignKeys.length) {
+    await pool.query(
+      `ALTER TABLE order_items ADD CONSTRAINT order_items_combo_fk
+       FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE SET NULL`,
+    );
+  }
   await migrateLegacyOrderDetails(pool);
   await pool.query(
     `UPDATE \`address\` AS address

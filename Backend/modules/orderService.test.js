@@ -32,9 +32,11 @@ test("normalizes the showroom order and ignores client-supplied prices", () => {
   assert.equal(order.gstRate, 3);
   assert.deepEqual(order.items, [{
     productId: 7,
+    comboId: null,
     quantity: 2,
     variantColor: "Black",
     variantSize: "Standard",
+    comboItems: null,
   }]);
 });
 
@@ -243,6 +245,8 @@ test("creates an order, derives price, and decrements product and variant stock 
   assert.deepEqual(insertedItems, [[
     21,
     7,
+    null,
+    null,
     "Dining Chair",
     110,
     2,
@@ -416,5 +420,141 @@ test("rolls back when requested quantity exceeds available stock", async () => {
   const service = createOrderService({ async getConnection() { return connection; } });
 
   await assert.rejects(service.create(validOrder()), { status: 409 });
+  assert.equal(rolledBack, true);
+});
+
+test("creates a combo order at its cart price and deducts component inventory transactionally", async () => {
+  const component = {
+    id: 7,
+    name: "Dining Chair",
+    product_code: "CHAIR-7",
+    status: "Active",
+    total_stock: 5,
+    available_stock: 5,
+    product_data: JSON.stringify({
+      variants: [{ color: "Black", size: "Standard", stock: 5 }],
+    }),
+  };
+  const combo = {
+    id: 3,
+    name: "Living Room Combo",
+    offer_price: "90.00",
+    status: "Active",
+    combo_data: JSON.stringify({
+      images: ["/uploads/combo.webp"],
+      combo_items: [{
+        product_id: 7,
+        quantity: 2,
+        variant_index: 0,
+        variant_color: "Black",
+        variant_size: "Standard",
+      }],
+    }),
+  };
+  const productUpdates = [];
+  const stockUpdates = [];
+  const insertedItems = [];
+  let committed = false;
+  const connection = {
+    async beginTransaction() {},
+    async execute(query, parameters) {
+      if (query.includes("FROM combos WHERE id = ?")) return [[combo]];
+      if (query.includes("FROM products p")) return [[component]];
+      if (query.startsWith("UPDATE products")) {
+        productUpdates.push(parameters);
+        component.total_stock = parameters[0];
+        component.product_data = parameters[1];
+        return [{ affectedRows: 1 }];
+      }
+      if (query.startsWith("INSERT INTO product_stock")) {
+        stockUpdates.push(parameters);
+        return [{ affectedRows: 1 }];
+      }
+      if (query.startsWith("INSERT INTO orders")) return [{ insertId: 44 }];
+      if (query.startsWith("UPDATE orders SET order_id")) return [{ affectedRows: 1 }];
+      if (query.startsWith("INSERT INTO `address`")) return [{ affectedRows: 1 }];
+      if (query.startsWith("INSERT INTO order_items")) {
+        insertedItems.push(parameters);
+        return [{ affectedRows: 1 }];
+      }
+      throw new Error(`Unexpected SQL in test: ${query}`);
+    },
+    async commit() { committed = true; },
+    async rollback() {},
+    release() {},
+  };
+  const service = createOrderService({ async getConnection() { return connection; } });
+
+  const order = await service.create(validOrder({
+    items: [{
+      combo_id: 3,
+      product_id: null,
+      combo_items: combo.combo_data && JSON.parse(combo.combo_data).combo_items,
+      quantity: 2,
+      price: 85,
+    }],
+  }), { useCartPrices: true });
+
+  assert.equal(order.subtotal, 170);
+  assert.equal(order.items[0].combo_id, 3);
+  assert.equal(order.items[0].product_id, null);
+  assert.equal(order.items[0].price, 85);
+  assert.equal(order.items[0].image, "/uploads/combo.webp");
+  assert.equal(productUpdates.length, 1);
+  assert.equal(productUpdates[0][0], 1);
+  assert.equal(JSON.parse(productUpdates[0][1]).variants[0].stock, 1);
+  assert.deepEqual(stockUpdates, [[7, 1]]);
+  assert.equal(insertedItems[0][1], null);
+  assert.equal(insertedItems[0][2], 3);
+  assert.equal(JSON.parse(insertedItems[0][3]).combo_items[0].product_id, 7);
+  assert.equal(insertedItems[0][5], 85);
+  assert.equal(committed, true);
+});
+
+test("rolls back combo checkout when a component has insufficient stock", async () => {
+  const comboItems = [{
+    product_id: 7,
+    quantity: 2,
+    variant_index: 0,
+    variant_color: "Black",
+    variant_size: "Standard",
+  }];
+  const connection = {
+    async beginTransaction() {},
+    async execute(query) {
+      if (query.includes("FROM combos WHERE id = ?")) {
+        return [[{
+          id: 3,
+          name: "Living Room Combo",
+          offer_price: "90.00",
+          status: "Active",
+          combo_data: JSON.stringify({ combo_items: comboItems }),
+        }]];
+      }
+      if (query.includes("FROM products p")) {
+        return [[{
+          id: 7,
+          name: "Dining Chair",
+          status: "Active",
+          total_stock: 3,
+          available_stock: 3,
+          product_data: JSON.stringify({ variants: [{ stock: 3 }] }),
+        }]];
+      }
+      assert.fail(`Unexpected SQL in test: ${query}`);
+    },
+    async commit() { assert.fail("Insufficient stock must not commit."); },
+    async rollback() { rolledBack = true; },
+    release() {},
+  };
+  let rolledBack = false;
+  const service = createOrderService({ async getConnection() { return connection; } });
+
+  await assert.rejects(
+    service.create(validOrder({
+      items: [{ combo_id: 3, product_id: null, combo_items: comboItems, quantity: 2, price: 85 }],
+    }), { useCartPrices: true }),
+    { status: 409, message: "There is not enough stock for Dining Chair." },
+  );
   assert.equal(rolledBack, true);
 });

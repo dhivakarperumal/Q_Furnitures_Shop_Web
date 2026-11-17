@@ -137,6 +137,36 @@ export const StoreProvider = ({ children }) => {
         }
     };
 
+    const addComboToCart = async (combo, qty = 1) => {
+        if (!user?.user_id) {
+            toast.error("Please login to add items to cart");
+            return false;
+        }
+
+        const comboId = combo?.combo_id ?? combo?.id;
+        if (!comboId || !Number.isInteger(Number(comboId)) || Number(comboId) < 1) {
+            console.error("Add to cart skipped: combo has no valid id", combo);
+            toast.error("Unable to add this combo to cart");
+            return false;
+        }
+        const quantity = Number(qty);
+        if (!Number.isSafeInteger(quantity) || quantity < 1) {
+            toast.error("Choose a valid quantity");
+            return false;
+        }
+
+        try {
+            await api.post("/cart", { combo_id: Number(comboId), quantity });
+            toast.success("Combo added to cart!");
+            await fetchCart();
+            return true;
+        } catch (err) {
+            console.error("Add combo to cart error:", err);
+            toast.error(err.response?.data?.message || "Failed to add combo to cart");
+            return false;
+        }
+    };
+
     const removeFromCart = async (cartItemId) => {
         try {
             await api.delete(`/cart/${cartItemId}`);
@@ -177,24 +207,36 @@ export const StoreProvider = ({ children }) => {
 
     // ─── WISHLIST ACTIONS ────────────────────────────────────────
 
-    const toggleWishlist = async (product) => {
+    const toggleWishlist = async (item) => {
         if (!user?.user_id) {
             toast.error("Please login to manage wishlist");
             return;
         }
 
-        const productId = product.product_id ?? product.productId ?? product.id;
-        const isAlready = wishlist.some(w =>
-            String(w.product_id ?? w.productId ?? w.id) === String(productId)
-        );
+        const isCombo = item.item_type === "combo" || item.combo_id != null;
+        const itemId = isCombo
+            ? item.combo_id ?? String(item.id).replace(/^combo-/, "")
+            : item.product_id ?? item.productId ?? item.id;
+        const isAlready = wishlist.some((favorite) => {
+            const favoriteIsCombo = favorite.item_type === "combo" || favorite.combo_id != null;
+            if (favoriteIsCombo !== isCombo) return false;
+            const favoriteId = isCombo
+                ? favorite.combo_id ?? String(favorite.id).replace(/^combo-/, "")
+                : favorite.product_id ?? favorite.productId ?? favorite.id;
+            return String(favoriteId) === String(itemId);
+        });
 
         try {
             if (isAlready) {
-                await api.delete(`/favorites/${productId}`);
-                toast.error("Removed from favorites");
+                await api.delete(isCombo ? `/favorites/combos/${itemId}` : `/favorites/${itemId}`);
+                toast.success("Removed from favorites");
             } else {
-                await api.post("/favorites", { product_id: Number(productId) });
-                toast.success("Added to favorites!");
+                if (isCombo) {
+                    await api.post(`/favorites/combos/${itemId}`);
+                } else {
+                    await api.post("/favorites", { product_id: Number(itemId) });
+                }
+                toast.success(isCombo ? "Combo added to favorites!" : "Added to favorites!");
             }
             await fetchWishlist();
         } catch (err) {
@@ -206,7 +248,7 @@ export const StoreProvider = ({ children }) => {
     return (
         <StoreContext.Provider value={{
             cart, wishlist,
-            addToCart, removeFromCart, updateCartQuantity, clearCart,
+            addToCart, addComboToCart, removeFromCart, updateCartQuantity, clearCart,
             toggleWishlist,
             loadingCart, loadingWishlist,
             fetchCart, fetchWishlist,

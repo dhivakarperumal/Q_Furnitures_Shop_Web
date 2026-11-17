@@ -10,9 +10,12 @@ const resolveImageUrl = (image) => {
 };
 
 const WishlistDrawer = ({ isOpen, onClose }) => {
-  const { wishlist, loadingWishlist, toggleWishlist, addToCart } = useContext(StoreContext);
+  const { wishlist, loadingWishlist, toggleWishlist, addToCart, addComboToCart } = useContext(StoreContext);
   const navigate = useNavigate();
   const [quantities, setQuantities] = useState({});
+  const getFavoriteKey = (item) => item.item_type === "combo"
+    ? `combo-${item.combo_id}`
+    : `product-${item.product_id ?? item.id}`;
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -31,10 +34,15 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
   };
 
   const handleAddToCart = async (item) => {
+    const quantity = quantities[getFavoriteKey(item)] || 1;
+    if (item.item_type === "combo") {
+      await addComboToCart(item, quantity);
+      return;
+    }
     const matchingVariant = item.variants?.find(
       (variant) => variant.color === item.colorName || variant.colorName === item.colorName,
     ) || item.variants?.[0] || null;
-    await addToCart(item, matchingVariant, item.size, quantities[item.id] || 1);
+    await addToCart(item, matchingVariant, item.size, quantity);
   };
 
   const handleAddAllToCart = async () => {
@@ -97,7 +105,7 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
           ) : (
             <div className="space-y-4">
               {wishlist.map((item) => (
-                <div key={item.id || item.product_id} className="flex gap-3 rounded-lg border border-gray-200 p-3">
+                <div key={getFavoriteKey(item)} className="flex gap-3 rounded-lg border border-gray-200 p-3">
                   <img
                     src={resolveImageUrl(item.image) || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
                     alt={item.name || "Product"}
@@ -119,17 +127,17 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
                       <div className="flex h-8 w-24 items-center overflow-hidden rounded-lg border border-gray-200">
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.id, -1)}
-                          disabled={(quantities[item.id] || 1) <= 1}
+                          onClick={() => updateQuantity(getFavoriteKey(item), -1)}
+                          disabled={(quantities[getFavoriteKey(item)] || 1) <= 1}
                           aria-label="Decrease quantity"
                           className="flex h-full flex-1 items-center justify-center text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           −
                         </button>
-                        <span className="w-8 text-center text-xs font-semibold text-gray-700">{quantities[item.id] || 1}</span>
+                        <span className="w-8 text-center text-xs font-semibold text-gray-700">{quantities[getFavoriteKey(item)] || 1}</span>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.id, 1)}
+                          onClick={() => updateQuantity(getFavoriteKey(item), 1)}
                           aria-label="Increase quantity"
                           className="flex h-full flex-1 items-center justify-center text-gray-600 transition hover:bg-gray-100"
                         >
@@ -156,7 +164,7 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
         {wishlist.length > 0 && !loadingWishlist && (
           <div className="space-y-2 border-t border-gray-100 bg-white px-5 py-4">
             <button type="button" onClick={handleAddAllToCart} className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-white transition hover:bg-primary-dark">
-              Add All Products to Cart
+              Add All Favorites to Cart
             </button>
             <button type="button" onClick={() => goTo("/shop")} className="w-full rounded-lg border border-primary py-3 text-sm font-semibold text-primary transition hover:bg-primary/10">
               Continue Shopping

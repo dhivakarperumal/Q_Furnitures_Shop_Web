@@ -152,12 +152,17 @@ function getComponentPrice(product, item) {
 }
 
 function getComponentStock(product, item) {
-  const totalStock = Number(product.available_stock || 0);
+  if (product.status && product.status !== "Active") return 0;
+  const totalStock = Number(product.available_stock ?? product.total_stock ?? 0);
   if (totalStock <= 0) return 0;
   const data = parseData(product.product_data);
-  const variant = Array.isArray(data.variants) ? data.variants[item.variant_index] : null;
-  if (variant?.sizesStock && item.variant_size &&
-      Object.prototype.hasOwnProperty.call(variant.sizesStock, item.variant_size)) {
+  const variants = Array.isArray(data.variants) ? data.variants : [];
+  const variantIndex = Number(item.variant_index || 0);
+  if (!variants.length && variantIndex !== 0) return 0;
+  const variant = variants[variantIndex];
+  if (variants.length && !variant) return 0;
+  if (variant?.sizesStock && item.variant_size) {
+    if (!Object.prototype.hasOwnProperty.call(variant.sizesStock, item.variant_size)) return 0;
     return Math.min(totalStock, Number(variant.sizesStock[item.variant_size]) || 0);
   }
   if (variant?.stock != null) return Math.min(totalStock, Number(variant.stock) || 0);
@@ -321,6 +326,30 @@ function createComboService(pool) {
         `SELECT * FROM combos ${where} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`,
         [...parameters, limit, offset],
       );
+      const combos = await Promise.all(rows.map(async (row) => {
+        const combo = toCombo(row);
+        if (!combo.combo_items.length) return { ...combo, total_stock: 0 };
+        const productIds = [...new Set(combo.combo_items.map((item) => Number(item.product_id)))];
+        if (productIds.some((id) => !Number.isSafeInteger(id) || id < 1)) {
+          return { ...combo, total_stock: 0 };
+        }
+        const [componentRows] = await pool.execute(
+          `SELECT p.id, p.status, p.total_stock, p.product_data,
+                  COALESCE(ps.available_stock, p.total_stock) AS available_stock
+           FROM products p
+           LEFT JOIN product_stock ps ON ps.product_id = p.id
+           WHERE p.id IN (${productIds.map(() => "?").join(",")})`,
+          productIds,
+        );
+        const components = new Map(componentRows.map((product) => [Number(product.id), product]));
+        const totalStock = Math.min(...combo.combo_items.map((item) => {
+          const product = components.get(Number(item.product_id));
+          return product
+            ? Math.floor(getComponentStock(product, item) / Number(item.quantity || 1))
+            : 0;
+        }));
+        return { ...combo, total_stock: Number.isFinite(totalStock) ? totalStock : 0 };
+      }));
       const [countRows] = await pool.execute(`SELECT COUNT(*) AS total FROM combos ${where}`, parameters);
       const total = Number(countRows[0]?.total || 0);
       const [statsRows] = await pool.execute(
@@ -332,7 +361,7 @@ function createComboService(pool) {
       );
       const stats = statsRows[0] || {};
       return {
-        combos: rows.map(toCombo),
+        combos,
         pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) },
         stats: {
           total: Number(stats.total || 0),

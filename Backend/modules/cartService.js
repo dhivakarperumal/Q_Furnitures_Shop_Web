@@ -1,5 +1,6 @@
 const { toProduct } = require("./productService");
 const { PRODUCT_SNAPSHOT_FIELDS } = require("./productSnapshotFields");
+const { toCombo } = require("./comboService");
 
 function cartError(status, message) {
   const error = new Error(message);
@@ -84,6 +85,127 @@ function getCartImage(product, variant) {
   return images[Number(product.main_image_index) || 0] || images[0] || null;
 }
 
+function parseComboSnapshot(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value !== "string") return {};
+  const parsed = JSON.parse(value);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw cartError(409, "Stored combo data is invalid.");
+  }
+  return parsed;
+}
+
+function getComboImage(combo) {
+  let images = combo.images;
+  if (typeof images === "string") {
+    try {
+      images = JSON.parse(images);
+    } catch {
+      images = [images];
+    }
+  }
+  const mainImageIndex = Number(combo.main_image_index) || 0;
+  return (Array.isArray(images) ? images[mainImageIndex] || images[0] : null) ||
+    (typeof combo.image === "string" ? combo.image : null);
+}
+
+function getComboItemVariant(product, item, strict = true) {
+  const data = parseComboSnapshot(product.product_data);
+  const variants = Array.isArray(data.variants) ? data.variants : [];
+  const variantIndex = Number(item.variant_index || 0);
+  if (!variants.length) {
+    if (variantIndex !== 0) {
+      if (strict) throw cartError(409, `The selected variant for ${product.name} is no longer available.`);
+      return undefined;
+    }
+    return null;
+  }
+  const variant = variants[variantIndex];
+  if (!variant || typeof variant !== "object") {
+    if (strict) throw cartError(409, `The selected variant for ${product.name} is no longer available.`);
+    return undefined;
+  }
+  const colors = [variant.colorName, variant.color, variant.colour]
+    .filter((value) => value != null)
+    .map((value) => String(value).trim().toLowerCase());
+  if (item.variant_color && colors.length &&
+      !colors.includes(String(item.variant_color).trim().toLowerCase())) {
+    if (strict) throw cartError(409, `The selected variant for ${product.name} has changed.`);
+    return undefined;
+  }
+  if (item.variant_size && variant.size != null &&
+      String(variant.size).trim() &&
+      String(variant.size).trim().toLowerCase() !== String(item.variant_size).trim().toLowerCase()) {
+    if (strict) throw cartError(409, `The selected variant for ${product.name} has changed.`);
+    return undefined;
+  }
+  return variant;
+}
+
+function getComboComponentStock(product, item, variant) {
+  if (product.status !== "Active") return 0;
+  const totalStock = Number(product.total_stock);
+  const availableStock = product.available_stock == null
+    ? totalStock
+    : Math.min(totalStock, Number(product.available_stock));
+  let stock = Math.max(0, Number.isFinite(availableStock) ? availableStock : 0);
+  const sizeStock = variant?.sizesStock;
+  if (sizeStock && typeof sizeStock === "object" && item.variant_size) {
+    if (!Object.prototype.hasOwnProperty.call(sizeStock, item.variant_size)) return 0;
+    stock = Math.min(stock, Math.max(0, Number(sizeStock[item.variant_size]) || 0));
+  } else if (variant?.stock != null) {
+    stock = Math.min(stock, Math.max(0, Number(variant.stock) || 0));
+  }
+  return stock;
+}
+
+async function getComboAvailability(executor, comboItems, { forUpdate = false, strict = false } = {}) {
+  if (!Array.isArray(comboItems) || !comboItems.length) {
+    if (strict) throw cartError(409, "This combo has no available component products.");
+    return 0;
+  }
+  const productIds = [...new Set(comboItems.map((item) => Number(item.product_id)))].sort((a, b) => a - b);
+  if (productIds.some((id) => !Number.isSafeInteger(id) || id < 1)) {
+    throw cartError(409, "This combo contains an invalid component product.");
+  }
+  const [products] = await executor.execute(
+    `SELECT p.id, p.name, p.status, p.total_stock, p.product_data, ps.available_stock
+     FROM products p
+     LEFT JOIN product_stock ps ON ps.product_id = p.id
+     WHERE p.id IN (${productIds.map(() => "?").join(",")})
+     ORDER BY p.id${forUpdate ? " FOR UPDATE" : ""}`,
+    productIds,
+  );
+  const productsById = new Map(products.map((product) => [Number(product.id), product]));
+  let availableStock = Number.MAX_SAFE_INTEGER;
+  const seenProductIds = new Set();
+
+  for (const item of comboItems) {
+    const componentProductId = Number(item.product_id);
+    if (seenProductIds.has(componentProductId)) {
+      if (strict) throw cartError(409, "This combo contains a duplicate component product.");
+      return 0;
+    }
+    seenProductIds.add(componentProductId);
+    const product = productsById.get(componentProductId);
+    if (!product) {
+      if (strict) throw cartError(409, "A component product in this combo no longer exists.");
+      return 0;
+    }
+    const variant = getComboItemVariant(product, item, strict);
+    if (variant === undefined) return 0;
+    const componentQuantity = Number(item.quantity);
+    if (!Number.isSafeInteger(componentQuantity) || componentQuantity < 1) {
+      throw cartError(409, "This combo contains an invalid component quantity.");
+    }
+    availableStock = Math.min(
+      availableStock,
+      Math.floor(getComboComponentStock(product, item, variant) / componentQuantity),
+    );
+  }
+  return availableStock === Number.MAX_SAFE_INTEGER ? 0 : availableStock;
+}
+
 function toSnapshotProduct(product) {
   const specifications = product.specifications || {};
   const shipping = product.shipping || {};
@@ -120,10 +242,13 @@ function toSnapshotProduct(product) {
 }
 
 function mapCartItem(row) {
+  const comboSnapshot = row.combo_snapshot == null ? null : parseComboSnapshot(row.combo_snapshot);
   return {
     ...row,
     id: Number(row.id),
-    product_id: Number(row.product_id),
+    product_id: row.product_id == null ? null : Number(row.product_id),
+    combo_id: row.combo_id == null ? null : Number(row.combo_id),
+    item_type: row.combo_id == null ? "product" : "combo",
     quantity: Number(row.quantity),
     price: Number(row.price),
     total_price: Number(row.total_price),
@@ -132,6 +257,7 @@ function mapCartItem(row) {
     colorName: row.variant_color || "",
     color: row.variant_color || "",
     size: row.variant_size || "",
+    combo_items: Array.isArray(comboSnapshot?.combo_items) ? comboSnapshot.combo_items : [],
   };
 }
 
@@ -157,10 +283,121 @@ function createCartService(pool) {
          WHERE user_id = ? ORDER BY created_at DESC, id DESC`,
         [userId],
       );
-      return rows.map(mapCartItem);
+      const items = rows.map(mapCartItem);
+      for (const item of items) {
+        if (item.combo_id != null) {
+          item.available_stock = await getComboAvailability(pool, item.combo_items);
+        }
+      }
+      return items;
     },
 
     async add(userId, input) {
+      if (input.combo_id != null) {
+        if (input.product_id != null) throw cartError(400, "Choose either a product or a combo for the cart.");
+        const comboId = normalizePositiveInteger(input.combo_id, "Combo ID", Number.MAX_SAFE_INTEGER);
+        const quantity = normalizePositiveInteger(input.quantity ?? 1, "Quantity");
+        const connection = await pool.getConnection();
+        try {
+          await connection.beginTransaction();
+          const [comboRows] = await connection.execute(
+            "SELECT * FROM combos WHERE id = ? LIMIT 1 FOR UPDATE",
+            [comboId],
+          );
+          if (!comboRows[0]) throw cartError(404, "Combo was not found.");
+          const combo = toCombo(comboRows[0]);
+          if (combo.status !== "Active") throw cartError(409, "This combo is not available for sale.");
+          const availableStock = await getComboAvailability(
+            connection,
+            combo.combo_items,
+            { forUpdate: true, strict: true },
+          );
+          const [existingRows] = await connection.execute(
+            `SELECT id, quantity FROM \`cart\`
+             WHERE user_id = ? AND combo_id = ?
+             LIMIT 1 FOR UPDATE`,
+            [userId, comboId],
+          );
+          const existing = existingRows[0];
+          const nextQuantity = Number(existing?.quantity || 0) + quantity;
+          if (nextQuantity > availableStock) {
+            throw cartError(409, `Only ${availableStock} combo${availableStock === 1 ? "" : "s"} available.`);
+          }
+
+          const image = getComboImage(combo);
+          const snapshot = {
+            ...combo,
+            combo_items: combo.combo_items,
+          };
+          const fields = PRODUCT_SNAPSHOT_FIELDS.map(([column]) => column);
+          const snapshotProduct = {
+            ...combo,
+            name: combo.name,
+            product_code: combo.combo_code,
+            product_type: "Combo Product",
+            offer_price: combo.offer_price,
+            selling_price: combo.selling_price,
+            total_stock: availableStock,
+            image,
+          };
+          const fieldValues = PRODUCT_SNAPSHOT_FIELDS.map(([, , key]) => {
+            const value = snapshotProduct[key];
+            return value === "" || value == null ? null : value;
+          });
+          const price = Number(combo.offer_price);
+          if (!Number.isFinite(price) || price < 0) {
+            throw cartError(409, "A valid price is unavailable for this combo.");
+          }
+          const totalPrice = Number((price * nextQuantity).toFixed(2));
+          let cartItemId;
+          if (existing) {
+            const [updateResult] = await connection.execute(
+              `UPDATE \`cart\`
+               SET ${fields.map((field) => `${field} = ?`).join(", ")},
+                   product_id = NULL, combo_snapshot = ?, variant_color = '', variant_size = '',
+                   cart_image = ?, price = ?, quantity = ?, total_price = ?,
+                   updated_by = ?, updated_at = CURRENT_TIMESTAMP
+               WHERE id = ? AND user_id = ?`,
+              [
+                ...fieldValues, JSON.stringify(snapshot), image, price, nextQuantity,
+                totalPrice, userId, existing.id, userId,
+              ],
+            );
+            if (updateResult.affectedRows !== 1) throw new Error("Combo cart item could not be updated.");
+            cartItemId = existing.id;
+          } else {
+            const columns = [
+              "user_id", "product_id", "combo_id", "combo_snapshot", "variant_color",
+              "variant_size", "cart_image", ...fields, "price", "quantity", "total_price",
+              "created_by", "updated_by",
+            ];
+            const values = [
+              userId, null, comboId, JSON.stringify(snapshot), "", "", image, ...fieldValues,
+              price, nextQuantity, totalPrice, userId, userId,
+            ];
+            const [insertResult] = await connection.execute(
+              `INSERT INTO \`cart\` (${columns.join(", ")})
+               VALUES (${columns.map(() => "?").join(", ")})`,
+              values,
+            );
+            cartItemId = insertResult.insertId;
+          }
+          await connection.commit();
+          return {
+            id: Number(cartItemId),
+            combo_id: comboId,
+            quantity: nextQuantity,
+            price,
+            total_price: totalPrice,
+            available_stock: availableStock,
+          };
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        } finally {
+          connection.release();
+        }
+      }
       const productId = normalizePositiveInteger(input.product_id, "Product ID", Number.MAX_SAFE_INTEGER);
       const quantity = normalizePositiveInteger(input.quantity ?? 1, "Quantity");
       const color = typeof input.variant_color === "string" ? input.variant_color.trim().slice(0, 100) : "";
@@ -259,6 +496,50 @@ function createCartService(pool) {
         );
         const initialCartItem = initialCartRows[0];
         if (!initialCartItem) throw cartError(404, "Cart item was not found.");
+
+        if (initialCartItem.combo_id != null) {
+          const [comboRows] = await connection.execute(
+            "SELECT * FROM combos WHERE id = ? LIMIT 1 FOR UPDATE",
+            [initialCartItem.combo_id],
+          );
+          if (!comboRows[0] || comboRows[0].status !== "Active") {
+            throw cartError(409, "This combo is no longer available for sale.");
+          }
+          const comboSnapshot = parseComboSnapshot(initialCartItem.combo_snapshot);
+          const comboItems = Array.isArray(comboSnapshot.combo_items)
+            ? comboSnapshot.combo_items
+            : toCombo(comboRows[0]).combo_items;
+          const availableStock = await getComboAvailability(
+            connection,
+            comboItems,
+            { forUpdate: true, strict: true },
+          );
+          if (quantity > availableStock) {
+            throw cartError(409, `Only ${availableStock} combo${availableStock === 1 ? "" : "s"} available.`);
+          }
+          const [cartRows] = await connection.execute(
+            `SELECT * FROM \`cart\`
+             WHERE id = ? AND user_id = ? LIMIT 1 FOR UPDATE`,
+            [cartItemId, userId],
+          );
+          const cartItem = cartRows[0];
+          if (!cartItem) throw cartError(404, "Cart item was not found.");
+          const totalPrice = Number((Number(cartItem.price) * quantity).toFixed(2));
+          await connection.execute(
+            `UPDATE \`cart\`
+             SET quantity = ?, total_price = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP
+             WHERE id = ? AND user_id = ?`,
+            [quantity, totalPrice, userId, cartItemId, userId],
+          );
+          await connection.commit();
+          return {
+            id: cartItemId,
+            quantity,
+            price: Number(cartItem.price),
+            total_price: totalPrice,
+            available_stock: availableStock,
+          };
+        }
 
         const { product } = await getProductForUpdate(connection, initialCartItem.product_id);
         const [cartRows] = await connection.execute(
