@@ -15,6 +15,7 @@ import Loader from "./Components/CommenComponents/Loader.jsx";
 const Home = React.lazy(() => import("./Components/Home/Home.jsx"));
 const About = React.lazy(() => import("./Components/About/About.jsx"));
 const Contact = React.lazy(() => import("./Components/Contact/Contact.jsx"));
+const Account = React.lazy(() => import("./Components/Account.jsx"));
 const Shop = React.lazy(() => import("./Components/Shop/Shop.jsx"));
 const ComboOffers = React.lazy(() => import("./Components/Shop/ComboOffers.jsx"));
 const ComboDetails = React.lazy(() => import("./Components/Shop/ComboDetails.jsx"));
@@ -63,6 +64,14 @@ const router = createBrowserRouter([
       { path: "/", element: <Home /> },
       { path: "about", element: <About /> },
       { path: "contactus", element: <Contact /> },
+      {
+        path: "account",
+        element: (
+          <PrivateRoute>
+            <Account />
+          </PrivateRoute>
+        ),
+      },
       { path: "shop", element: <Shop /> },
       { path: "combo", element: <ComboOffers /> },
       { path: "combo/:id", element: <ComboDetails /> },

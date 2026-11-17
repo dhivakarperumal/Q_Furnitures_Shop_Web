@@ -22,6 +22,33 @@ function toPublicUser(user) {
   };
 }
 
+function accountError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+function normalizeProfile(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw accountError(400, "Profile data must be an object.");
+  }
+
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
+  const phone = typeof input.phone === "string" ? input.phone.trim() : "";
+  if (name.length < 2 || name.length > 120) {
+    throw accountError(400, "Name must be between 2 and 120 characters.");
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 191) {
+    throw accountError(400, "Enter a valid email address.");
+  }
+  if (phone && (phone.length < 6 || phone.length > 32)) {
+    throw accountError(400, "Phone number must be between 6 and 32 characters.");
+  }
+
+  return { name, email, phone: phone || null };
+}
+
 function createAuthService(pool) {
   if (!process.env.JWT_SECRET) {
     throw new Error("Missing required environment variable: JWT_SECRET");
@@ -37,6 +64,14 @@ function createAuthService(pool) {
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || "12h" },
     );
+  }
+
+  async function getProfile(userId) {
+    const [users] = await pool.execute(
+      `SELECT ${USER_COLUMNS} FROM users WHERE id = ? LIMIT 1`,
+      [userId],
+    );
+    return users[0] ? toPublicUser(users[0]) : null;
   }
 
   return {
@@ -60,6 +95,54 @@ function createAuthService(pool) {
       );
 
       return toPublicUser(users[0]);
+    },
+
+    getProfile,
+
+    async updateProfile(userId, input) {
+      const profile = normalizeProfile(input);
+      try {
+        await pool.execute(
+          "UPDATE users SET username = ?, email = ?, phone = ? WHERE id = ?",
+          [profile.name, profile.email, profile.phone, userId],
+        );
+      } catch (error) {
+        if (error.code === "ER_DUP_ENTRY") {
+          throw accountError(409, "That email or phone number is already in use.");
+        }
+        throw error;
+      }
+
+      const user = await getProfile(userId);
+      if (!user) throw accountError(404, "Account was not found.");
+      return user;
+    },
+
+    async changePassword(userId, currentPassword, newPassword) {
+      if (typeof currentPassword !== "string" || !currentPassword) {
+        throw accountError(400, "Enter your current password.");
+      }
+      if (typeof newPassword !== "string" || newPassword.length < 8 || newPassword.length > 72) {
+        throw accountError(400, "New password must be between 8 and 72 characters.");
+      }
+
+      const [users] = await pool.execute(
+        "SELECT password_hash FROM users WHERE id = ? LIMIT 1",
+        [userId],
+      );
+      if (!users[0]) throw accountError(404, "Account was not found.");
+      if (!await bcrypt.compare(currentPassword, users[0].password_hash)) {
+        throw accountError(400, "Current password is incorrect.");
+      }
+      if (await bcrypt.compare(newPassword, users[0].password_hash)) {
+        throw accountError(400, "Choose a password you have not used before.");
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      await pool.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        [passwordHash, userId],
+      );
     },
 
     async login(identifier, password) {
