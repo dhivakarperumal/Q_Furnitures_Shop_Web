@@ -61,6 +61,13 @@ function validateCombo(input) {
   if (!Number.isFinite(offer) || offer < 0 || (offerType === "Percentage" && offer > 100)) {
     throw comboError("Combo discount value is outside the allowed range.");
   }
+  const mrpMode = input.mrp_mode || "auto";
+  if (!["auto", "manual"].includes(mrpMode)) {
+    throw comboError("Combo MRP mode must be automatic or manual.");
+  }
+  if (mrpMode === "manual" && (!Number.isFinite(Number(input.mrp)) || Number(input.mrp) <= 0)) {
+    throw comboError("Enter a manual combo MRP greater than zero.");
+  }
   const rating = Number(input.rating ?? 5);
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
     throw comboError("Combo rating must be between 1 and 5.");
@@ -93,6 +100,20 @@ function validateCombo(input) {
       variant_material: String(item.variant_material || "").trim(),
     };
   });
+  if (input.specifications != null && !Array.isArray(input.specifications)) {
+    throw comboError("Combo specifications must be a list.");
+  }
+  const specifications = (input.specifications || []).map((specification, index) => {
+    if (!specification || typeof specification !== "object" || Array.isArray(specification)) {
+      throw comboError(`Combo specification ${index + 1} is invalid.`);
+    }
+    const specificationName = String(specification.name || "").trim();
+    const value = String(specification.value || "").trim();
+    if (!specificationName || !value) {
+      throw comboError(`Combo specification ${index + 1} must include a name and a value.`);
+    }
+    return { name: specificationName, value };
+  });
 
   return {
     ...input,
@@ -103,8 +124,10 @@ function validateCombo(input) {
     rating,
     offer,
     offer_type: offerType,
+    mrp_mode: mrpMode,
     offer_price_mode: input.offer_price_mode === "manual" ? "manual" : "auto",
     combo_items: comboItems,
+    specifications,
   };
 }
 
@@ -190,17 +213,21 @@ function createComboService(pool) {
         return total + getComponentPrice(product, item) * item.quantity;
       }, 0);
       if (totalPrice <= 0) throw comboError("Combo products must have a total price greater than zero.");
+      const mrp = combo.mrp_mode === "manual" ? Number(combo.mrp) : totalPrice;
+      if (!Number.isFinite(mrp) || mrp <= 0) {
+        throw comboError("Combo MRP must be greater than zero.");
+      }
       const calculatedPrice = Math.max(
         0,
         combo.offer_type === "Percentage"
-          ? totalPrice * (1 - combo.offer / 100)
-          : totalPrice - combo.offer,
+          ? mrp * (1 - combo.offer / 100)
+          : mrp - combo.offer,
       );
       const offerPrice = combo.offer_price_mode === "manual"
         ? Number(combo.offer_price)
         : calculatedPrice;
-      if (!Number.isFinite(offerPrice) || offerPrice < 0 || offerPrice > totalPrice) {
-        throw comboError("Final combo price must be between zero and its original total.");
+      if (!Number.isFinite(offerPrice) || offerPrice < 0 || offerPrice > mrp) {
+        throw comboError("Final combo price must be between zero and the combo MRP.");
       }
       const totalStock = combo.combo_items.length
         ? Math.min(...combo.combo_items.map((item) =>
@@ -216,7 +243,7 @@ function createComboService(pool) {
         ...combo,
         combo_code: comboCode,
         product_code: comboCode,
-        mrp: Number(totalPrice.toFixed(2)),
+        mrp: Number(mrp.toFixed(2)),
         offer_price: Number(offerPrice.toFixed(2)),
         selling_price: Number(offerPrice.toFixed(2)),
         total_stock: totalStock,

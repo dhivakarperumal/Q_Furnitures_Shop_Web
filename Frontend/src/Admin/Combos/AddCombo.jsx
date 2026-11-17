@@ -24,6 +24,8 @@ const initialForm = {
   featured: false,
   trending_product: false,
   offer_product: true,
+  mrp: "0",
+  mrp_mode: "auto",
   offer_type: "Percentage",
   offer: "0",
   offer_price: "0",
@@ -407,17 +409,6 @@ function AddCombo() {
                 <Field label="Warranty" name="warranty_period" value={form.warranty_period} onChange={handleChange} placeholder="e.g. 3 years" />
                 <Field label="Estimated delivery days" name="estimated_delivery_days" value={form.estimated_delivery_days} onChange={handleChange} type="number" min="0" />
                 <Field label="Delivery charges" name="delivery_charges" value={form.delivery_charges} onChange={handleChange} type="number" min="0" step="0.01" />
-              </div>
-              <div className="flex flex-wrap gap-5">
-                {[
-                  ["delivery_available", "Delivery available"],
-                  ["free_delivery", "Free delivery"],
-                ].map(([name, label]) => (
-                  <label key={name} className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <input type="checkbox" name={name} checked={Boolean(form[name])} onChange={handleChange} className="h-4 w-4 accent-orange-600" />
-                    {label}
-                  </label>
-                ))}
               </div>
             </ComboSection>
           </div>

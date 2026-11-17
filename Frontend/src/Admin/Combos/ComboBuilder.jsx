@@ -189,10 +189,13 @@ function ComboBuilder({
   })), [items, productCache]);
   const summary = useMemo(() => {
     const resolved = selectedProducts.filter(({ product }) => product);
-    const originalTotal = resolved.reduce(({ total }, { item, product }) => {
+    const componentTotal = resolved.reduce(({ total }, { item, product }) => {
       const variant = getVariant(product, item.variant_index);
       return { total: total + getUnitPrice(product, variant) * Number(item.quantity || 1) };
     }, { total: 0 }).total;
+    const originalTotal = form.mrp_mode === "manual"
+      ? Number(form.mrp) || 0
+      : componentTotal;
     const availableComboStock = resolved.length
       ? Math.min(...resolved.map(({ item, product }) => {
         const variant = getVariant(product, item.variant_index);
@@ -225,7 +228,7 @@ function ComboBuilder({
       savings: Math.max(0, originalTotal - finalPrice),
       resolvedCount: resolved.length,
     };
-  }, [form.offer, form.offer_price, form.offer_price_mode, form.offer_type, selectedProducts]);
+  }, [form.mrp, form.mrp_mode, form.offer, form.offer_price, form.offer_price_mode, form.offer_type, selectedProducts]);
 
   useEffect(() => {
     onSummaryChange(summary);
@@ -464,9 +467,29 @@ function ComboBuilder({
       <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
         <div className="mb-4">
           <h3 className="text-sm font-bold text-slate-900">Combo pricing</h3>
-          <p className="mt-1 text-xs text-slate-500">The total is based on the selected product variants and quantities.</p>
+          <p className="mt-1 text-xs text-slate-500">Use the selected products’ total or enter a custom MRP.</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
+          <label>
+            <span className={labelClass}>MRP calculation</span>
+            <select name="mrp_mode" value={form.mrp_mode} onChange={setFormField} className={fieldClass}>
+              <option value="auto">Automatic product total</option>
+              <option value="manual">Enter manually</option>
+            </select>
+          </label>
+          <label>
+            <span className={labelClass}>MRP</span>
+            <input
+              name="mrp"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.mrp_mode === "manual" ? form.mrp : summary.originalTotal.toFixed(2)}
+              onChange={setFormField}
+              readOnly={form.mrp_mode !== "manual"}
+              className={`${fieldClass} ${form.mrp_mode !== "manual" ? "bg-slate-50" : ""}`}
+            />
+          </label>
           <label>
             <span className={labelClass}>Offer type</span>
             <select name="offer_type" value={form.offer_type} onChange={setFormField} className={fieldClass}>
