@@ -25,13 +25,16 @@ const StockDetails = () => {
 
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [activeTab, setActiveTab] = useState("single");
     const [viewMode, setViewMode] = useState("table");
     const itemsPerPage = 10;
 
     const currentCacheKey = JSON.stringify({
+        type: activeTab,
         page: currentPage,
         limit: itemsPerPage,
-        search: searchTerm
+        search: searchTerm,
+        ...(activeTab === "single" ? { exclude_combo_products: true } : {}),
     });
     
     const pageData = stockCache[currentCacheKey];
@@ -58,23 +61,44 @@ const StockDetails = () => {
             limit: itemsPerPage,
             search: searchTerm
         };
-        const cacheKey = JSON.stringify(params);
-        if (!stockCache[cacheKey]) setLoading(true);
+        const type = activeTab;
+        if (type === "single") params.exclude_combo_products = true;
+        const cacheKey = JSON.stringify({ type, ...params });
+        const cachedData = stockCache[cacheKey];
+        if (cachedData) {
+            setProducts(cachedData.products || []);
+            setPagination(cachedData.pagination || { total: 0, totalPages: 1 });
+            setStats(cachedData.stats || { total: 0, active: 0, outOfStock: 0, lowStock: 0 });
+        } else {
+            setLoading(true);
+            setProducts([]);
+            setPagination({ total: 0, totalPages: 1 });
+            setStats({ total: 0, active: 0, outOfStock: 0, lowStock: 0 });
+        }
 
         try {
-            const response = await api.get("/products", { params });
+            const response = await api.get(type === "single" ? "/products" : "/combos", { params });
             const data = response.data;
-            let finalData = {};
- 
-            if (Array.isArray(data)) {
-                finalData = { products: data, pagination: { total: data.length, totalPages: 1 }, stats: { total: 0, active: 0, lowStock: 0, outOfStock: 0 }};
-            } else {
-                finalData = {
-                    products: Array.isArray(data.products) ? data.products : [],
-                    pagination: data.pagination || { total: 0, totalPages: 1 },
-                    stats: data.stats || { total: 0, active: 0, lowStock: 0, outOfStock: 0 }
-                };
-            }
+            const items = type === "single" ? data.products : data.combos;
+            const responseStats = data.stats || {};
+            const finalData = {
+                type,
+                products: Array.isArray(items) ? items : [],
+                pagination: data.pagination || { total: Array.isArray(items) ? items.length : 0, totalPages: 1 },
+                stats: type === "single"
+                    ? {
+                        total: Number(responseStats.total) || 0,
+                        active: Number(responseStats.active) || 0,
+                        outOfStock: Number(responseStats.outOfStock) || 0,
+                        lowStock: Number(responseStats.lowStock) || 0,
+                    }
+                    : {
+                        total: Number(responseStats.total) || 0,
+                        active: Number(responseStats.active) || 0,
+                        outOfStock: Number(responseStats.inactive) || 0,
+                        lowStock: Number(responseStats.lowStock) || 0,
+                    },
+            };
             setProducts(finalData.products);
             setPagination(finalData.pagination);
             setStats(finalData.stats);
@@ -82,6 +106,9 @@ const StockDetails = () => {
         } catch (error) {
             console.error("Error fetching products:", error);
             setProducts([]);
+            setPagination({ total: 0, totalPages: 1 });
+            setStats({ total: 0, active: 0, outOfStock: 0, lowStock: 0 });
+            toast.error(error.response?.data?.message || "Failed to load inventory.");
         } finally {
             setLoading(false);
             setIsSyncing(false);
@@ -90,7 +117,7 @@ const StockDetails = () => {
 
     useEffect(() => {
         fetchProducts();
-    }, [currentPage, searchTerm]);
+    }, [currentPage, searchTerm, activeTab]);
 
     useEffect(() => {
         api.get("/stock/settings")
@@ -260,17 +287,21 @@ const StockDetails = () => {
                 String(product.id) === String(selectedProduct.id) ? savedProduct : product,
             ));
             setStockCached((current) => Object.fromEntries(
-                Object.entries(current).map(([key, data]) => [
-                    key,
-                    {
-                        ...data,
-                        products: Array.isArray(data.products)
-                            ? data.products.map((product) =>
-                                String(product.id) === String(selectedProduct.id) ? savedProduct : product,
-                            )
-                            : data.products,
-                    },
-                ]),
+                Object.entries(current).map(([key, data]) => {
+                    if (data.type === "combos") return null;
+                    if (data.type && data.type !== "single") return [key, data];
+                    return [
+                        key,
+                        {
+                            ...data,
+                            products: Array.isArray(data.products)
+                                ? data.products.map((product) =>
+                                    String(product.id) === String(selectedProduct.id) ? savedProduct : product,
+                                )
+                                : data.products,
+                        },
+                    ];
+                }).filter(Boolean),
             ));
 
             toast.success("Stock updated successfully");
@@ -304,6 +335,7 @@ const StockDetails = () => {
                 const imgs = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
                 if (Array.isArray(imgs) && imgs.length > 0) imgUrl = imgs[0];
             }
+            if (!imgUrl && product.image) imgUrl = product.image;
 
             const finalUrl = processUrl(imgUrl);
             if (finalUrl) return finalUrl;
@@ -329,13 +361,54 @@ const StockDetails = () => {
                 </label>
             </section>
 
+            <div className="flex w-fit rounded-xl border border-orange-100 bg-white p-1 shadow-sm" role="tablist" aria-label="Inventory type">
+                {[
+                    { id: "single", label: "Single Products" },
+                    { id: "combos", label: "Combos" },
+                ].map((tab) => (
+                    <button
+                        key={tab.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === tab.id}
+                        onClick={() => {
+                            setActiveTab(tab.id);
+                            setCurrentPage(1);
+                        }}
+                        className={`rounded-lg px-5 py-2.5 text-sm font-bold transition-all ${
+                            activeTab === tab.id
+                                ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-sm"
+                                : "text-gray-500 hover:bg-orange-50 hover:text-primary-dark"
+                        }`}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+            {activeTab === "combos" && (
+                <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                    Combo stock is calculated from its component products. Restock components in the Single Products tab.
+                </p>
+            )}
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {[
-                    { label: "Total Products", value: stats.total || 0, sub: "All furniture products", Icon: FiBox, color: "orange" },
-                    { label: "Active", value: stats.active || 0, sub: "Active products", Icon: FiCheckCircle, color: "emerald" },
-                    { label: "Inactive", value: stats.outOfStock || 0, sub: "Inactive products", Icon: FiAlertCircle, color: "amber" },
-                    { label: "Low Stock", value: stats.lowStock || 0, sub: "Products low in stock", Icon: FiXCircle, color: "rose" },
+                    { label: activeTab === "single" ? "Total Products" : "Total Combos", value: stats.total || 0, sub: activeTab === "single" ? "Single furniture products" : "Managed furniture combos", Icon: FiBox, color: "orange" },
+                    { label: "Active", value: stats.active || 0, sub: activeTab === "single" ? "Active products" : "Active combos", Icon: FiCheckCircle, color: "emerald" },
+                    { label: "Inactive", value: stats.outOfStock || 0, sub: activeTab === "single" ? "Inactive products" : "Inactive combos", Icon: FiAlertCircle, color: "amber" },
+                    {
+                        label: activeTab === "single" ? "Low Stock" : "Low Stock on Page",
+                        value: activeTab === "single"
+                            ? stats.lowStock || 0
+                            : products.filter((combo) => {
+                                const stock = Number(getStockLevel(combo));
+                                return stock > 0 && stock <= 5;
+                            }).length,
+                        sub: activeTab === "single" ? "Products low in stock" : "Combos with 1–5 available",
+                        Icon: FiXCircle,
+                        color: "rose",
+                    },
                 ].map((stat, i) => (
                     <div key={i} className={`group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-xl border bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(74,46,25,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(74,46,25,0.14)] ${
                         stat.color === "orange" ? "border-orange-100/80 hover:border-orange-200" : stat.color === "emerald" ? "border-emerald-100/80 hover:border-emerald-200" : stat.color === "amber" ? "border-amber-100/80 hover:border-amber-200" : "border-rose-100/80 hover:border-rose-200"
@@ -366,7 +439,7 @@ const StockDetails = () => {
                     <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search products by name, SKU..."
+                        placeholder={activeTab === "single" ? "Search products by name, SKU..." : "Search combos by name, SKU..."}
                         className="w-full rounded-xl border border-gray-100 bg-gray-50 py-2.5 pl-11 pr-4 text-sm font-medium text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-orange-100"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -406,10 +479,10 @@ const StockDetails = () => {
                 </div>
                 <button
                     type="button"
-                    onClick={() => navigate("/admin/products/stock/add")}
+                    onClick={() => navigate(activeTab === "single" ? "/admin/products/stock/add" : "/admin/combos")}
                     className="flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-primary to-primary-dark px-5 py-3 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95"
                 >
-                    <FiPlus size={17} /> Add Stock
+                    {activeTab === "single" ? <><FiPlus size={17} /> Add Stock</> : <><FiBox size={17} /> Manage Combos</>}
                 </button>
                 </div>
                 </div>
@@ -428,7 +501,7 @@ const StockDetails = () => {
                             <thead>
                             <tr className="border-b border-secondary-dark bg-gradient-to-r from-secondary-dark to-secondary-light">
                                 <th className="w-12 px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">S.No.</th>
-                                <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">Product</th>
+                                <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">{activeTab === "single" ? "Product" : "Combo"}</th>
                                 <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">Category</th>
                                 <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">Price</th>
                                 <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-[#FCD34D]">Stock</th>
@@ -460,7 +533,10 @@ const StockDetails = () => {
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-bold text-slate-800 leading-tight max-w-[180px] truncate">{product.name}</p>
-                                                            <p className="mt-0.5 text-[11px] font-medium text-gray-400">SKU: {product.product_code || `SKU${String(product.id).padStart(4, "0")}`}</p>
+                                                            <p className="mt-0.5 text-[11px] font-medium text-gray-400">SKU: {product.product_code || product.combo_code || `SKU${String(product.id).padStart(4, "0")}`}</p>
+                                                            {activeTab === "combos" && (
+                                                                <p className="mt-0.5 text-[10px] text-gray-500">Includes {product.combo_items?.length || 0} products</p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
@@ -476,15 +552,21 @@ const StockDetails = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-4">
-                                                    <button
-                                                        onClick={() => openUpdateModal(product)}
-                                                        title="Click to update stock"
-                                                        className="group/stock flex items-center gap-1.5 text-sm font-black text-slate-800 transition-colors hover:text-primary-dark"
-                                                    >
-                                                        <span className="underline decoration-dotted decoration-gray-300 group-hover/stock:decoration-primary-dark">{stock}</span>
-                                                        <span className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-primary-dark opacity-0 transition-opacity group-hover/stock:opacity-100">edit</span>
-                                                    </button>
-                                                    <p className="mt-1 text-[10px] text-gray-500">Reserved {product.reserved_stock || 0} · Damaged {product.damaged_stock || 0} · Reorder at {product.minimum_stock ?? 5}</p>
+                                                    {activeTab === "single" ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => openUpdateModal(product)}
+                                                                title="Click to update stock"
+                                                                className="group/stock flex items-center gap-1.5 text-sm font-black text-slate-800 transition-colors hover:text-primary-dark"
+                                                            >
+                                                                <span className="underline decoration-dotted decoration-gray-300 group-hover/stock:decoration-primary-dark">{stock}</span>
+                                                                <span className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-primary-dark opacity-0 transition-opacity group-hover/stock:opacity-100">edit</span>
+                                                            </button>
+                                                            <p className="mt-1 text-[10px] text-gray-500">Reserved {product.reserved_stock || 0} · Damaged {product.damaged_stock || 0} · Reorder at {product.minimum_stock ?? 5}</p>
+                                                        </>
+                                                    ) : (
+                                                        <div className="text-sm font-black text-slate-800">{stock} available</div>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <span className={`px-3 py-1 rounded-lg text-[11px] font-bold border ` + getStatusStyle(status)}>
@@ -493,13 +575,23 @@ const StockDetails = () => {
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => openUpdateModal(product)}
-                                                            className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 text-primary-dark transition-colors hover:bg-orange-100"
-                                                            title="Update Stock"
-                                                        >
-                                                            <FiEdit2 size={13} />
-                                                        </button>
+                                                        {activeTab === "single" ? (
+                                                            <button
+                                                                onClick={() => openUpdateModal(product)}
+                                                                className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 text-primary-dark transition-colors hover:bg-orange-100"
+                                                                title="Update Stock"
+                                                            >
+                                                                <FiEdit2 size={13} />
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => navigate(`/admin/combos/edit/${product.id}`)}
+                                                                className="rounded-lg bg-orange-50 px-3 py-1.5 text-xs font-bold text-primary-dark transition-colors hover:bg-orange-100"
+                                                                title="Manage Combo"
+                                                            >
+                                                                Manage
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -535,7 +627,10 @@ const StockDetails = () => {
                                         <div className="p-4">
                                             <div className="min-w-0">
                                                 <p className="text-base font-bold text-slate-800 truncate">{product.name}</p>
-                                                <p className="mt-1 text-[11px] font-medium text-gray-400">SKU: {product.product_code || `SKU${String(product.id).padStart(4, "0")}`}</p>
+                                                <p className="mt-1 text-[11px] font-medium text-gray-400">SKU: {product.product_code || product.combo_code || `SKU${String(product.id).padStart(4, "0")}`}</p>
+                                                {activeTab === "combos" && (
+                                                    <p className="mt-1 text-[10px] text-gray-500">Includes {product.combo_items?.length || 0} products</p>
+                                                )}
                                                 <span className="mt-3 inline-block rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-primary-dark">
                                                     {product.category || "Uncategorized"}
                                                 </span>
@@ -547,18 +642,24 @@ const StockDetails = () => {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-[11px] text-gray-400 font-medium">Available Stock</p>
-                                                    <button onClick={() => openUpdateModal(product)} className="text-lg font-black text-slate-800 transition-colors hover:text-primary-dark">
-                                                        {stock}
-                                                    </button>
-                                                    <p className="mt-1 text-[10px] text-gray-500">Reserved {product.reserved_stock || 0} · Damaged {product.damaged_stock || 0}</p>
-                                                    <p className="text-[10px] text-gray-500">Reorder at {product.minimum_stock ?? 5}</p>
+                                                    {activeTab === "single" ? (
+                                                        <>
+                                                            <button onClick={() => openUpdateModal(product)} className="text-lg font-black text-slate-800 transition-colors hover:text-primary-dark">
+                                                                {stock}
+                                                            </button>
+                                                            <p className="mt-1 text-[10px] text-gray-500">Reserved {product.reserved_stock || 0} · Damaged {product.damaged_stock || 0}</p>
+                                                            <p className="text-[10px] text-gray-500">Reorder at {product.minimum_stock ?? 5}</p>
+                                                        </>
+                                                    ) : (
+                                                        <p className="text-lg font-black text-slate-800">{stock}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => openUpdateModal(product)}
+                                                onClick={() => activeTab === "single" ? openUpdateModal(product) : navigate(`/admin/combos/edit/${product.id}`)}
                                                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary-dark py-2.5 text-xs font-bold text-white transition-all hover:from-secondary-light hover:to-secondary-dark"
                                             >
-                                                <FiEdit2 size={13} /> Update Stock
+                                                {activeTab === "single" ? <><FiEdit2 size={13} /> Update Stock</> : <><FiBox size={13} /> Manage Combo</>}
                                             </button>
                                         </div>
                                     </div>

@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { Armchair, Minus, Plus, ShoppingBag, Star } from "lucide-react";
+import { Armchair, Heart, Minus, Plus, ShoppingBag, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
 import { resolveMediaUrl } from "../../utils/media";
@@ -27,13 +27,16 @@ function formatPrice(value) {
 }
 
 export default function ComboOfferCard({ combo }) {
-  const { cart, addComboToCart, updateCartQuantity } = useContext(StoreContext);
+  const { cart, wishlist, addComboToCart, updateCartQuantity, toggleWishlist } = useContext(StoreContext);
   const image = getComboImage(combo);
   const mrp = Number(combo.mrp) || 0;
   const price = Number(combo.offer_price ?? combo.selling_price) || 0;
   const savings = Math.max(0, mrp - price);
   const discount = mrp > 0 ? Math.round((savings / mrp) * 100) : 0;
   const itemCount = Array.isArray(combo.combo_items) ? combo.combo_items.length : 0;
+  const isWishlisted = wishlist.some((item) =>
+    item.item_type === "combo" && Number(item.combo_id) === Number(combo.id),
+  );
   const cartItem = cart.find((item) => Number(item.combo_id) === Number(combo.id));
   const availableStock = Number(cartItem?.available_stock ?? combo.total_stock) || 0;
 
@@ -59,6 +62,17 @@ export default function ComboOfferCard({ combo }) {
             {discount}% OFF
           </span>
         )}
+        <button
+          type="button"
+          onClick={() => toggleWishlist({ ...combo, item_type: "combo" })}
+          aria-label={isWishlisted ? `Remove ${combo.name} from favorites` : `Add ${combo.name} to favorites`}
+          aria-pressed={isWishlisted}
+          className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:scale-105 ${
+            isWishlisted ? "text-rose-600" : "text-[#634d3b] hover:text-rose-600"
+          }`}
+        >
+          <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
+        </button>
       </div>
 
       <div className="flex flex-1 flex-col p-4">
