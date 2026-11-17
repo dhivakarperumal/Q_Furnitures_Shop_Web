@@ -34,7 +34,8 @@ const initialForm = {
     total_stock: "0", warehouse: "", package_length: "", package_width: "", package_height: "",
     delivery_available: true, delivery_charges: "", free_delivery: false,
     estimated_delivery_days: "", assembly_required: false, installation_available: false,
-    return_policy: "", video_url: "", customization_enabled: false, customization_title: "",
+    return_policy: "", offer_start_date: "", offer_end_date: "",
+    video_url: "", customization_enabled: false, customization_title: "",
     customization_description: "", rating: "5",
 };
 
@@ -164,7 +165,14 @@ const AddProducts = () => {
     const finalOfferPrice = form.offer_price_mode === "manual"
         ? Number(form.offer_price) || 0
         : calculatedOfferPrice;
-    const stockState = Number(form.total_stock) <= 0 ? "Out of stock" : Number(form.total_stock) <= 5 ? "Low stock" : "In stock";
+    const stockState = Number(form.total_stock) <= 0
+        ? "Out of stock"
+        : Number(form.total_stock) <= 5 ? "Low stock" : "In stock";
+    const formSections = [
+        ["#basic", "Basics"], ["#pricing", "Pricing"], ["#specifications", "Specifications"],
+        ["#variants", "Variants"], ["#gallery", "Gallery"], ["#shipping", "Delivery"],
+        ["#customization", "Customization"],
+    ];
 
     useEffect(() => {
         let isMounted = true;
@@ -190,6 +198,17 @@ const AddProducts = () => {
 
                 if (isEdit && productResponse) {
                     const product = productResponse.data;
+                    if (product.product_type === "Combo Product") {
+                        const { data: comboResponse } = await api.get("/combos", {
+                            params: { page: 1, limit: 100, legacy_product_id: product.id },
+                        });
+                        const legacyCombo = comboResponse?.combos?.[0];
+                        if (!legacyCombo) {
+                            throw new Error("This legacy combo has not been migrated to combo management.");
+                        }
+                        navigate(`/admin/combos/edit/${legacyCombo.id}`, { replace: true });
+                        return;
+                    }
                     const specifications = product.specifications || {};
                     const shipping = product.shipping || {};
                     setForm((previous) => ({
@@ -263,7 +282,7 @@ const AddProducts = () => {
         };
         loadProduct();
         return () => { isMounted = false; };
-    }, [id, isEdit]);
+    }, [id, isEdit, navigate]);
 
     const handleChange = (event) => {
         const { name, value, type, checked } = event.target;
@@ -416,7 +435,8 @@ const AddProducts = () => {
 
     const saveProduct = async (event, asDraft = false) => {
         event?.preventDefault();
-        if (!form.name.trim() || !form.category || !form.mrp || Number(form.mrp) <= 0) {
+        const effectiveMrp = Number(form.mrp);
+        if (!form.name.trim() || !form.category || !effectiveMrp || effectiveMrp <= 0) {
             toast.error("Add a product name, category, and valid MRP to continue.");
             return;
         }
@@ -424,7 +444,7 @@ const AddProducts = () => {
             toast.error("Enter a valid offer value.");
             return;
         }
-        if (form.offer_price_mode === "manual" && (form.offer_price === "" || finalOfferPrice > Number(form.mrp))) {
+        if (form.offer_price_mode === "manual" && (form.offer_price === "" || finalOfferPrice > effectiveMrp)) {
             toast.error("Enter a manual offer price between zero and the MRP.");
             return;
         }
@@ -438,7 +458,7 @@ const AddProducts = () => {
         const productData = {
             ...form,
             status: asDraft ? "Draft" : form.status,
-            mrp: String(form.mrp),
+            mrp: String(effectiveMrp),
             offer: String(form.offer || "0"),
             offer_price: finalOfferPrice.toFixed(2),
             offer_price_mode: form.offer_price_mode,
@@ -525,11 +545,7 @@ const AddProducts = () => {
             </div>
 
             <nav aria-label="Product form sections" className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-                {[
-                    ["#basic", "Basics"], ["#pricing", "Pricing"], ["#specifications", "Specifications"],
-                    ["#variants", "Variants"], ["#gallery", "Gallery"], ["#shipping", "Delivery"],
-                    ["#customization", "Customization"],
-                ].map(([href, label]) => <a key={href} href={href} className="whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-orange-50 hover:text-orange-700">{label}</a>)}
+                {formSections.map(([href, label]) => <a key={href} href={href} className="whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-orange-50 hover:text-orange-700">{label}</a>)}
             </nav>
 
             <form onSubmit={saveProduct} className="space-y-5">
@@ -548,13 +564,16 @@ const AddProducts = () => {
                             <SelectField label="Subcategory" name="subcategory" value={form.subcategory} onChange={handleChange} options={[{ value: "", label: "Select a subcategory" }, ...subcategories]} disabled={!subcategories.length} />
                             <Field label="Brand name" name="brand" value={form.brand} onChange={handleChange} placeholder="Brand or collection" />
                             <Field label="Model number" name="model_number" value={form.model_number} onChange={handleChange} placeholder="Optional model reference" />
-                            <SelectField label="Product type" name="product_type" value={form.product_type} onChange={handleChange} options={["Standard", "Variable Product"]} />
+                            <SelectField label="Product type" name="product_type" value={form.product_type} onChange={handleChange} options={[
+                                { label: "Standard Product", value: "Standard" },
+                                { label: "Variable Product", value: "Variable Product" },
+                            ]} />
                             <SelectField label="Product status" name="status" value={form.status} onChange={handleChange} options={["Active", "Inactive", "Draft"]} />
                             <Field label="Product rating (1–5)" name="rating" value={form.rating} onChange={handleChange} type="number" min="1" max="5" step="0.1" required />
                             <Field label="Product tags" name="tags" value={form.tags} onChange={handleChange} placeholder="solid wood, modern, living room — separate with commas" />
                         </div>
                         <label className="block">
-                            <span className={labelClass}>Full product escription</span>
+                            <span className={labelClass}>Product description</span>
                             <textarea className={`${inputClass} min-h-28 resize-y`} name="description" value={form.description} onChange={handleChange} placeholder="Describe the materials, craftsmanship, comfort, and care details…" rows={4} />
                         </label>
                         <div className="grid gap-3 md:grid-cols-3">

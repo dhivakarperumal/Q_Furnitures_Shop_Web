@@ -17,7 +17,9 @@ const FeaturedProducts = () => {
     if (!Array.isArray(response.data?.products)) {
       throw new Error("The products response did not contain a product list.");
     }
-    return response.data.products.filter((product) => product.status === "Active");
+    return response.data.products.filter((product) =>
+      product.status === "Active" && product.product_type !== "Combo Product",
+    );
   }, []);
 
   useEffect(() => {

@@ -54,6 +54,7 @@ const navItems = [
     children: [
       { path: "/admin/products/all", label: "All Products", icon: PackageSearch },
       { path: "/admin/products/add", label: "Add Product", icon: PackagePlus },
+      { path: "/admin/combos", label: "Combos", icon: PackagePlus },
       { path: "/admin/products/category", label: "Categories", icon: Layers },
       { path: "/admin/products/stock", label: "Stock Details", icon: Warehouse, exact: true },
       { path: "/admin/products/stock/movements", label: "Stock Movements", icon: ArrowLeftRight },
@@ -123,7 +124,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
   }, []);
   /* ================= ACTIVE ROUTE MAP ================= */
   const activeRouteMap = {
-    "/admin/products": ["/admin/products/all", "/admin/products/add", "/admin/products/category"],
+    "/admin/products": ["/admin/products/all", "/admin/products/add", "/admin/products/category", "/admin/combos"],
     "/admin/orders": ["/admin/orders/all", "/admin/orders/new", "/admin/orders/billing", "/admin/orders/delivery", "/admin/orders/cancelled"],
     "/admin/users": ["/admin/users/all"],
   };

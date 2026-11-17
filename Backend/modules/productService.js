@@ -315,10 +315,13 @@ function createProductService(pool) {
       }
     },
 
-    async list({ page, limit, search, status }) {
+    async list({ page, limit, search, status, excludeComboProducts = false }) {
       const filters = [];
       const parameters = [];
 
+      if (excludeComboProducts) {
+        filters.push("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(p.product_data, '$.product_type')), '') <> 'Combo Product'");
+      }
       if (search) {
         const searchTerm = `%${search}%`;
         filters.push("(p.name LIKE ? OR p.product_code LIKE ? OR p.category LIKE ?)");
@@ -342,13 +345,16 @@ function createProductService(pool) {
         `SELECT COUNT(*) AS total FROM products p LEFT JOIN product_stock ps ON ps.product_id = p.id ${whereClause}`,
         parameters,
       );
+      const statsWhereClause = excludeComboProducts
+        ? "WHERE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(p.product_data, '$.product_type')), '') <> 'Combo Product'"
+        : "";
       const [statsRows] = await pool.execute(
         `SELECT COUNT(*) AS total,
                 COALESCE(SUM(status = 'Active'), 0) AS active,
                 COALESCE(SUM(status = 'Inactive'), 0) AS outOfStock,
                 COALESCE(SUM(COALESCE(ps.available_stock, p.total_stock) > 0 AND
                   COALESCE(ps.available_stock, p.total_stock) <= COALESCE(ps.minimum_stock, 5)), 0) AS lowStock
-         FROM products p LEFT JOIN product_stock ps ON ps.product_id = p.id`,
+         FROM products p LEFT JOIN product_stock ps ON ps.product_id = p.id ${statsWhereClause}`,
       );
       const total = Number(countRows[0]?.total || 0);
       const stats = statsRows[0] || {};

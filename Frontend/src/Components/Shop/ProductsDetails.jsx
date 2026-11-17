@@ -40,6 +40,17 @@ function parseImages(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
+function parseRecords(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string" || !value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function formatPrice(value) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -72,6 +83,9 @@ function ProductDetails() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
   const [relatedError, setRelatedError] = useState("");
+  const [comboComponents, setComboComponents] = useState([]);
+  const [comboComponentsLoading, setComboComponentsLoading] = useState(false);
+  const [comboComponentsError, setComboComponentsError] = useState("");
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [reviewsError, setReviewsError] = useState("");
@@ -144,6 +158,44 @@ function ProductDetails() {
   }, [product]);
 
   useEffect(() => {
+    if (!product || product.product_type !== "Combo Product") {
+      setComboComponents([]);
+      return undefined;
+    }
+
+    const comboItems = parseRecords(product.combo_items);
+    if (!comboItems.length) {
+      setComboComponents([]);
+      setComboComponentsError("");
+      return undefined;
+    }
+
+    let active = true;
+    setComboComponentsLoading(true);
+    setComboComponentsError("");
+    Promise.all(comboItems.map(async (item) => {
+      const { data } = await api.get(`/products/${item.product_id}`);
+      return { item, product: data };
+    }))
+      .then((components) => {
+        if (active) setComboComponents(components);
+      })
+      .catch((error) => {
+        console.error("Combo components request failed:", error);
+        if (active) {
+          setComboComponentsError(error.response?.data?.message || error.message || "Could not load included products.");
+        }
+      })
+      .finally(() => {
+        if (active) setComboComponentsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [product]);
+
+  useEffect(() => {
     let active = true;
     setReviews([]);
     setReviewsLoading(true);
@@ -205,6 +257,7 @@ function ProductDetails() {
   const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const colorName = String(variant?.colorName || variant?.color || variant?.colour || "Default");
   const productId = product?.id ?? product?.product_id;
+  const isCombo = product?.product_type === "Combo Product";
   const isWishlisted = wishlist.some((item) =>
     String(item.product_id ?? item.productId ?? item.id) === String(productId),
   );
@@ -407,10 +460,57 @@ function ProductDetails() {
                     )}
                   </div>
                   <p className="mt-1 text-xs text-[#9a8979]">Inclusive of all taxes</p>
+                  {isCombo && mrp > price && (
+                    <p className="mt-2 text-sm font-semibold text-emerald-700">Combo savings: {formatPrice(mrp - price)}</p>
+                  )}
 
                   <p className="mt-6 whitespace-pre-line text-sm leading-7 text-[#725d4b]">
                     {product.description || "Thoughtfully designed to bring comfort and character to your home."}
                   </p>
+
+                  {isCombo && (
+                    <div className="mt-6 rounded-2xl border border-orange-100 bg-orange-50/50 p-4">
+                      <h2 className="text-sm font-bold text-[#351d0e]">Included in this combo</h2>
+                      {comboComponentsLoading ? (
+                        <p className="mt-3 text-xs text-[#8b735e]">Loading included products…</p>
+                      ) : comboComponentsError ? (
+                        <p role="alert" className="mt-3 text-xs text-red-700">{comboComponentsError}</p>
+                      ) : comboComponents.length ? (
+                        <ul className="mt-3 space-y-3">
+                          {comboComponents.map(({ item, product: component }) => {
+                            const componentVariant = parseRecords(component.variants)[Number(item.variant_index) || 0];
+                            const componentPrice = Number(
+                              componentVariant?.selling_price ?? componentVariant?.offer_price ??
+                              component.selling_price ?? component.offer_price ?? component.mrp,
+                            ) || 0;
+                            const variantLabel = [
+                              item.variant_color || componentVariant?.colorName || componentVariant?.color || componentVariant?.colour,
+                              item.variant_size || componentVariant?.size,
+                              item.variant_material || componentVariant?.material,
+                            ].filter(Boolean).join(" · ");
+                            const componentImages = parseImages(component.images);
+                            const componentImage = componentImages[Number(component.main_image_index) || 0] || componentImages[0] || component.image;
+                            return (
+                              <li key={`${component.id}-${item.variant_index}`} className="flex items-center gap-3">
+                                {componentImage ? (
+                                  <img src={resolveMediaUrl(componentImage)} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                                ) : (
+                                  <div className="h-14 w-14 rounded-lg bg-white" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-semibold text-[#493522]">{component.name}</p>
+                                  {variantLabel && <p className="truncate text-xs text-[#8b735e]">{variantLabel}</p>}
+                                  <p className="text-xs text-[#8b735e]">Qty {item.quantity} · {formatPrice(componentPrice)} each</p>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-xs text-[#8b735e]">Included product information is not available.</p>
+                      )}
+                    </div>
+                  )}
 
                   {variants.length > 0 && (
                     <div className="mt-6">

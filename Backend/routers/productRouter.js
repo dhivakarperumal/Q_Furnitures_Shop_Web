@@ -21,6 +21,9 @@ function parseNumber(value, field, fallback) {
 
 function normalizeProduct(body, existing = {}) {
   const input = { ...existing, ...body };
+  if (input.product_type === "Combo Product") {
+    throw badRequest("Create and manage combo products from the Combo Management page.");
+  }
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const category = typeof input.category === "string" ? input.category.trim() : "";
   const productCode = typeof input.product_code === "string" ? input.product_code.trim() : "";
@@ -131,7 +134,8 @@ function createProductRouter(productService) {
       const limit = Math.min(100, Math.max(1, Number.parseInt(request.query.limit, 10) || 10));
       const search = typeof request.query.search === "string" ? request.query.search.trim() : "";
       const status = typeof request.query.status === "string" ? request.query.status : "All";
-      return response.json(await productService.list({ page, limit, search, status }));
+      const excludeComboProducts = request.query.exclude_combo_products === "true";
+      return response.json(await productService.list({ page, limit, search, status, excludeComboProducts }));
     } catch (error) {
       return next(error);
     }

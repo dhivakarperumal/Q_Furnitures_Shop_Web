@@ -14,6 +14,7 @@ import Loader from "./Components/CommenComponents/Loader.jsx";
 // Lazy Load Main Components
 const Home = React.lazy(() => import("./Components/Home/Home.jsx"));
 const Shop = React.lazy(() => import("./Components/Shop/Shop.jsx"));
+const ComboOffers = React.lazy(() => import("./Components/Shop/ComboOffers.jsx"));
 const ProductsDetails = React.lazy(() => import("./Components/Shop/ProductsDetails.jsx"));
 const Checkout = React.lazy(() => import("./Components/Shop/Checkout.jsx"));
 const MyOrders = React.lazy(() => import("./Components/MyOrders.jsx"));
@@ -27,6 +28,8 @@ const Dashboard = React.lazy(() => import("./Admin/Dashboard.jsx"));
 const Category = React.lazy(() => import("./Admin/Categories/Category.jsx"));
 const AllProducts = React.lazy(() => import("./Admin/Products/AllProducts.jsx"));
 const AddProducts = React.lazy(() => import("./Admin/Products/AddProducts.jsx"));
+const Combos = React.lazy(() => import("./Admin/Combos/Combos.jsx"));
+const AddCombo = React.lazy(() => import("./Admin/Combos/AddCombo.jsx"));
 const ProductDetail = React.lazy(() => import("./Admin/Products/ProductDetail.jsx"));
 const Users = React.lazy(() => import("./Admin/Customers/Users.jsx"));
 const Billing = React.lazy(() => import("./Admin/Billings/Billing.jsx"));
@@ -56,6 +59,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Home /> },
       { path: "shop", element: <Shop /> },
+      { path: "combo", element: <ComboOffers /> },
       { path: "products/:id", element: <ProductsDetails /> },
       {
         path: "ordersmain",
@@ -93,6 +97,9 @@ const router = createBrowserRouter([
       { path: "products/category", element: <Category /> },
       { path: "products/all", element: <AllProducts /> },
       { path: "products/add", element: <AddProducts /> },
+      { path: "combos", element: <Combos /> },
+      { path: "combos/add", element: <AddCombo /> },
+      { path: "combos/edit/:id", element: <AddCombo /> },
       { path: "products/stock", element: <StockDetails /> },
       { path: "products/stock/add", element: <AddStock /> },
       { path: "products/:id", element: <ProductDetail /> },

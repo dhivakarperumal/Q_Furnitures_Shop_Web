@@ -34,7 +34,8 @@ const AllProducts = () => {
         page: currentPage,
         limit: itemsPerPage,
         search: searchTerm,
-        status: showLowStockOnly ? "Low Stock" : "All"
+        status: showLowStockOnly ? "Low Stock" : "All",
+        exclude_combo_products: true,
     });
 
     const pageData = productsCache[currentCacheKey];
@@ -87,7 +88,8 @@ const AllProducts = () => {
             page: currentPage,
             limit: itemsPerPage,
             search: searchTerm,
-            status: showLowStockOnly ? "Low Stock" : "All"
+            status: showLowStockOnly ? "Low Stock" : "All",
+            exclude_combo_products: true,
         };
         const cacheKey = JSON.stringify(params);
         if (!productsCache[cacheKey]) setLoading(true);
