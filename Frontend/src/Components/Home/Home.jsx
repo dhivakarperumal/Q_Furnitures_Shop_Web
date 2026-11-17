@@ -3,6 +3,7 @@ import FeaturedProducts from "./FeaturedProducts";
 import FeaturedCombos from "./FeaturedCombos";
 import HomeCategories from "./HomeCategories";
 import CustomFurnitureBanner from "./CustomFurnitureBanner";
+import FestiveSaleBanner from "./FestiveSaleBanner";
 import OfferProducts from "./OfferProducts";
 import OfferBanners from "./OfferBanners";
 import HomeReviews from "./HomeReviews";
@@ -14,11 +15,12 @@ const Home = () => (
     {/* <StoreBenefits /> */}
     <HomeCategories />
     <FeaturedProducts />
-    <CustomFurnitureBanner />
     <OfferBanners />
-    <FeaturedCombos />
     <TopRatedProducts />
+    <CustomFurnitureBanner />
+    <FeaturedCombos />
     <OfferProducts />
+    <FestiveSaleBanner />
     <HomeReviews />
   </main>
 );
