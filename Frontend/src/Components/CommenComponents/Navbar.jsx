@@ -232,7 +232,7 @@ const Navbar = () => {
                 <FiChevronDown className={`transition-transform ${categoryMenu ? "rotate-180" : ""}`} />
               </button>
               {categoryMenu && (
-                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(90vw,540px)] -translate-x-1/2 overflow-hidden rounded-2xl border border-[#f1dfca] bg-white shadow-[0_20px_55px_rgba(53,29,14,0.18)]">
+                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(90vw,540px)] -translate-x-1/2 overflow-hidden rounded-2xl border border-[#f1dfca] bg-white">
                   <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-[#fff5e9] to-white px-4 py-3.5">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c66a22]">Explore</p>
@@ -300,7 +300,7 @@ const Navbar = () => {
                 <FiChevronDown className={`transition-transform ${roomsMenu ? "rotate-180" : ""}`} />
               </button>
               {roomsMenu && (
-                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(88vw,390px)] -translate-x-1/2 overflow-hidden rounded-3xl border border-[#f1dfca] bg-white shadow-[0_24px_70px_rgba(53,29,14,0.2)]">
+                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(88vw,390px)] -translate-x-1/2 overflow-hidden rounded-3xl border border-[#f1dfca] bg-white">
                   <div className="bg-gradient-to-r from-[#fff5e9] to-[#fff0df] px-5 py-4">
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c66a22]">Made for every space</p>
                     <h3 className="mt-1 text-base font-bold text-[#351d0e]">Shop by room</h3>
@@ -311,7 +311,7 @@ const Navbar = () => {
                         key={slug}
                         to={`/shop?room=${encodeURIComponent(slug)}`}
                         onClick={() => setRoomsMenu(false)}
-                        className="group flex min-h-24 items-center gap-3 rounded-2xl border border-[#f3e7d9] bg-[#fffdfa] p-3 transition hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                        className="group flex min-h-24 items-center gap-3 rounded-2xl border border-[#f3e7d9] bg-[#fffdfa] p-3 transition hover:border-orange-200 hover:bg-orange-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
                       >
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-[#c96518] transition group-hover:bg-[#f07816] group-hover:text-white">
                           <RoomIcon size={19} />
@@ -414,10 +414,10 @@ const Navbar = () => {
                   {profileInitial}
                 </button>
                 {userMenu && (
-                  <div className="absolute right-0 top-full z-[70] mt-3 w-[min(88vw,330px)] overflow-hidden rounded-3xl border border-[#f1dfca] bg-white shadow-[0_24px_70px_rgba(53,29,14,0.2)]">
+                  <div className="absolute right-0 top-full z-[70] mt-3 w-[min(88vw,330px)] overflow-hidden rounded-3xl border border-[#f1dfca] bg-white">
                     <div className="bg-gradient-to-br from-[#fff0df] via-[#fff8ef] to-white p-5">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f07816] to-[#d9650b] text-lg font-bold text-white shadow-md shadow-orange-200 ring-4 ring-white">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f07816] to-[#d9650b] text-lg font-bold text-white ring-4 ring-white">
                           {profileImage ? (
                             <img src={profileImage} alt="" className="h-full w-full object-cover" />
                           ) : (
