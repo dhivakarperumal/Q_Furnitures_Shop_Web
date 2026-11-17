@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 const PageHeader = ({ title, background }) => {
 
-  const bgImage = background || "/images/welcome.png";
+  const bgImage = background || "/images/ph1.png";
 
   return (
     <div
