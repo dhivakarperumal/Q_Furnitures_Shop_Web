@@ -253,7 +253,7 @@ const Navbar = () => {
                         return (
                           <NavLink
                             key={cat.catId || cat.id || cat.name}
-                            to={`/category/${cat.slug || cat.name}`}
+                            to={`/shop?category=${encodeURIComponent(cat.name)}`}
                             onClick={() => setCategoryMenu(false)}
                             className={({ isActive }) =>
                               `group flex min-w-0 items-center gap-3 rounded-xl border border-transparent px-2.5 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${
@@ -715,7 +715,7 @@ const Navbar = () => {
                     return (
                       <NavLink
                         key={cat.catId || cat.id || cat.name}
-                        to={`/category/${cat.slug || cat.name}`}
+                        to={`/shop?category=${encodeURIComponent(cat.name)}`}
                         onClick={closeMobileMenu}
                         className={({ isActive }) =>
                           `group flex items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
