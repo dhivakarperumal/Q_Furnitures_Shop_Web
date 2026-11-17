@@ -399,6 +399,63 @@ test("loads normalized address and item rows in the existing order response shap
   assert.equal(order.total_amount, 204.6);
 });
 
+test("hydrates combo order items with their included product details", async () => {
+  const comboItems = [
+    { product_id: 7, quantity: 1, variant_index: 0, variant_color: "Cream", variant_size: "3 Seater" },
+    { product_id: 8, quantity: 2, variant_index: 0, variant_color: "Walnut", variant_size: "Standard" },
+  ];
+  const pool = {
+    async execute(query, parameters) {
+      if (query.startsWith("SELECT * FROM orders")) {
+        return [[{ id: 16, order_id: "ORD0016", total_amount: "500.00" }]];
+      }
+      if (query.includes("FROM `address`")) return [[]];
+      if (query.includes("FROM order_items")) {
+        return [[{
+          id: 5,
+          order_id: 16,
+          product_id: null,
+          combo_id: 3,
+          combo_snapshot: JSON.stringify({ combo_items: comboItems }),
+          product_name: "Living Room Combo",
+          price: "500.00",
+          quantity: 2,
+          total: "1000.00",
+          image: "/uploads/combo.webp",
+        }]];
+      }
+      if (query.startsWith("SELECT id, name, product_data FROM products")) {
+        assert.deepEqual(parameters, [7, 8]);
+        return [[
+          {
+            id: 7,
+            name: "Three-Seater Sofa",
+            product_data: JSON.stringify({ variants: [{ images: ["/uploads/sofa.webp"] }] }),
+          },
+          {
+            id: 8,
+            name: "Coffee Table",
+            product_data: JSON.stringify({ images: ["/uploads/table.webp"] }),
+          },
+        ]];
+      }
+      throw new Error(`Unexpected SQL in test: ${query}`);
+    },
+  };
+
+  const order = await createOrderService(pool).getById(16);
+
+  assert.equal(order.items[0].item_type, "combo");
+  assert.deepEqual(order.items[0].combo_items.map((item) => ({
+    product_name: item.product_name,
+    image: item.image,
+    quantity: item.quantity,
+  })), [
+    { product_name: "Three-Seater Sofa", image: "/uploads/sofa.webp", quantity: 1 },
+    { product_name: "Coffee Table", image: "/uploads/table.webp", quantity: 2 },
+  ]);
+});
+
 test("rolls back when requested quantity exceeds available stock", async () => {
   let rolledBack = false;
   const connection = {

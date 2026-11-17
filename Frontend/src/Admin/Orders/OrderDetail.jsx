@@ -22,6 +22,12 @@ import { toast, Toaster } from "react-hot-toast";
 const logo = "/images/logo.png";
 const formatOrderId = (order) => order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
 const formatCurrency = (value) => Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+const escapeHtml = (value) => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 const getDiscountLabel = (order) => order.discount_type === "percentage"
     ? `Discount (${Number(order.discount_value || 0)}%)`
     : "Discount";
@@ -88,6 +94,15 @@ const OrderDetail = () => {
                 const sizeVal = i.variant_size || "";
                 const colorVal = i.variant_color || "";
                 const finalImgUrl = getProductImage(i);
+                const comboComponents = Array.isArray(i.combo_items) ? i.combo_items : [];
+                const comboComponentsHTML = comboComponents.length
+                    ? `<ul style="margin:6px 0 0;padding-left:16px;color:#666;font-size:10px;">${comboComponents.map((component) => {
+                        const componentQuantity = Number(component.quantity || 1) * Number(i.quantity || 1);
+                        const variant = escapeHtml([component.variant_color, component.variant_size].filter(Boolean).join(" · "));
+                        const name = escapeHtml(component.product_name || `Product #${component.product_id}`);
+                        return `<li style="margin:3px 0;">${name} × ${componentQuantity}${variant ? ` (${variant})` : ""}</li>`;
+                    }).join("")}</ul>`
+                    : "";
 
                 return `
           <tr>
@@ -97,6 +112,7 @@ const OrderDetail = () => {
               <div style="display:flex;flex-direction:column;text-align:left;">
                 <span style="font-weight:bold;">${i.product_name || ""}</span>
                 <small style="color:#666;margin-top:4px;font-size:10px;">${sizeVal ? 'Size: ' + sizeVal : ''} ${colorVal ? '| Color: ' + colorVal : ''}</small>
+                ${comboComponentsHTML}
               </div>
             </td>
             <td style="border:1px solid #ddd;padding:10px;text-align:center;">${i.quantity || 1}</td>
@@ -365,6 +381,15 @@ const OrderDetail = () => {
 
     if (!order) return <div className="p-20 text-center font-bold text-gray-400">Order not found</div>;
 
+    const includedProductCount = (order.items || []).reduce((total, item) => {
+        if (item.item_type !== "combo") return total + Number(item.quantity || 0);
+        const components = Array.isArray(item.combo_items) ? item.combo_items : [];
+        return total + components.reduce(
+            (componentTotal, component) => componentTotal + Number(component.quantity || 0) * Number(item.quantity || 0),
+            0,
+        );
+    }, 0);
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <Toaster position="top-right" />
@@ -426,7 +451,7 @@ const OrderDetail = () => {
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                             <h3 className="text-xl font-black text-slate-800 tracking-tight">Manifest Items</h3>
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-lg">{order.items?.length || 0} Products</span>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-lg">{includedProductCount} Products</span>
                         </div>
                         <div className="divide-y divide-gray-50">
                             {order.items?.map((item) => (
@@ -447,6 +472,33 @@ const OrderDetail = () => {
                                         <h4 className="font-black text-slate-800 text-md tracking-tight">{item.product_name}</h4>
 
                                         <p className="text-xs font-bold text-gray-400 mt-2 italic uppercase tracking-wider">Unit Price: ₹{parseFloat(item.price).toLocaleString()}</p>
+                                        {item.item_type === "combo" && (
+                                            <div className="mt-4 rounded-xl border border-orange-100 bg-orange-50/50 p-4">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-primary-dark">Included products</p>
+                                                {item.combo_items?.length ? (
+                                                    <ul className="mt-2 space-y-2">
+                                                        {item.combo_items.map((component, index) => {
+                                                            const quantity = Number(component.quantity || 1) * Number(item.quantity || 1);
+                                                            const variant = [component.variant_color, component.variant_size].filter(Boolean).join(" · ");
+                                                            return (
+                                                                <li
+                                                                    key={`${component.product_id}-${index}`}
+                                                                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-orange-100 pt-2 text-xs"
+                                                                >
+                                                                    <span className="font-semibold text-slate-700">
+                                                                        {component.product_name || `Product #${component.product_id}`}
+                                                                        {variant && <span className="ml-2 font-normal text-slate-500">{variant}</span>}
+                                                                    </span>
+                                                                    <span className="font-bold text-primary-dark">Qty: {quantity}</span>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                ) : (
+                                                    <p className="mt-2 text-xs text-slate-500">Included product details are unavailable.</p>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-3 mt-1.5">
                                         {item.variant_color && (

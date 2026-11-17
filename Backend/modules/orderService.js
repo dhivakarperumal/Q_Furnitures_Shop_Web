@@ -340,11 +340,44 @@ function createOrderService(pool) {
     const [addresses] = addressResult;
     const [items] = itemResult;
     const addressesByOrderId = new Map(addresses.map((address) => [String(address.order_id), address]));
+    const mappedItems = items.map(mapOrderItem);
+    const comboComponentIds = [...new Set(mappedItems.flatMap((item) =>
+      item.combo_items
+        .map((component) => Number(component.product_id))
+        .filter((productId) => Number.isSafeInteger(productId) && productId > 0),
+    ))];
+    const productsById = new Map();
+    if (comboComponentIds.length) {
+      const [products] = await pool.execute(
+        `SELECT id, name, product_data FROM products
+         WHERE id IN (${comboComponentIds.map(() => "?").join(", ")})`,
+        comboComponentIds,
+      );
+      for (const product of products) {
+        productsById.set(Number(product.id), product);
+      }
+    }
+
     const itemsByOrderId = new Map();
-    for (const item of items) {
+    for (const item of mappedItems) {
+      if (item.combo_items.length) {
+        item.combo_items = item.combo_items.map((component) => {
+          const productId = Number(component.product_id);
+          const product = productsById.get(productId);
+          const productData = product ? parseProductData(product.product_data) : {};
+          const variants = Array.isArray(productData.variants) ? productData.variants : [];
+          const variant = variants[Number(component.variant_index) || 0] || null;
+          return {
+            ...component,
+            product_id: productId,
+            product_name: component.product_name || product?.name || `Product #${productId}`,
+            image: component.image || getProductImage(productData, variant),
+          };
+        });
+      }
       const key = String(item.order_id);
       if (!itemsByOrderId.has(key)) itemsByOrderId.set(key, []);
-      itemsByOrderId.get(key).push(mapOrderItem(item));
+      itemsByOrderId.get(key).push(item);
     }
 
     return rows.map((row) => mapOrder(
