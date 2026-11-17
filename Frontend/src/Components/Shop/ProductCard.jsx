@@ -187,7 +187,7 @@ export function ProductListCard({ product }) {
   );
 
   return (
-    <article className="group flex min-h-[96px] overflow-hidden rounded-xl border border-[#eee4d8] bg-white shadow-[0_3px_12px_rgba(53,29,14,0.05)] transition hover:border-[#e6c6a9] hover:shadow-[0_8px_20px_rgba(53,29,14,0.1)]">
+    <article className="group flex h-[112px] overflow-hidden rounded-xl border border-[#eee4d8] bg-white shadow-[0_3px_12px_rgba(53,29,14,0.05)] transition hover:border-[#e6c6a9] hover:shadow-[0_8px_20px_rgba(53,29,14,0.1)]">
       <div className="relative w-[38%] shrink-0 overflow-hidden bg-[#f7f1e9]">
         <Link to={`/products/${productId}`} aria-label={`View ${product.name} details`} className="block h-full w-full">
           {image ? (
