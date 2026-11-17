@@ -342,7 +342,7 @@ const Navbar = () => {
                   aria-label={`Open account menu for ${profileName}`}
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac]"
                 >
-                  <User size={20} />
+                  {profileInitial}
                 </button>
                 {userMenu && (
                   <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-orange-100 bg-white py-1 shadow-xl">
