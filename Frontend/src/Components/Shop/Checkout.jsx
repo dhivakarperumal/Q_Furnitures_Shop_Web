@@ -17,11 +17,11 @@ import {
   Truck,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import api from "../api";
-import { AuthContext } from "../PrivateRouter/AuthContext";
-import { StoreContext } from "../PrivateRouter/StoreContext";
-import PageContainer from "./CommenComponents/PageContainer";
-import PageHeader from "./CommenComponents/PageHeader";
+import api from "../../api";
+import { AuthContext } from "../../PrivateRouter/AuthContext";
+import { StoreContext } from "../../PrivateRouter/StoreContext";
+import PageContainer from "../CommenComponents/PageContainer";
+import PageHeader from "../CommenComponents/PageHeader";
 
 const GST_RATE = 3;
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";

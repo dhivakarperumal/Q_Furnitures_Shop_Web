@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
-import ProductCard from "../ProductCard";
+import ProductCard from "../Shop/ProductCard";
 
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
@@ -17,7 +17,9 @@ const FeaturedProducts = () => {
     if (!Array.isArray(response.data?.products)) {
       throw new Error("The products response did not contain a product list.");
     }
-    return response.data.products.filter((product) => product.status === "Active");
+    return response.data.products.filter((product) =>
+      product.status === "Active" && product.product_type !== "Combo Product",
+    );
   }, []);
 
   useEffect(() => {

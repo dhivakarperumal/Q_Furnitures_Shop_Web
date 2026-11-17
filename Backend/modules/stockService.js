@@ -92,6 +92,70 @@ async function insertMovement(connection, movement) {
   );
 }
 
+function parseProductData(value) {
+  if (value == null) return {};
+  if (typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value !== "string") return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function getComboComponentIds(productData) {
+  const data = parseProductData(productData);
+  const productType = String(data.product_type || data.type || "").trim();
+  if (productType !== "Combo Product") return [];
+  const items = Array.isArray(data.combo_items) ? data.combo_items : [];
+  return items
+    .filter((item) => item && typeof item === "object" && Number(item.product_id) > 0)
+    .map((item) => ({
+      productId: Number(item.product_id),
+      quantity: Number(item.quantity) || 1,
+    }));
+}
+
+async function getComboComponentAdjustments(connection, comboProduct, quantity, direction, settings) {
+  const entries = new Map();
+  const amount = Number(quantity) || 0;
+  if (amount <= 0) return [];
+
+  for (const item of getComboComponentIds(comboProduct.product_data)) {
+    const totalRequired = item.quantity * amount;
+    if (totalRequired <= 0) continue;
+    if (!entries.has(item.productId)) {
+      entries.set(item.productId, { productId: item.productId, quantity: 0, productName: "", productSku: "" });
+    }
+    entries.get(item.productId).quantity += totalRequired;
+  }
+
+  const adjustments = [];
+  for (const entry of entries.values()) {
+    const product = await getStockForUpdate(connection, entry.productId);
+    if (!product) throw stockError(`Combo component product ${entry.productId} no longer exists.`, 409);
+    const previousStock = Number(product.available_stock || 0);
+    const currentStock = previousStock + (direction === "out" ? -entry.quantity : entry.quantity);
+    if (direction === "out" && product.deduction_rule !== "none" && currentStock < 0 && !settings) {
+      throw stockError(
+        `Insufficient stock for ${product.name}. Available: ${previousStock}, requested: ${entry.quantity}.`,
+        409,
+      );
+    }
+    adjustments.push({
+      productId: entry.productId,
+      previousStock,
+      currentStock,
+      quantity: entry.quantity,
+      productName: product.name,
+      productSku: product.product_code,
+    });
+  }
+
+  return adjustments;
+}
+
 function createStockService(pool) {
   async function getNegativeStockSetting(executor = pool) {
     const [rows] = await executor.execute(
@@ -165,35 +229,98 @@ function createStockService(pool) {
     for (const item of stockItems) {
       const productId = Number(item.product_id);
       const state = products.get(productId);
-      if (isDeduction && state.product.deduction_rule === "none") continue;
       const quantity = Number(item.quantity);
-      const previousStock = state.currentStock;
-      const currentStock = previousStock + (isDeduction ? -quantity : quantity);
+      const comboAdjustments = await getComboComponentAdjustments(
+        connection,
+        state.product,
+        quantity,
+        isDeduction ? "out" : "in",
+        settings,
+      );
+
+      if (isDeduction && state.product.deduction_rule === "none") {
+        for (const comboAdjustment of comboAdjustments) {
+          const comboMovementKey = `${transactionReference}:item:${item.id}:combo:${comboAdjustment.productId}`;
+          const [existingMovements] = await connection.execute(
+            "SELECT id FROM stock_movements WHERE movement_key = ? LIMIT 1",
+            [comboMovementKey],
+          );
+          if (existingMovements.length) continue;
+          await updateAvailableStock(connection, comboAdjustment.productId, comboAdjustment.currentStock);
+          await insertMovement(connection, {
+            transactionId,
+            productId: comboAdjustment.productId,
+            invoiceId: invoice.id,
+            invoiceItemId: item.id,
+            key: comboMovementKey,
+            type,
+            productName: comboAdjustment.productName,
+            productSku: comboAdjustment.productSku,
+            previousStock: comboAdjustment.previousStock,
+            stockIn: isDeduction ? 0 : comboAdjustment.quantity,
+            stockOut: isDeduction ? comboAdjustment.quantity : 0,
+            currentStock: comboAdjustment.currentStock,
+            updatedBy: actor,
+            remarks: isDeduction ? `Combo component stock deducted for ${item.product_name || state.product.name}` : `Combo component stock restored for ${item.product_name || state.product.name}`,
+          });
+        }
+        continue;
+      }
+
       const movementKey = `${transactionReference}:item:${item.id}`;
       const [existingMovements] = await connection.execute(
         "SELECT id FROM stock_movements WHERE movement_key = ? LIMIT 1",
         [movementKey],
       );
-      if (existingMovements.length) continue;
 
-      state.currentStock = currentStock;
-      await updateAvailableStock(connection, productId, currentStock);
-      await insertMovement(connection, {
-        transactionId,
-        productId,
-        invoiceId: invoice.id,
-        invoiceItemId: item.id,
-        key: movementKey,
-        type,
-        productName: item.product_name || state.product.name,
-        productSku: item.sku || state.product.product_code,
-        previousStock,
-        stockIn: isDeduction ? 0 : quantity,
-        stockOut: isDeduction ? quantity : 0,
-        currentStock,
-        updatedBy: actor,
-        remarks: isDeduction ? `Sold on ${invoice.invoice_number}` : `Restored from ${invoice.invoice_number}`,
-      });
+      if (!existingMovements.length) {
+        const previousStock = state.currentStock;
+        const currentStock = previousStock + (isDeduction ? -quantity : quantity);
+        state.currentStock = currentStock;
+        await updateAvailableStock(connection, productId, currentStock);
+        await insertMovement(connection, {
+          transactionId,
+          productId,
+          invoiceId: invoice.id,
+          invoiceItemId: item.id,
+          key: movementKey,
+          type,
+          productName: item.product_name || state.product.name,
+          productSku: item.sku || state.product.product_code,
+          previousStock,
+          stockIn: isDeduction ? 0 : quantity,
+          stockOut: isDeduction ? quantity : 0,
+          currentStock,
+          updatedBy: actor,
+          remarks: isDeduction ? `Sold on ${invoice.invoice_number}` : `Restored from ${invoice.invoice_number}`,
+        });
+      }
+
+      for (const comboAdjustment of comboAdjustments) {
+        const comboMovementKey = `${transactionReference}:item:${item.id}:combo:${comboAdjustment.productId}`;
+        const [comboMovementRows] = await connection.execute(
+          "SELECT id FROM stock_movements WHERE movement_key = ? LIMIT 1",
+          [comboMovementKey],
+        );
+        if (comboMovementRows.length) continue;
+        await updateAvailableStock(connection, comboAdjustment.productId, comboAdjustment.currentStock);
+        await insertMovement(connection, {
+          transactionId,
+          productId: comboAdjustment.productId,
+          invoiceId: invoice.id,
+          invoiceItemId: item.id,
+          key: comboMovementKey,
+          type,
+          productName: comboAdjustment.productName,
+          productSku: comboAdjustment.productSku,
+          previousStock: comboAdjustment.previousStock,
+          stockIn: isDeduction ? 0 : comboAdjustment.quantity,
+          stockOut: isDeduction ? comboAdjustment.quantity : 0,
+          currentStock: comboAdjustment.currentStock,
+          updatedBy: actor,
+          remarks: isDeduction ? `Combo component stock deducted for ${item.product_name || state.product.name}` : `Combo component stock restored for ${item.product_name || state.product.name}`,
+        });
+      }
     }
   }
 

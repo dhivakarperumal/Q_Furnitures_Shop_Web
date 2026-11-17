@@ -514,6 +514,55 @@ async function initializeDatabase(pool) {
       KEY products_name_idx (name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS combos (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      legacy_product_id BIGINT UNSIGNED NULL,
+      combo_code VARCHAR(128) NULL,
+      name VARCHAR(191) NOT NULL,
+      category VARCHAR(191) NOT NULL,
+      subcategory VARCHAR(191) NULL,
+      mrp DECIMAL(12,2) NOT NULL,
+      offer DECIMAL(12,2) NOT NULL DEFAULT 0,
+      offer_type VARCHAR(32) NOT NULL DEFAULT 'Percentage',
+      offer_price DECIMAL(12,2) NOT NULL,
+      selling_price DECIMAL(12,2) NOT NULL,
+      total_stock INT NOT NULL DEFAULT 0,
+      rating DECIMAL(2,1) NOT NULL DEFAULT 5.0,
+      status VARCHAR(32) NOT NULL DEFAULT 'Active',
+      combo_data JSON NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY combos_legacy_product_unique (legacy_product_id),
+      UNIQUE KEY combos_combo_code_unique (combo_code),
+      KEY combos_status_idx (status),
+      KEY combos_name_idx (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS combo_legacy_migrations (
+      legacy_product_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+      imported_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    INSERT IGNORE INTO combo_legacy_migrations (legacy_product_id)
+    SELECT id FROM products
+    WHERE JSON_UNQUOTE(JSON_EXTRACT(product_data, '$.product_type')) = 'Combo Product'
+  `);
+  await pool.query(`
+    INSERT IGNORE INTO combos
+      (legacy_product_id, combo_code, name, category, subcategory, mrp, offer, offer_type,
+       offer_price, selling_price, total_stock, rating, status, combo_data)
+    SELECT p.id, p.product_code, p.name, p.category, p.subcategory, p.mrp, p.offer,
+           p.offer_type, p.offer_price, p.selling_price, p.total_stock, p.rating, p.status,
+           p.product_data
+    FROM products p
+    JOIN combo_legacy_migrations migration ON migration.legacy_product_id = p.id
+    WHERE NOT EXISTS (
+      SELECT 1 FROM combos existing_combo WHERE existing_combo.legacy_product_id = p.id
+    )
+  `);
   const [wishlistTableRows] = await pool.execute(
     `SELECT TABLE_NAME
      FROM INFORMATION_SCHEMA.TABLES
@@ -641,6 +690,7 @@ async function initializeDatabase(pool) {
       product_id BIGINT UNSIGNED NULL,
       user_name VARCHAR(191) NOT NULL,
       user_email VARCHAR(191) NULL,
+      reviewer_user_id BIGINT UNSIGNED NULL,
       rating TINYINT UNSIGNED NOT NULL,
       comment TEXT NOT NULL,
       review_image VARCHAR(512) NULL,
@@ -650,10 +700,38 @@ async function initializeDatabase(pool) {
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       KEY reviews_status_created_idx (status, created_at),
       KEY reviews_rating_idx (rating),
+      UNIQUE KEY reviews_customer_product_unique (reviewer_user_id, product_id),
+      CONSTRAINT reviews_reviewer_fk
+        FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE SET NULL,
       CONSTRAINT reviews_product_fk
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [reviewerColumnRows] = await pool.execute(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews' AND COLUMN_NAME = 'reviewer_user_id'`,
+  );
+  if (!reviewerColumnRows.length) {
+    await pool.query("ALTER TABLE reviews ADD COLUMN reviewer_user_id BIGINT UNSIGNED NULL AFTER user_email");
+  }
+  const [reviewerIndexRows] = await pool.execute(
+    `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews'
+       AND INDEX_NAME = 'reviews_customer_product_unique'`,
+  );
+  if (!reviewerIndexRows.length) {
+    await pool.query("CREATE UNIQUE INDEX reviews_customer_product_unique ON reviews (reviewer_user_id, product_id)");
+  }
+  const [reviewerConstraintRows] = await pool.execute(
+    `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews'
+       AND CONSTRAINT_NAME = 'reviews_reviewer_fk'`,
+  );
+  if (!reviewerConstraintRows.length) {
+    await pool.query(
+      "ALTER TABLE reviews ADD CONSTRAINT reviews_reviewer_fk FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE SET NULL",
+    );
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS youtube_videos (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
-import ProductCard from "../ProductCard";
+import ProductCard from "./ProductCard";
 
 const PRODUCTS_PER_PAGE = 12;
 

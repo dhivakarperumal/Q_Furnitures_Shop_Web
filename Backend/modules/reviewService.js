@@ -25,6 +25,29 @@ function createReviewService(pool) {
       return reviews;
     },
 
+    async listPublishedForProduct(productId) {
+      const [reviews] = await pool.execute(
+        `SELECT reviews.id, reviews.product_id, reviews.user_name, reviews.rating,
+                reviews.comment, reviews.review_image, reviews.admin_reply, reviews.created_at
+         FROM reviews
+         WHERE reviews.status = 'Published' AND reviews.product_id = ?
+         ORDER BY reviews.created_at DESC, reviews.id DESC`,
+        [productId],
+      );
+      return reviews;
+    },
+
+    async getCustomerReview(productId, userId) {
+      const [reviews] = await pool.execute(
+        `SELECT reviews.id, reviews.status
+         FROM reviews
+         WHERE reviews.product_id = ? AND reviews.reviewer_user_id = ?
+         LIMIT 1`,
+        [productId, userId],
+      );
+      return reviews[0] || null;
+    },
+
     async list({ status, rating, search }) {
       const filters = [];
       const parameters = [];
@@ -76,6 +99,19 @@ function createReviewService(pool) {
           review.review_image,
         ],
       );
+      return getById(result.insertId);
+    },
+
+    async createCustomer(review, userId) {
+      const [result] = await pool.execute(
+        `INSERT INTO reviews
+           (product_id, reviewer_user_id, user_name, user_email, rating, comment)
+         SELECT ?, users.id, users.username, users.email, ?, ?
+         FROM users
+         WHERE users.id = ?`,
+        [review.product_id, review.rating, review.comment, userId],
+      );
+      if (!result.affectedRows) return null;
       return getById(result.insertId);
     },
 

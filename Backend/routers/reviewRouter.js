@@ -67,8 +67,50 @@ function normalizeReview(body) {
   };
 }
 
+function normalizeCustomerReview(body) {
+  const productId = Number(body.product_id);
+  const rating = Number(body.rating);
+  const comment = typeof body.comment === "string" ? body.comment.trim() : "";
+
+  if (!Number.isSafeInteger(productId) || productId < 1) {
+    throw badRequest("Select a valid product.");
+  }
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw badRequest("Rating must be between 1 and 5.");
+  }
+  if (!comment || comment.length > 5000) {
+    throw badRequest("Review comment is required and must be 5,000 characters or fewer.");
+  }
+
+  return { product_id: productId, rating, comment };
+}
+
 function createReviewRouter(reviewService) {
   const router = express.Router();
+
+  router.get("/product/:productId", async (request, response, next) => {
+    try {
+      const productId = parseId(request.params.productId);
+      return response.json({ reviews: await reviewService.listPublishedForProduct(productId) });
+    } catch (error) {
+      if (error.status === 400) return response.status(400).json({ message: error.message });
+      return next(error);
+    }
+  });
+
+  router.get("/product/:productId/mine", requireAuthentication, async (request, response, next) => {
+    try {
+      const productId = parseId(request.params.productId);
+      const userId = Number(request.auth?.id);
+      if (!Number.isSafeInteger(userId) || userId < 1) {
+        return response.status(401).json({ message: "Sign in again to check your review." });
+      }
+      return response.json({ review: await reviewService.getCustomerReview(productId, userId) });
+    } catch (error) {
+      if (error.status === 400) return response.status(400).json({ message: error.message });
+      return next(error);
+    }
+  });
 
   router.get("/published", async (request, response, next) => {
     try {
@@ -108,6 +150,30 @@ function createReviewRouter(reviewService) {
       return response.status(201).json({ review });
     } catch (error) {
       if (error.status === 400) return response.status(400).json({ message: error.message });
+      if (error.code === "ER_NO_REFERENCED_ROW_2") {
+        return response.status(400).json({ message: "Selected product was not found." });
+      }
+      return next(error);
+    }
+  });
+
+  router.post("/customer", requireAuthentication, async (request, response, next) => {
+    try {
+      const userId = Number(request.auth?.id);
+      if (!Number.isSafeInteger(userId) || userId < 1) {
+        return response.status(401).json({ message: "Sign in again to submit a review." });
+      }
+      const review = await reviewService.createCustomer(
+        normalizeCustomerReview(request.body || {}),
+        userId,
+      );
+      if (!review) return response.status(401).json({ message: "Your account could not be found. Sign in again." });
+      return response.status(201).json({ review });
+    } catch (error) {
+      if (error.status === 400) return response.status(400).json({ message: error.message });
+      if (error.code === "ER_DUP_ENTRY") {
+        return response.status(409).json({ message: "You have already reviewed this product." });
+      }
       if (error.code === "ER_NO_REFERENCED_ROW_2") {
         return response.status(400).json({ message: "Selected product was not found." });
       }
@@ -164,3 +230,4 @@ function createReviewRouter(reviewService) {
 
 module.exports = createReviewRouter;
 module.exports.normalizeReview = normalizeReview;
+module.exports.normalizeCustomerReview = normalizeCustomerReview;
