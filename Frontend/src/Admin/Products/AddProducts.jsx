@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { createPortal } from "react-dom";
 import {
     ArrowDown, ArrowLeft, ArrowUp, Box, Check, ChevronDown, CircleDollarSign,
     ClipboardList, ImagePlus, Layers3, LoaderCircle, PackageCheck, Plus,
@@ -56,10 +57,14 @@ const calculateVariantSellingPrice = (variant) => {
     return Math.max(0, price);
 };
 
-const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100";
-const selectClass = `${inputClass} cursor-pointer`;
-const labelClass = "mb-1.5 block text-xs font-semibold tracking-wide text-slate-600";
+const inputClass = "w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100";
+const labelClass = "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-600";
 const iconButtonClass = "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-40";
+const formatCurrency = (amount) => new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+}).format(Number(amount) || 0);
 
 function Field({ label, name, value, onChange, type = "text", placeholder, required = false, min, max, step, prefix, suffix, ...props }) {
     return (
@@ -86,26 +91,200 @@ function Field({ label, name, value, onChange, type = "text", placeholder, requi
     );
 }
 
-function SelectField({ label, name, value, onChange, options, required = false, disabled = false }) {
+function SelectField({ label, name, value, onChange, options, required = false, disabled = false, compact = false, ariaLabel }) {
+    const id = useId().replace(/:/g, "");
+    const labelId = `${id}-label`;
+    const listboxId = `${id}-listbox`;
+    const rootRef = useRef(null);
+    const triggerRef = useRef(null);
+    const menuRef = useRef(null);
+    const optionRefs = useRef([]);
+    const typeaheadRef = useRef("");
+    const [isOpen, setIsOpen] = useState(false);
+    const [activeIndex, setActiveIndex] = useState(-1);
+    const [placement, setPlacement] = useState(null);
+    const normalizedOptions = options.map((option) => (
+        typeof option === "string" ? { label: option, value: option } : option
+    ));
+    const selectedIndex = normalizedOptions.findIndex((option) => String(option.value) === String(value ?? ""));
+    const selectedOption = selectedIndex >= 0 ? normalizedOptions[selectedIndex] : null;
+
+    useLayoutEffect(() => {
+        if (!isOpen) return undefined;
+
+        const updatePlacement = () => {
+            const rect = triggerRef.current?.getBoundingClientRect();
+            if (!rect) return;
+
+            const desiredHeight = Math.min(256, Math.max(48, normalizedOptions.length * 40 + 8));
+            const spaceBelow = window.innerHeight - rect.bottom - 8;
+            const spaceAbove = rect.top - 8;
+            const openAbove = spaceBelow < desiredHeight && spaceAbove > spaceBelow;
+            const availableHeight = Math.max(80, openAbove ? spaceAbove : spaceBelow);
+            const maxHeight = Math.min(256, availableHeight);
+            const menuHeight = Math.min(desiredHeight, maxHeight);
+
+            setPlacement({
+                top: openAbove
+                    ? Math.max(8, rect.top - menuHeight - 6)
+                    : Math.min(rect.bottom + 6, window.innerHeight - menuHeight - 8),
+                left: Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8)),
+                width: rect.width,
+                maxHeight,
+            });
+        };
+        const handleOutsidePointer = (event) => {
+            if (!rootRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        updatePlacement();
+        document.addEventListener("pointerdown", handleOutsidePointer);
+        window.addEventListener("resize", updatePlacement);
+        window.addEventListener("scroll", updatePlacement, true);
+        return () => {
+            document.removeEventListener("pointerdown", handleOutsidePointer);
+            window.removeEventListener("resize", updatePlacement);
+            window.removeEventListener("scroll", updatePlacement, true);
+        };
+    }, [isOpen, normalizedOptions.length]);
+
+    useEffect(() => {
+        if (isOpen && activeIndex >= 0) {
+            optionRefs.current[activeIndex]?.scrollIntoView?.({ block: "nearest" });
+        }
+    }, [activeIndex, isOpen]);
+
+    const chooseOption = (index) => {
+        const option = normalizedOptions[index];
+        if (!option) return;
+        onChange({ target: { name, value: option.value } });
+        setIsOpen(false);
+    };
+
+    const openMenu = (index = selectedIndex >= 0 ? selectedIndex : 0) => {
+        setActiveIndex(index);
+        setIsOpen(true);
+    };
+
+    const handleKeyDown = (event) => {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            const direction = event.key === "ArrowDown" ? 1 : -1;
+            if (!isOpen) {
+                openMenu(event.key === "ArrowDown"
+                    ? (selectedIndex >= 0 ? selectedIndex : 0)
+                    : (selectedIndex >= 0 ? selectedIndex : normalizedOptions.length - 1));
+                return;
+            }
+            setActiveIndex((current) => Math.max(0, Math.min(normalizedOptions.length - 1, current + direction)));
+            return;
+        }
+
+        if (event.key === "Home" || event.key === "End") {
+            event.preventDefault();
+            if (!isOpen) setIsOpen(true);
+            setActiveIndex(event.key === "Home" ? 0 : normalizedOptions.length - 1);
+            return;
+        }
+
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            if (isOpen) chooseOption(activeIndex >= 0 ? activeIndex : selectedIndex);
+            else openMenu();
+            return;
+        }
+
+        if (event.key === "Escape" && isOpen) {
+            event.preventDefault();
+            setIsOpen(false);
+            return;
+        }
+
+        if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            typeaheadRef.current += event.key.toLocaleLowerCase();
+            const startIndex = activeIndex >= 0 ? activeIndex + 1 : 0;
+            const orderedOptions = [
+                ...normalizedOptions.slice(startIndex),
+                ...normalizedOptions.slice(0, startIndex),
+            ];
+            const match = orderedOptions.find((option) => option.label.toLocaleLowerCase().startsWith(typeaheadRef.current));
+            if (match) {
+                const matchIndex = normalizedOptions.indexOf(match);
+                setActiveIndex(matchIndex);
+                if (!isOpen) setIsOpen(true);
+            }
+            window.setTimeout(() => { typeaheadRef.current = ""; }, 500);
+        }
+    };
+
     return (
-        <label className="block min-w-0">
-            <span className={labelClass}>{label}{required && <span className="ml-1 text-rose-500">*</span>}</span>
-            <span className="relative block">
-                <select className={`${selectClass} appearance-none pr-9 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400`} name={name} value={value ?? ""} onChange={onChange} required={required} disabled={disabled}>
-                    {options.map((option) => {
-                        const item = typeof option === "string" ? { label: option, value: option } : option;
-                        return <option key={item.value} value={item.value}>{item.label}</option>;
+        <div ref={rootRef} className={compact ? "flex min-w-0 flex-1" : "block min-w-0"}>
+            {label && <span id={labelId} className={labelClass}>{label}{required && <span className="ml-1 text-rose-500">*</span>}</span>}
+            <button
+                ref={triggerRef}
+                type="button"
+                role="combobox"
+                aria-label={ariaLabel}
+                aria-labelledby={label ? labelId : undefined}
+                aria-haspopup="listbox"
+                aria-controls={listboxId}
+                aria-expanded={isOpen}
+                aria-activedescendant={isOpen && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+                aria-required={required || undefined}
+                aria-disabled={disabled || undefined}
+                disabled={disabled}
+                onClick={() => isOpen ? setIsOpen(false) : openMenu()}
+                onKeyDown={handleKeyDown}
+                className={compact
+                    ? `relative inline-flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white py-1.5 pl-2 pr-7 text-left text-xs text-slate-700 outline-none transition hover:border-orange-300 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 ${isOpen ? "border-orange-400 ring-2 ring-orange-100" : ""}`
+                    : `relative flex w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 pr-9 text-left text-sm outline-none transition disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 ${isOpen ? "border-orange-400 ring-4 ring-orange-100" : "border-slate-200 hover:border-orange-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"}`}
+            >
+                <span className={`min-w-0 truncate ${selectedOption ? "" : "text-slate-400"}`}>
+                    {selectedOption?.label || "Select an option"}
+                </span>
+                <ChevronDown size={compact ? 14 : 15} className={`pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            </button>
+            {isOpen && placement && createPortal(
+                <div
+                    ref={menuRef}
+                    id={listboxId}
+                    role="listbox"
+                    aria-labelledby={label ? labelId : undefined}
+                    className="fixed z-[1000] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_12px_32px_rgba(27,39,51,0.16)] ring-1 ring-slate-900/5"
+                    style={{ top: placement.top, left: placement.left, width: placement.width, maxHeight: placement.maxHeight }}
+                >
+                    {normalizedOptions.map((option, index) => {
+                        const isSelected = index === selectedIndex;
+                        const isActive = index === activeIndex;
+                        return (
+                            <div
+                                key={`${option.value}-${index}`}
+                                ref={(element) => { optionRefs.current[index] = element; }}
+                                id={`${listboxId}-option-${index}`}
+                                role="option"
+                                aria-selected={isSelected}
+                                onPointerMove={() => setActiveIndex(index)}
+                                onPointerDown={(event) => event.preventDefault()}
+                                onClick={() => chooseOption(index)}
+                                className={`flex min-h-9 cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition ${isActive ? "bg-orange-50 text-orange-800" : "text-slate-700 hover:bg-slate-50"} ${isSelected ? "font-semibold" : ""}`}
+                            >
+                                <span className="min-w-0 truncate">{option.label}</span>
+                                {isSelected && <Check size={14} className="shrink-0 text-orange-600" />}
+                            </div>
+                        );
                     })}
-                </select>
-                <ChevronDown size={15} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            </span>
-        </label>
+                </div>,
+                document.body,
+            )}
+        </div>
     );
 }
 
 function Toggle({ label, description, checked, onChange }) {
     return (
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
+        <div className={`flex items-center justify-between gap-4 rounded-2xl border px-4 py-3 transition ${checked ? "border-orange-200 bg-orange-50/70" : "border-slate-200 bg-slate-50/70"}`}>
             <div>
                 <p className="text-sm font-semibold text-slate-800">{label}</p>
                 {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
@@ -119,18 +298,18 @@ function Toggle({ label, description, checked, onChange }) {
 
 function SectionCard({ id, title, description, icon: Icon, children, action }) {
     return (
-        <section id={id} className="mb-5 inline-block w-full break-inside-avoid scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
-                <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><Icon size={19} /></span>
+        <section id={id} className="scroll-mt-28 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_12px_36px_rgba(27,39,51,0.055)]">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-white to-orange-50/30 px-5 py-5 sm:px-7">
+                <div className="flex min-w-0 items-center gap-3.5">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-100/80 text-orange-700 ring-1 ring-orange-200/60"><Icon size={20} /></span>
                     <div>
-                        <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+                        <h2 className="text-base font-extrabold tracking-tight text-slate-900">{title}</h2>
                         {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
                     </div>
                 </div>
                 {action}
             </div>
-            <div className="space-y-5 p-5 sm:p-6">{children}</div>
+            <div className="space-y-6 p-5 sm:p-7">{children}</div>
         </section>
     );
 }
@@ -165,6 +344,28 @@ const AddProducts = () => {
         ? Number(form.offer_price) || 0
         : calculatedOfferPrice;
     const stockState = Number(form.total_stock) <= 0 ? "Out of stock" : Number(form.total_stock) <= 5 ? "Low stock" : "In stock";
+    const formSections = [
+        { id: "basic", label: "Product details", icon: Layers3 },
+        { id: "pricing", label: "Pricing", icon: CircleDollarSign },
+        { id: "specifications", label: "Specifications", icon: ClipboardList },
+        { id: "variants", label: "Variants", icon: Box },
+        { id: "inventory", label: "Inventory", icon: PackageCheck },
+        { id: "gallery", label: "Media gallery", icon: ImagePlus },
+        { id: "shipping", label: "Delivery", icon: Truck },
+        { id: "customization", label: "Customization", icon: Sparkles },
+    ];
+    const completionItems = [
+        { label: "Name and category", complete: Boolean(form.name.trim() && form.category) },
+        { label: "Price added", complete: Number(form.mrp) > 0 },
+        { label: "Product photos", complete: images.length > 0 },
+        { label: "Stock recorded", complete: form.total_stock !== "" },
+    ];
+    const completionPercent = Math.round(
+        (completionItems.filter((item) => item.complete).length / completionItems.length) * 100,
+    );
+    const discountPercent = Number(form.mrp) > 0
+        ? Math.max(0, Math.round((1 - finalOfferPrice / Number(form.mrp)) * 100))
+        : 0;
 
     useEffect(() => {
         let isMounted = true;
@@ -507,36 +708,68 @@ const AddProducts = () => {
     }
 
     return (
-        <div className="mx-auto max-w-[1440px] space-y-6 pb-24">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-4">
-                    <Link to="/admin/products/all" aria-label="Back to products" title="Back to products" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-400 shadow-sm transition hover:border-orange-200 hover:text-orange-600">
-                        <ArrowLeft size={20} />
+        <div className="w-full min-w-0 pb-32">
+            <header className="mb-6">
+                <div className="mb-5 flex items-center gap-3 text-xs font-semibold text-slate-500">
+                    <Link to="/admin/products/all" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700" aria-label="Back to products" title="Back to products">
+                        <ArrowLeft size={18} />
                     </Link>
-                    <div className="min-w-0">
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{isEdit ? "Edit product" : "Add new product"}</h1>
-                        <p className="mt-1 text-sm text-slate-500">Build a complete product listing for your furniture collection.</p>
+                    <div>
+                        <p className="uppercase tracking-[0.12em] text-slate-400">Product catalog <span className="mx-1 text-slate-300">/</span> Products</p>
+                        <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{isEdit ? "Edit product" : "Add a product"}</h1>
+                    </div>
+                    <div className={`ml-auto inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold ${form.status === "Active" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : form.status === "Draft" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-slate-200 bg-white text-slate-600"}`}>
+                        <span className={`h-2 w-2 rounded-full ${form.status === "Active" ? "bg-emerald-500" : form.status === "Draft" ? "bg-amber-400" : "bg-slate-400"}`} />
+                        {form.status}
                     </div>
                 </div>
-                <div className="flex items-center gap-2 self-start rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 shadow-sm sm:self-auto">
-                    <span className={`h-2 w-2 rounded-full ${form.status === "Active" ? "bg-emerald-500" : form.status === "Draft" ? "bg-amber-400" : "bg-slate-400"}`} />
-                    {form.status}
-                </div>
-            </div>
 
-            <nav aria-label="Product form sections" className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-                {[
-                    ["#basic", "Basics"], ["#pricing", "Pricing"], ["#specifications", "Specifications"],
-                    ["#variants", "Variants"], ["#gallery", "Gallery"], ["#shipping", "Delivery"],
-                    ["#customization", "Customization"],
-                ].map(([href, label]) => <a key={href} href={href} className="whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-orange-50 hover:text-orange-700">{label}</a>)}
+                <div className="overflow-hidden rounded-[24px] border border-orange-100 bg-gradient-to-r from-[#fff5e9] via-white to-white shadow-[0_8px_28px_rgba(27,39,51,0.04)]">
+                    <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:py-6">
+                        <div className="flex items-start gap-3">
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-orange-600 shadow-sm ring-1 ring-orange-100"><Sparkles size={20} /></span>
+                            <div>
+                                <p className="text-sm font-extrabold text-slate-900">Create a standout furniture listing</p>
+                                <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600">Add clear product details, accurate pricing, and quality images to help customers choose with confidence.</p>
+                            </div>
+                        </div>
+                        <div className="flex min-w-[190px] items-center gap-3 rounded-2xl border border-white bg-white/80 px-4 py-3 shadow-sm">
+                            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange-50 text-sm font-extrabold text-orange-700">
+                                <svg viewBox="0 0 36 36" className="absolute inset-0 h-full w-full -rotate-90">
+                                    <circle cx="18" cy="18" r="15" fill="none" stroke="#ffedd5" strokeWidth="3" />
+                                    <circle cx="18" cy="18" r="15" fill="none" stroke="#f97316" strokeWidth="3" strokeDasharray={`${completionPercent * 0.942} 100`} strokeLinecap="round" />
+                                </svg>
+                                {completionPercent}%
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-slate-800">Listing progress</p>
+                                <p className="mt-0.5 text-[11px] text-slate-500">{completionItems.filter((item) => item.complete).length} of {completionItems.length} essentials ready</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <nav aria-label="Product form sections" className="mb-6 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+                <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 xl:grid-cols-8">
+                    {formSections.map(({ id: sectionId, label, icon: Icon }, index) => (
+                        <a key={sectionId} href={`#${sectionId}`} className="group flex min-w-0 items-center gap-2 rounded-xl px-2 py-2.5 text-xs font-bold text-slate-500 transition hover:bg-orange-50 hover:text-orange-700 sm:px-3">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition group-hover:bg-white group-hover:text-orange-600">{index + 1}</span>
+                            <Icon size={15} className="text-slate-400 group-hover:text-orange-600" />
+                            <span className="truncate">{label}</span>
+                        </a>
+                    ))}
+                </div>
             </nav>
 
             <form onSubmit={saveProduct} className="space-y-5">
-                <div className="columns-1 lg:columns-2 lg:gap-x-5">
+                <div className="space-y-5">
+                    <div className="min-w-0 space-y-5">
                     <SectionCard id="basic" title="Basic information" description="Give your product a clear identity." icon={Layers3}>
                         <div className="grid gap-4 md:grid-cols-2">
-                            <Field label="Product name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. Aria solid wood king bed" required />
+                            <div className="md:col-span-2">
+                                <Field label="Product name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. Aria solid wood king bed" required />
+                            </div>
                             <div>
                                 <span className={labelClass}>Product SKU / code</span>
                                 <div className="flex gap-2">
@@ -554,7 +787,7 @@ const AddProducts = () => {
                             <Field label="Product tags" name="tags" value={form.tags} onChange={handleChange} placeholder="solid wood, modern, living room — separate with commas" />
                         </div>
                         <label className="block">
-                            <span className={labelClass}>Full product escription</span>
+                            <span className={labelClass}>Full product description</span>
                             <textarea className={`${inputClass} min-h-28 resize-y`} name="description" value={form.description} onChange={handleChange} placeholder="Describe the materials, craftsmanship, comfort, and care details…" rows={4} />
                         </label>
                         <div className="grid gap-3 md:grid-cols-3">
@@ -564,190 +797,280 @@ const AddProducts = () => {
                         </div>
                     </SectionCard>
 
-                    <SectionCard id="pricing" title="Pricing" description="Set your list price and offer details." icon={CircleDollarSign}>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <Field label="MRP" name="mrp" value={form.mrp} onChange={handleChange} type="number" min="0" step="0.01" placeholder="20000" prefix="₹" required />
-                            <SelectField label="Offer type" name="offer_type" value={form.offer_type} onChange={handleChange} options={["Percentage", "Fixed Amount"]} />
-                            <Field label={form.offer_type === "Percentage" ? "Offer (%)" : "Offer amount (₹)"} name="offer" value={form.offer} onChange={handleChange} type="number" min="0" max={form.offer_type === "Percentage" ? "100" : undefined} step="0.01" placeholder="10" prefix={form.offer_type === "Fixed Amount" ? "₹" : undefined} suffix={form.offer_type === "Percentage" ? "%" : undefined} />
-                            <SelectField label="Offer price calculation" name="offer_price_mode" value={form.offer_price_mode} onChange={(event) => {
-                                const mode = event.target.value;
-                                setForm((previous) => ({
-                                    ...previous,
-                                    offer_price_mode: mode,
-                                    offer_price: mode === "manual" ? calculatedOfferPrice.toFixed(2) : previous.offer_price,
-                                }));
-                            }} options={[{ value: "auto", label: "Automatic" }, { value: "manual", label: "Manual" }]} />
-                            <Field label="Offer price" name="offer_price" value={form.offer_price_mode === "manual" ? form.offer_price : calculatedOfferPrice.toFixed(2)} onChange={handleChange} readOnly={form.offer_price_mode === "auto"} type="number" min="0" max={form.mrp || undefined} step="0.01" prefix="₹" />
-                        </div>
-                    </SectionCard>
-
-                    <SectionCard id="specifications" title="Furniture specifications" description="Add dimensions, material, and construction details." icon={ClipboardList}>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <SelectField label="Material type" name="material_type" value={form.material_type} onChange={handleChange} options={[{ value: "", label: "Select material" }, "Solid Wood", "Engineered Wood", "Plywood", "Metal", "Plastic", "Glass", "Upholstered"]} />
-                            <SelectField label="Wood type" name="wood_type" value={form.wood_type} onChange={handleChange} options={[{ value: "", label: "Select wood" }, "Teak", "Sheesham", "Mango", "Oak", "Acacia", "Pine", "Other"]} />
-                            <Field label="Furniture colour" name="colour" value={form.colour} onChange={handleChange} placeholder="e.g. Natural teak" />
-                            <SelectField label="Finish type" name="finish_type" value={form.finish_type} onChange={handleChange} options={[{ value: "", label: "Select finish" }, "Matte", "Glossy", "Natural Polish", "Laminate"]} />
-                            <Field label="Height" name="height" value={form.height} onChange={handleChange} type="number" min="0" step="0.1" suffix="cm" />
-                            <Field label="Width" name="width" value={form.width} onChange={handleChange} type="number" min="0" step="0.1" suffix="cm" />
-                            <Field label="Depth" name="depth" value={form.depth} onChange={handleChange} type="number" min="0" step="0.1" suffix="cm" />
-                            <Field label="Product weight" name="weight" value={form.weight} onChange={handleChange} type="number" min="0" step="0.1" suffix="kg" />
-                            <Field label="Seating capacity" name="seating_capacity" value={form.seating_capacity} onChange={handleChange} type="number" min="0" />
-                            <Field label="Number of doors" name="doors" value={form.doors} onChange={handleChange} type="number" min="0" />
-                            <Field label="Number of drawers" name="drawers" value={form.drawers} onChange={handleChange} type="number" min="0" />
-                            <Field label="Mattress size" name="mattress_size" value={form.mattress_size} onChange={handleChange} placeholder="King / Queen / Single" />
-                            <Field label="Warranty period" name="warranty_period" value={form.warranty_period} onChange={handleChange} placeholder="e.g. 3 years" />
-                            <Field label="Country of origin" name="country_of_origin" value={form.country_of_origin} onChange={handleChange} />
-                        </div>
-                    </SectionCard>
-
-                    <SectionCard id="variants" title="Product variants" description="Offer different colours, sizes, and materials." icon={Box} action={<button type="button" onClick={addVariant} className="inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-700"><Plus size={14} /> Add variant</button>}>
-                        {!variants.length && <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center"><p className="text-sm font-semibold text-slate-700">No variants added</p><p className="mt-1 text-xs text-slate-500">Create colour or size options customers can choose.</p></div>}
-                        <div className="space-y-4">
-                            {variants.map((variant, index) => (
-                                <div key={index} className="rounded-xl border border-slate-200 p-4">
-                                    <div className="mb-4 flex items-center justify-between">
-                                        <p className="text-sm font-bold text-slate-800">Variant {index + 1}</p>
-                                        <button type="button" aria-label={`Remove variant ${index + 1}`} onClick={() => removeVariant(index)} className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700"><Trash2 size={14} /> Remove</button>
-                                    </div>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <Field label="Colour" value={variant.color} onChange={(event) => updateVariant(index, "color", event.target.value)} placeholder="Walnut brown" />
-                                        <Field label="Size" value={variant.size} onChange={(event) => updateVariant(index, "size", event.target.value)} placeholder="King / 3-seater" />
-                                        <Field label="Material" value={variant.material} onChange={(event) => updateVariant(index, "material", event.target.value)} placeholder="Teak wood" />
-                                        <Field label="MRP" value={variant.mrp} onChange={(event) => updateVariant(index, "mrp", event.target.value)} type="number" min="0" step="0.01" />
-                                        <SelectField label="Offer type" value={variant.offer_type} onChange={(event) => updateVariant(index, "offer_type", event.target.value)} options={["Percentage", "Fixed Amount"]} />
-                                        <Field label="Offer" value={variant.offer} onChange={(event) => updateVariant(index, "offer", event.target.value)} type="number" min="0" />
-                                        <Field label="Selling price" value={calculateVariantSellingPrice(variant).toFixed(2)} readOnly type="number" min="0" step="0.01" prefix="₹" />
-                                        <Field label="Stock quantity" value={variant.stock} onChange={(event) => updateVariant(index, "stock", event.target.value)} type="number" min="0" />
-                                    </div>
-                                    <div className="mt-4 space-y-3">
-                                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">
-                                            <UploadCloud size={14} /> Upload variant images
-                                            <input
-                                                type="file"
-                                                className="hidden"
-                                                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                                                multiple
-                                                onChange={(event) => {
-                                                    handleVariantImageUpload(index, event.target.files);
-                                                    event.target.value = "";
-                                                }}
-                                            />
-                                        </label>
-                                        {uploading && <span className="ml-3 text-xs text-slate-500">Uploading… {uploadProgress}%</span>}
-                                        {!!variant.images?.length && <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                                            {variant.images.map((image, imageIndex) => <div key={`${image}-${imageIndex}`} className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                                                <img src={resolveMediaUrl(image)} alt={`Variant ${index + 1} image ${imageIndex + 1}`} className="h-full w-full object-cover" />
-                                                <button type="button" onClick={() => removeVariantImage(index, imageIndex)} aria-label={`Remove variant image ${imageIndex + 1}`} className="absolute right-1 top-1 rounded-full bg-white/95 p-1 text-slate-600 shadow transition hover:bg-rose-50 hover:text-rose-600"><X size={12} /></button>
-                                            </div>)}
-                                        </div>}
-                                    </div>
+                    <div className="grid gap-5 xl:grid-cols-2">
+                        <div className="min-w-0 space-y-5">
+                            <SectionCard id="pricing" title="Pricing" description="Set your list price and offer details." icon={CircleDollarSign}>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <Field label="MRP" name="mrp" value={form.mrp} onChange={handleChange} type="number" min="0" step="0.01" placeholder="20000" prefix="₹" required />
+                                    <SelectField label="Offer type" name="offer_type" value={form.offer_type} onChange={handleChange} options={["Percentage", "Fixed Amount"]} />
+                                    <Field label={form.offer_type === "Percentage" ? "Offer (%)" : "Offer amount (₹)"} name="offer" value={form.offer} onChange={handleChange} type="number" min="0" max={form.offer_type === "Percentage" ? "100" : undefined} step="0.01" placeholder="10" prefix={form.offer_type === "Fixed Amount" ? "₹" : undefined} suffix={form.offer_type === "Percentage" ? "%" : undefined} />
+                                    <SelectField label="Offer price calculation" name="offer_price_mode" value={form.offer_price_mode} onChange={(event) => {
+                                        const mode = event.target.value;
+                                        setForm((previous) => ({
+                                            ...previous,
+                                            offer_price_mode: mode,
+                                            offer_price: mode === "manual" ? calculatedOfferPrice.toFixed(2) : previous.offer_price,
+                                        }));
+                                    }} options={[{ value: "auto", label: "Automatic" }, { value: "manual", label: "Manual" }]} />
+                                    <Field label="Offer price" name="offer_price" value={form.offer_price_mode === "manual" ? form.offer_price : calculatedOfferPrice.toFixed(2)} onChange={handleChange} readOnly={form.offer_price_mode === "auto"} type="number" min="0" max={form.mrp || undefined} step="0.01" prefix="₹" />
                                 </div>
-                            ))}
-                        </div>
-                    </SectionCard>
+                            </SectionCard>
 
-                    <SectionCard id="inventory" title="Inventory management" description="Track stock and warehouse availability." icon={PackageCheck}>
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <Field label="Available stock quantity" name="total_stock" value={form.total_stock} onChange={handleChange} type="number" min="0" />
-                            <Field label="Warehouse / store location" name="warehouse" value={form.warehouse} onChange={handleChange} placeholder="e.g. Chennai central warehouse" />
-                        </div>
-                        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                            <span className="text-sm font-medium text-slate-600">Current inventory status</span>
-                            <span className={`rounded-full px-3 py-1 text-xs font-bold ${stockState === "In stock" ? "bg-emerald-100 text-emerald-700" : stockState === "Low stock" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>{stockState}</span>
-                        </div>
-                    </SectionCard>
+                            <SectionCard id="variants" title="Product variants" description="Offer different colours, sizes, and materials." icon={Box} action={<button type="button" onClick={addVariant} className="inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-700"><Plus size={14} /> Add variant</button>}>
+                                {!variants.length && <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center"><p className="text-sm font-semibold text-slate-700">No variants added</p><p className="mt-1 text-xs text-slate-500">Create colour or size options customers can choose.</p></div>}
+                                <div className="space-y-4">
+                                    {variants.map((variant, index) => (
+                                        <div key={index} className="rounded-xl border border-slate-200 p-4">
+                                            <div className="mb-4 flex items-center justify-between">
+                                                <p className="text-sm font-bold text-slate-800">Variant {index + 1}</p>
+                                                <button type="button" aria-label={`Remove variant ${index + 1}`} onClick={() => removeVariant(index)} className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700"><Trash2 size={14} /> Remove</button>
+                                            </div>
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                                <Field label="Colour" value={variant.color} onChange={(event) => updateVariant(index, "color", event.target.value)} placeholder="Walnut brown" />
+                                                <Field label="Size" value={variant.size} onChange={(event) => updateVariant(index, "size", event.target.value)} placeholder="King / 3-seater" />
+                                                <Field label="Material" value={variant.material} onChange={(event) => updateVariant(index, "material", event.target.value)} placeholder="Teak wood" />
+                                                <Field label="Variant SKU" value={variant.sku} onChange={(event) => updateVariant(index, "sku", event.target.value)} placeholder="Optional variant code" />
+                                                <Field label="MRP" value={variant.mrp} onChange={(event) => updateVariant(index, "mrp", event.target.value)} type="number" min="0" step="0.01" />
+                                                <SelectField label="Offer type" value={variant.offer_type} onChange={(event) => updateVariant(index, "offer_type", event.target.value)} options={["Percentage", "Fixed Amount"]} />
+                                                <Field label="Offer" value={variant.offer} onChange={(event) => updateVariant(index, "offer", event.target.value)} type="number" min="0" />
+                                                <Field label="Selling price" value={calculateVariantSellingPrice(variant).toFixed(2)} readOnly type="number" min="0" step="0.01" prefix="₹" />
+                                                <Field label="Stock quantity" value={variant.stock} onChange={(event) => updateVariant(index, "stock", event.target.value)} type="number" min="0" />
+                                            </div>
+                                            <div className="mt-4 space-y-3">
+                                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">
+                                                    <UploadCloud size={14} /> Upload variant images
+                                                    <input
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                                        multiple
+                                                        onChange={(event) => {
+                                                            handleVariantImageUpload(index, event.target.files);
+                                                            event.target.value = "";
+                                                        }}
+                                                    />
+                                                </label>
+                                                {uploading && <span className="ml-3 text-xs text-slate-500">Uploading… {uploadProgress}%</span>}
+                                                {!!variant.images?.length && <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                                    {variant.images.map((image, imageIndex) => <div key={`${image}-${imageIndex}`} className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                                                        <img src={resolveMediaUrl(image)} alt={`Variant ${index + 1} image ${imageIndex + 1}`} className="h-full w-full object-cover" />
+                                                        <button type="button" onClick={() => removeVariantImage(index, imageIndex)} aria-label={`Remove variant image ${imageIndex + 1}`} className="absolute right-1 top-1 rounded-full bg-white/95 p-1 text-slate-600 shadow transition hover:bg-rose-50 hover:text-rose-600"><X size={12} /></button>
+                                                    </div>)}
+                                                </div>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </SectionCard>
 
-                    <SectionCard id="gallery" title="Product images & gallery" description="Upload up to 10 JPG, PNG, or WEBP images." icon={ImagePlus}>
-                        <input ref={fileInputRef} className="hidden" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple onChange={(event) => addFiles(event.target.files)} />
-                        <button type="button" onClick={() => fileInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(event.dataTransfer.files); }} disabled={uploading} className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-orange-200 bg-orange-50/40 px-4 py-8 text-center transition hover:border-orange-400 hover:bg-orange-50 disabled:opacity-60">
-                            {uploading ? <LoaderCircle size={24} className="animate-spin text-orange-600" /> : <UploadCloud size={25} className="text-orange-600" />}
-                            <span className="mt-2 text-sm font-semibold text-slate-800">{uploading ? `Uploading images… ${uploadProgress}%` : "Drop images here or browse files"}</span>
-                            <span className="mt-1 text-xs text-slate-500">JPG, PNG, WEBP · up to 10 images</span>
-                            {uploading && <span className="mt-3 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-orange-100"><span className="block h-full rounded-full bg-orange-500 transition-all" style={{ width: `${uploadProgress}%` }} /></span>}
-                        </button>
-                        {images.length > 0 && <div className="grid gap-3 sm:grid-cols-2">
-                            {images.map((image, index) => (
-                                <div key={`${image}-${index}`} className={`overflow-hidden rounded-xl border ${mainImageIndex === index ? "border-orange-400 ring-2 ring-orange-100" : "border-slate-200"}`}>
-                                    <div className="group relative aspect-[4/3] bg-slate-100">
-                                        <img src={resolveMediaUrl(image)} alt={`Furniture product view ${index + 1}`} className="h-full w-full object-cover" />
-                                        <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold text-slate-700 shadow">{mainImageIndex === index ? "Main image" : `Image ${index + 1}`}</span>
-                                        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-                                            <button type="button" aria-label="Move image up" onClick={() => moveImage(index, -1)} className={iconButtonClass} disabled={index === 0}><ArrowUp size={14} /></button>
-                                            <button type="button" aria-label="Move image down" onClick={() => moveImage(index, 1)} className={iconButtonClass} disabled={index === images.length - 1}><ArrowDown size={14} /></button>
-                                            <button type="button" aria-label="Remove image" onClick={() => removeImage(index)} className={`${iconButtonClass} hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600`}><X size={14} /></button>
+                            <SectionCard id="gallery" title="Product images & gallery" description="Upload up to 10 JPG, PNG, or WEBP images." icon={ImagePlus}>
+                                <input ref={fileInputRef} className="hidden" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple onChange={(event) => addFiles(event.target.files)} />
+                                <button type="button" onClick={() => fileInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(event.dataTransfer.files); }} disabled={uploading} className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-orange-200 bg-orange-50/40 px-4 py-8 text-center transition hover:border-orange-400 hover:bg-orange-50 disabled:opacity-60">
+                                    {uploading ? <LoaderCircle size={24} className="animate-spin text-orange-600" /> : <UploadCloud size={25} className="text-orange-600" />}
+                                    <span className="mt-2 text-sm font-semibold text-slate-800">{uploading ? `Uploading images… ${uploadProgress}%` : "Drop images here or browse files"}</span>
+                                    <span className="mt-1 text-xs text-slate-500">JPG, PNG, WEBP · up to 10 images</span>
+                                    {uploading && <span className="mt-3 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-orange-100"><span className="block h-full rounded-full bg-orange-500 transition-all" style={{ width: `${uploadProgress}%` }} /></span>}
+                                </button>
+                                {images.length > 0 && <div className="grid gap-3 sm:grid-cols-2">
+                                    {images.map((image, index) => (
+                                        <div key={`${image}-${index}`} className={`overflow-hidden rounded-xl border ${mainImageIndex === index ? "border-orange-400 ring-2 ring-orange-100" : "border-slate-200"}`}>
+                                            <div className="group relative aspect-[4/3] bg-slate-100">
+                                                <img src={resolveMediaUrl(image)} alt={`Furniture product view ${index + 1}`} className="h-full w-full object-cover" />
+                                                <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold text-slate-700 shadow">{mainImageIndex === index ? "Main image" : `Image ${index + 1}`}</span>
+                                                <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                                                    <button type="button" aria-label="Move image up" onClick={() => moveImage(index, -1)} className={iconButtonClass} disabled={index === 0}><ArrowUp size={14} /></button>
+                                                    <button type="button" aria-label="Move image down" onClick={() => moveImage(index, 1)} className={iconButtonClass} disabled={index === images.length - 1}><ArrowDown size={14} /></button>
+                                                    <button type="button" aria-label="Remove image" onClick={() => removeImage(index)} className={`${iconButtonClass} hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600`}><X size={14} /></button>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 p-2.5">
+                                                <SelectField
+                                                    ariaLabel={`Image ${index + 1} view`}
+                                                    compact
+                                                    value={imageRoles[index] || "Product view"}
+                                                    onChange={(event) => setImageRoles((previous) => previous.map((role, i) => i === index ? event.target.value : role))}
+                                                    options={["Product view", "Front view", "Side view", "Back view", "Lifestyle image"]}
+                                                />
+                                                <button type="button" onClick={() => setMainImageIndex(index)} className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold ${mainImageIndex === index ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{mainImageIndex === index ? <span className="inline-flex items-center gap-1"><Check size={12} /> Main</span> : "Set main"}</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>}
+                                <Field label="Product video URL (optional)" name="video_url" value={form.video_url} onChange={handleChange} placeholder="https://…" />
+                            </SectionCard>
+                        </div>
+                        <div className="min-w-0 space-y-5">
+                            <SectionCard id="specifications" title="Furniture specifications" description="Add dimensions, material, and construction details." icon={ClipboardList}>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <SelectField label="Material type" name="material_type" value={form.material_type} onChange={handleChange} options={[{ value: "", label: "Select material" }, "Solid Wood", "Engineered Wood", "Plywood", "Metal", "Plastic", "Glass", "Upholstered"]} />
+                                    <SelectField label="Wood type" name="wood_type" value={form.wood_type} onChange={handleChange} options={[{ value: "", label: "Select wood" }, "Teak", "Sheesham", "Mango", "Oak", "Acacia", "Pine", "Other"]} />
+                                    <Field label="Furniture colour" name="colour" value={form.colour} onChange={handleChange} placeholder="e.g. Natural teak" />
+                                    <SelectField label="Finish type" name="finish_type" value={form.finish_type} onChange={handleChange} options={[{ value: "", label: "Select finish" }, "Matte", "Glossy", "Natural Polish", "Laminate"]} />
+                                    <Field label="Height" name="height" value={form.height} onChange={handleChange} type="number" min="0" step="0.1" suffix="cm" />
+                                    <Field label="Width" name="width" value={form.width} onChange={handleChange} type="number" min="0" step="0.1" suffix="cm" />
+                                    <Field label="Depth" name="depth" value={form.depth} onChange={handleChange} type="number" min="0" step="0.1" suffix="cm" />
+                                    <Field label="Product weight" name="weight" value={form.weight} onChange={handleChange} type="number" min="0" step="0.1" suffix="kg" />
+                                    <Field label="Seating capacity" name="seating_capacity" value={form.seating_capacity} onChange={handleChange} type="number" min="0" />
+                                    <Field label="Number of doors" name="doors" value={form.doors} onChange={handleChange} type="number" min="0" />
+                                    <Field label="Number of drawers" name="drawers" value={form.drawers} onChange={handleChange} type="number" min="0" />
+                                    <Field label="Mattress size" name="mattress_size" value={form.mattress_size} onChange={handleChange} placeholder="King / Queen / Single" />
+                                    <Field label="Warranty period" name="warranty_period" value={form.warranty_period} onChange={handleChange} placeholder="e.g. 3 years" />
+                                    <Field label="Country of origin" name="country_of_origin" value={form.country_of_origin} onChange={handleChange} />
+                                </div>
+                            </SectionCard>
+
+                            <SectionCard id="inventory" title="Inventory management" description="Track stock and warehouse availability." icon={PackageCheck}>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <Field label="Available stock quantity" name="total_stock" value={form.total_stock} onChange={handleChange} type="number" min="0" />
+                                    <Field label="Warehouse / store location" name="warehouse" value={form.warehouse} onChange={handleChange} placeholder="e.g. Chennai central warehouse" />
+                                </div>
+                                <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                                    <span className="text-sm font-medium text-slate-600">Current inventory status</span>
+                                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${stockState === "In stock" ? "bg-emerald-100 text-emerald-700" : stockState === "Low stock" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>{stockState}</span>
+                                </div>
+                            </SectionCard>
+
+                        </div>
+                    </div>
+
+                    <div className="grid items-start gap-5 xl:grid-cols-2">
+                        <SectionCard id="shipping" title="Delivery & shipping" description="Set delivery preferences and package details." icon={Truck}>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field label="Package length" name="package_length" value={form.package_length} onChange={handleChange} type="number" min="0" suffix="cm" />
+                                <Field label="Package width" name="package_width" value={form.package_width} onChange={handleChange} type="number" min="0" suffix="cm" />
+                                <Field label="Package height" name="package_height" value={form.package_height} onChange={handleChange} type="number" min="0" suffix="cm" />
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <Toggle label="Delivery available" checked={form.delivery_available} onChange={(checked) => setForm((previous) => ({ ...previous, delivery_available: checked }))} />
+                                <Toggle label="Free delivery" checked={form.free_delivery} onChange={(checked) => setForm((previous) => ({ ...previous, free_delivery: checked }))} />
+                                <Toggle label="Assembly required" checked={form.assembly_required} onChange={(checked) => setForm((previous) => ({ ...previous, assembly_required: checked }))} />
+                                <Toggle label="Installation available" checked={form.installation_available} onChange={(checked) => setForm((previous) => ({ ...previous, installation_available: checked }))} />
+                            </div>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Field label="Delivery charges" name="delivery_charges" value={form.delivery_charges} onChange={handleChange} type="number" min="0" suffix="₹" disabled={form.free_delivery} />
+                                <Field label="Estimated delivery days" name="estimated_delivery_days" value={form.estimated_delivery_days} onChange={handleChange} type="number" min="0" suffix="days" />
+                            </div>
+                            <label className="block">
+                                <span className={labelClass}>Return policy</span>
+                                <textarea className={`${inputClass} min-h-20 resize-y`} name="return_policy" value={form.return_policy} onChange={handleChange} placeholder="Add the return window and product condition requirements…" rows={3} />
+                            </label>
+                        </SectionCard>
+
+                        <div className="min-w-0 space-y-5">
+                            <SectionCard id="customization" title="Customization options" description="Let customers configure this product before adding it to cart." icon={Sparkles}>
+                                <Toggle label="Enable product customization" description="Customization is available on the product details page when enabled." checked={form.customization_enabled} onChange={(checked) => setForm((previous) => ({ ...previous, customization_enabled: checked }))} />
+                                {form.customization_enabled && <>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <Field label="Customization title" name="customization_title" value={form.customization_title} onChange={handleChange} placeholder="Make it yours" />
+                                        <Field label="Customization description" name="customization_description" value={form.customization_description} onChange={handleChange} placeholder="Choose your preferred finish and size" />
+                                    </div>
+                                    <div className="flex justify-end"><button type="button" onClick={() => setCustomizations((previous) => [...previous, initialCustomization()])} className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 hover:bg-orange-100"><Plus size={14} /> Add customization option</button></div>
+                                    {!customizations.length && <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">Add an option such as fabric, wood type, colour, size, or engraving.</p>}
+                                    {customizations.map((option, index) => <div key={index} className="space-y-3 rounded-xl border border-slate-200 p-4">
+                                        <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-800">Option {index + 1}</p><button type="button" onClick={() => setCustomizations((previous) => previous.filter((_, i) => i !== index))} className="text-xs font-semibold text-rose-600 hover:text-rose-700"><Trash2 size={14} className="inline" /> Remove</button></div>
+                                        <div className="grid gap-3 md:grid-cols-2">
+                                            <Field label="Customization option name" value={option.name} onChange={(event) => updateCustomization(index, "name", event.target.value)} placeholder="Select sofa fabric" />
+                                            <SelectField label="Customization type" value={option.type} onChange={(event) => updateCustomization(index, "type", event.target.value)} options={["Text Input", "Dropdown Selection", "Radio Button", "Checkbox", "Colour Selection", "Size Selection", "Image Selection"]} />
+                                            <Field label="Available options (comma-separated)" value={option.options} onChange={(event) => updateCustomization(index, "options", event.target.value)} placeholder="Natural oak, Walnut, White" />
+                                            <Field label="Additional customization price" value={option.additionalPrice} onChange={(event) => updateCustomization(index, "additionalPrice", event.target.value)} type="number" min="0" step="0.01" suffix="₹" />
+                                        </div>
+                                        <Toggle label="Required selection" description="Customers must select this option before adding to cart." checked={Boolean(option.required)} onChange={(checked) => updateCustomization(index, "required", checked)} />
+                                    </div>)}
+                                    <div className="rounded-xl bg-orange-50 px-4 py-3 text-xs leading-5 text-orange-800">Paid option prices are stored with the product configuration for the storefront/cart to apply to the selected choices.</div>
+                                </>}
+                            </SectionCard>
+
+                            <div className="grid min-w-0 items-stretch gap-5 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+                                <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_12px_36px_rgba(27,39,51,0.055)]">
+                                    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                                        <div>
+                                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-orange-600">Live preview</p>
+                                            <h2 className="mt-1 text-sm font-extrabold text-slate-900">Product card</h2>
+                                        </div>
+                                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Updates live</span>
+                                    </div>
+                                    <div className="p-4">
+                                        <div className="relative mb-4 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 to-slate-100">
+                                            {images[mainImageIndex] || images[0]
+                                                ? <img src={resolveMediaUrl(images[mainImageIndex] || images[0])} alt="Product preview" className="h-full w-full object-cover" />
+                                                : <div className="flex flex-col items-center gap-2 text-slate-400"><ImagePlus size={30} strokeWidth={1.5} /><span className="text-xs font-semibold">Your product photo</span></div>}
+                                            <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold text-slate-600 shadow-sm">{form.category || "Select a category"}</span>
+                                        </div>
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{form.brand || "Q Living Furniture"}</p>
+                                        <h3 className="mt-1 line-clamp-2 min-h-10 text-sm font-extrabold leading-5 text-slate-900">{form.name.trim() || "Your product name"}</h3>
+                                        <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                            {Number(form.mrp) > 0
+                                                ? <>
+                                                    <span className="text-lg font-extrabold tracking-tight text-slate-900">{formatCurrency(finalOfferPrice)}</span>
+                                                    {finalOfferPrice < Number(form.mrp) && <>
+                                                        <span className="text-xs text-slate-400 line-through">{formatCurrency(form.mrp)}</span>
+                                                        {discountPercent > 0 && <span className="rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">{discountPercent}% off</span>}
+                                                    </>}
+                                                </>
+                                                : <span className="text-sm font-semibold text-slate-400">Add a price to preview</span>}
+                                        </div>
+                                        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                                            <span className="text-xs font-semibold text-slate-500">Inventory</span>
+                                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${stockState === "In stock" ? "bg-emerald-50 text-emerald-700" : stockState === "Low stock" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"}`}>{stockState}</span>
+                                        </div>
+                                        <div className="mt-3 grid grid-cols-2 gap-2">
+                                            <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="text-[10px] font-semibold text-slate-400">Photos</p><p className="mt-0.5 text-sm font-extrabold text-slate-800">{images.length}<span className="ml-1 text-[10px] font-medium text-slate-400">/ 10</span></p></div>
+                                            <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="text-[10px] font-semibold text-slate-400">Variants</p><p className="mt-0.5 text-sm font-extrabold text-slate-800">{variants.length}</p></div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 p-2.5">
-                                        <select aria-label={`Image ${index + 1} view`} className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700" value={imageRoles[index] || "Product view"} onChange={(event) => setImageRoles((previous) => previous.map((role, i) => i === index ? event.target.value : role))}>
-                                            {["Product view", "Front view", "Side view", "Back view", "Lifestyle image"].map((role) => <option key={role}>{role}</option>)}
-                                        </select>
-                                        <button type="button" onClick={() => setMainImageIndex(index)} className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold ${mainImageIndex === index ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{mainImageIndex === index ? <span className="inline-flex items-center gap-1"><Check size={12} /> Main</span> : "Set main"}</button>
+                                </section>
+
+                                <section className="flex h-full flex-col rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_12px_36px_rgba(27,39,51,0.055)]">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2"><ShieldCheck size={17} className="text-orange-600" /><h2 className="text-sm font-extrabold text-slate-900">Listing checklist</h2></div>
+                                        <span className="text-xs font-extrabold text-orange-700">{completionPercent}%</span>
                                     </div>
-                                </div>
-                            ))}
-                        </div>}
-                        <Field label="Product video URL (optional)" name="video_url" value={form.video_url} onChange={handleChange} placeholder="https://…" />
-                    </SectionCard>
-
-                    <SectionCard id="shipping" title="Delivery & shipping" description="Set delivery preferences and package details." icon={Truck}>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <Field label="Package length" name="package_length" value={form.package_length} onChange={handleChange} type="number" min="0" suffix="cm" />
-                            <Field label="Package width" name="package_width" value={form.package_width} onChange={handleChange} type="number" min="0" suffix="cm" />
-                            <Field label="Package height" name="package_height" value={form.package_height} onChange={handleChange} type="number" min="0" suffix="cm" />
-                        </div>
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <Toggle label="Delivery available" checked={form.delivery_available} onChange={(checked) => setForm((previous) => ({ ...previous, delivery_available: checked }))} />
-                            <Toggle label="Free delivery" checked={form.free_delivery} onChange={(checked) => setForm((previous) => ({ ...previous, free_delivery: checked }))} />
-                            <Toggle label="Assembly required" checked={form.assembly_required} onChange={(checked) => setForm((previous) => ({ ...previous, assembly_required: checked }))} />
-                            <Toggle label="Installation available" checked={form.installation_available} onChange={(checked) => setForm((previous) => ({ ...previous, installation_available: checked }))} />
-                        </div>
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <Field label="Delivery charges" name="delivery_charges" value={form.delivery_charges} onChange={handleChange} type="number" min="0" suffix="₹" disabled={form.free_delivery} />
-                            <Field label="Estimated delivery days" name="estimated_delivery_days" value={form.estimated_delivery_days} onChange={handleChange} type="number" min="0" suffix="days" />
-                        </div>
-                        <label className="block">
-                            <span className={labelClass}>Return policy</span>
-                            <textarea className={`${inputClass} min-h-20 resize-y`} name="return_policy" value={form.return_policy} onChange={handleChange} placeholder="Add the return window and product condition requirements…" rows={3} />
-                        </label>
-                    </SectionCard>
-
-                    <SectionCard id="customization" title="Customization options" description="Let customers configure this product before adding it to cart." icon={Sparkles}>
-                        <Toggle label="Enable product customization" description="Customization is available on the product details page when enabled." checked={form.customization_enabled} onChange={(checked) => setForm((previous) => ({ ...previous, customization_enabled: checked }))} />
-                        {form.customization_enabled && <>
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <Field label="Customization title" name="customization_title" value={form.customization_title} onChange={handleChange} placeholder="Make it yours" />
-                                <Field label="Customization description" name="customization_description" value={form.customization_description} onChange={handleChange} placeholder="Choose your preferred finish and size" />
+                                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-orange-100">
+                                        <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-500" style={{ width: `${completionPercent}%` }} />
+                                    </div>
+                                    <p className="mt-2 text-[11px] text-slate-500">A complete listing helps customers shop with confidence.</p>
+                                    <ul className="mt-4 flex flex-1 flex-col justify-between">
+                                        {completionItems.map((item) => (
+                                            <li key={item.label} className="flex items-center gap-2.5 text-xs">
+                                                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${item.complete ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
+                                                    {item.complete ? <Check size={12} /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+                                                </span>
+                                                <span className={item.complete ? "font-semibold text-slate-700" : "text-slate-500"}>{item.label}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
                             </div>
-                            <div className="flex justify-end"><button type="button" onClick={() => setCustomizations((previous) => [...previous, initialCustomization()])} className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 hover:bg-orange-100"><Plus size={14} /> Add customization option</button></div>
-                            {!customizations.length && <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">Add an option such as fabric, wood type, colour, size, or engraving.</p>}
-                            {customizations.map((option, index) => <div key={index} className="space-y-3 rounded-xl border border-slate-200 p-4">
-                                <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-800">Option {index + 1}</p><button type="button" onClick={() => setCustomizations((previous) => previous.filter((_, i) => i !== index))} className="text-xs font-semibold text-rose-600 hover:text-rose-700"><Trash2 size={14} className="inline" /> Remove</button></div>
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    <Field label="Customization option name" value={option.name} onChange={(event) => updateCustomization(index, "name", event.target.value)} placeholder="Select sofa fabric" />
-                                    <SelectField label="Customization type" value={option.type} onChange={(event) => updateCustomization(index, "type", event.target.value)} options={["Text Input", "Dropdown Selection", "Radio Button", "Checkbox", "Colour Selection", "Size Selection", "Image Selection"]} />
-                                    <Field label="Available options (comma-separated)" value={option.options} onChange={(event) => updateCustomization(index, "options", event.target.value)} placeholder="Natural oak, Walnut, White" />
-                                    <Field label="Additional customization price" value={option.additionalPrice} onChange={(event) => updateCustomization(index, "additionalPrice", event.target.value)} type="number" min="0" step="0.01" suffix="₹" />
-                                </div>
-                                <Toggle label="Required selection" description="Customers must select this option before adding to cart." checked={Boolean(option.required)} onChange={(checked) => updateCustomization(index, "required", checked)} />
-                            </div>)}
-                            <div className="rounded-xl bg-orange-50 px-4 py-3 text-xs leading-5 text-orange-800">Paid option prices are stored with the product configuration for the storefront/cart to apply to the selected choices.</div>
-                        </>}
-                    </SectionCard>
+
+                            <div className="flex items-start gap-3 rounded-2xl border border-orange-100 bg-orange-50/80 p-4">
+                                <Sparkles size={16} className="mt-0.5 shrink-0 text-orange-600" />
+                                <p className="text-[11px] leading-5 text-orange-900"><span className="font-bold">Pro tip:</span> Use bright, uncluttered photos and specific material details to make furniture listings easier to compare.</p>
+                            </div>
+                        </div>
+                        </div>
+
+                    </div>
 
                 </div>
 
-                <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(27,39,51,0.04)]">
-                        <div className="mb-4 flex items-center gap-2"><ShieldCheck size={17} className="text-emerald-600" /><h2 className="text-sm font-bold text-slate-900">Ready to publish?</h2></div>
-                        <p className="text-xs leading-5 text-slate-500">Complete the required fields, check pricing, then save this listing. You can update it at any time.</p>
-                        <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-                            <button type="button" disabled={loading || uploading} onClick={() => navigate(-1)} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60"><X size={14} /> Cancel</button>
-                            <button type="button" disabled={loading || uploading} onClick={(event) => saveProduct(event, true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60">Save as draft</button>
-                            <button type="button" disabled={loading || uploading} onClick={resetForm} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-60"><RotateCcw size={14} /> Reset form</button>
-                            <button type="submit" disabled={loading || uploading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60">
-                                {loading ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}{loading ? "Saving…" : isEdit ? "Update product" : "Save product"}
-                            </button>
+                <div className="sticky bottom-2 z-30 flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/95 p-3 shadow-[0_16px_44px_rgba(27,39,51,0.14)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                    <div className="flex items-center gap-2.5 px-1">
+                        {loading || uploading ? <LoaderCircle size={16} className="animate-spin text-orange-600" /> : <Check size={16} className="text-emerald-600" />}
+                        <div>
+                            <p className="text-xs font-bold text-slate-800">{loading ? "Saving your product…" : uploading ? "Uploading product images…" : "Your listing is ready to save"}</p>
+                            <p className="mt-0.5 text-[10px] text-slate-500">{form.product_code ? `SKU ${form.product_code}` : "Product details are stored securely."}</p>
                         </div>
-                </aside>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button type="button" disabled={loading || uploading} onClick={() => navigate(-1)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50 sm:flex-none"><X size={14} /> Cancel</button>
+                        <button type="button" disabled={loading || uploading} onClick={resetForm} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700 disabled:opacity-50 sm:flex-none"><RotateCcw size={14} /> Reset</button>
+                        <button type="button" disabled={loading || uploading} onClick={(event) => saveProduct(event, true)} className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:border-orange-200 hover:bg-orange-50 disabled:opacity-50 sm:flex-none">Save as draft</button>
+                        <button type="submit" disabled={loading || uploading} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-orange-500 px-5 py-2.5 text-xs font-extrabold text-white shadow-md shadow-orange-200 transition hover:from-orange-700 hover:to-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none">
+                            {loading ? <LoaderCircle size={15} className="animate-spin" /> : <Save size={15} />}
+                            {loading ? "Saving…" : isEdit ? "Update product" : "Save product"}
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
     );
