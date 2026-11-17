@@ -260,7 +260,7 @@ const Navbar = () => {
                 Hot
               </span>
             </NavLink>
-            <NavLink to="/about" className={navClass}>Interior Ideas</NavLink>
+            <Link to="/about" className={navClass({ isActive: false })}>Interior Ideas</Link>
             <NavLink to="/about" className={navClass}>About Us</NavLink>
             <NavLink
               to="/contactus"
