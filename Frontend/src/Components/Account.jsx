@@ -1,9 +1,11 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
+  Camera,
   Check,
   Clock3,
   CreditCard,
+  Home,
   KeyRound,
   LoaderCircle,
   LogOut,
@@ -11,22 +13,26 @@ import {
   PackageCheck,
   ShoppingBag,
   UserRound,
+  Upload,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../api";
 import { AuthContext } from "../PrivateRouter/AuthContext";
+import { resolveMediaUrl } from "../utils/media";
 import PageContainer from "./CommenComponents/PageContainer";
 
 const inputClass =
-  "mt-1 w-full rounded-xl border border-[#e5d8ca] bg-white px-4 py-3 text-sm text-[#351d0e] outline-none transition placeholder:text-[#a99a8a] focus:border-primary focus:ring-4 focus:ring-orange-100";
+  "mt-1 w-full rounded-lg border border-[#ddd5cd] bg-white px-4 py-2.5 text-sm text-[#351d0e] outline-none transition placeholder:text-[#a99a8a] focus:border-primary focus:ring-4 focus:ring-orange-100";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: UserRound },
-  { id: "password", label: "Set Password", icon: KeyRound },
-  { id: "orders", label: "Orders", icon: PackageCheck },
   { id: "addresses", label: "Addresses", icon: MapPin },
+  { id: "orders", label: "Orders", icon: PackageCheck },
+  { id: "password", label: "Set Password", icon: KeyRound },
 ];
+
+const accountHeroImage = resolveMediaUrl("/uploads/banners/1a4fd15f-b369-42f2-9d40-47fcb5d305a2.png");
 
 function formatAmount(value) {
   const amount = Number(value || 0);
@@ -69,11 +75,13 @@ function getOrderAddress(order) {
 
 function Account() {
   const { user, updateUser, logout } = useContext(AuthContext);
+  const photoInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [profile, setProfile] = useState({
     name: user?.name || user?.username || "",
     email: user?.email || "",
     phone: user?.phone || "",
+    profile_image: user?.profile_image || "",
   });
   const [orders, setOrders] = useState([]);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -81,6 +89,7 @@ function Account() {
   const [profileError, setProfileError] = useState("");
   const [ordersError, setOrdersError] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [profileFormError, setProfileFormError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -105,6 +114,7 @@ function Account() {
             name: data.name || data.username || "",
             email: data.email || "",
             phone: data.phone || "",
+            profile_image: data.profile_image || user?.profile_image || "",
           });
         }
       } catch (error) {
@@ -177,6 +187,7 @@ function Account() {
         name: data.user.name || data.user.username || "",
         email: data.user.email || "",
         phone: data.user.phone || "",
+        profile_image: data.user.profile_image || profile.profile_image || "",
       });
       updateUser(data.user);
       toast.success("Profile updated.");
@@ -186,6 +197,50 @@ function Account() {
       toast.error(message);
     } finally {
       setProfileSaving(false);
+    }
+  }
+
+  function cancelProfileChanges() {
+    setProfile({
+      name: user?.name || user?.username || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      profile_image: user?.profile_image || "",
+    });
+    setProfileFormError("");
+  }
+
+  async function uploadProfilePhoto(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Choose a JPG, PNG, or WebP image.");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Profile photo must be 5 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+    setPhotoUploading(true);
+    try {
+      const { data } = await api.post("/uploads/profile-image", formData);
+      updateUser(data.user);
+      setProfile((current) => ({
+        ...current,
+        profile_image: data.user.profile_image || data.url || "",
+      }));
+      toast.success("Profile photo updated.");
+    } catch (error) {
+      console.error("Could not update account photo:", error);
+      toast.error(error.response?.data?.message || "Could not update your profile photo.");
+    } finally {
+      setPhotoUploading(false);
+      event.target.value = "";
     }
   }
 
@@ -219,19 +274,54 @@ function Account() {
   }
 
   const displayName = profile.name || user?.name || user?.username || "there";
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
 
   return (
-    <main className="min-h-[65vh] bg-[#fcfaf7] py-8 text-[#351d0e] sm:py-12">
-      <PageContainer>
-        <header className="mb-7">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a06e46]">Your Q Furnitures account</p>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">My Account</h1>
-          <p className="mt-2 text-sm text-[#806d5d]">Welcome back, {displayName}.</p>
-        </header>
+    <main className="min-h-[65vh] bg-[#fffaf5] text-[#351d0e]">
+      <section className="relative isolate min-h-[130px] overflow-hidden bg-[#f3e5d7] sm:min-h-[160px]">
+        <img src={accountHeroImage} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-center" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#fff8f0] via-[#fff8f0]/95 to-[#fff8f0]/10" />
+        <PageContainer>
+          <div className="flex min-h-[130px] items-center py-5 sm:min-h-[160px]">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#806d5d]">Your Q Furnitures account</p>
+              <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">
+                My <span className="text-[#ef7412]">Account</span>
+              </h1>
+              <p className="mt-1 text-sm text-[#594333]">Manage your profile, addresses, orders and account settings.</p>
+            </div>
+          </div>
+        </PageContainer>
+      </section>
 
-        <div className="grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
-          <aside className="h-fit rounded-2xl border border-[#eee4d8] bg-white p-3 shadow-sm">
-            <nav aria-label="Account sections" role="tablist" className="flex gap-2 overflow-x-auto lg:flex-col">
+      <PageContainer>
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 py-3 text-xs text-[#725d4b]">
+          <Link to="/" className="inline-flex items-center gap-1.5 hover:text-[#e87500]">
+            <Home size={14} /> Home
+          </Link>
+          <span className="text-[#e87500]">›</span>
+          <span aria-current="page">My Account</span>
+        </nav>
+
+        <div className="grid gap-4 pb-8 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-5 lg:pb-10">
+          <aside className="h-fit overflow-hidden rounded-2xl border border-[#f1e7dd] bg-[#fff7ef] p-3 shadow-sm sm:p-4">
+            <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f5dfc8] text-lg font-bold text-[#a34720]">
+                {profile.profile_image ? (
+                  <img src={resolveMediaUrl(profile.profile_image)} alt="" className="h-full w-full object-cover" />
+                ) : initials || <UserRound size={25} />}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-extrabold">{displayName}</span>
+                <span className="mt-0.5 block truncate text-xs text-[#725d4b]">{profile.email || user?.email}</span>
+              </span>
+            </div>
+            <nav aria-label="Account sections" role="tablist" className="mt-3 flex gap-1 overflow-x-auto lg:flex-col">
               {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -241,28 +331,28 @@ function Account() {
                   aria-selected={activeTab === id}
                   aria-controls={`account-panel-${id}`}
                   onClick={() => setActiveTab(id)}
-                  className={`inline-flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                  className={`inline-flex min-h-10 shrink-0 items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-left text-xs font-bold transition sm:text-sm lg:w-full ${
                     activeTab === id
-                      ? "bg-[#fff0df] text-[#a34720]"
-                      : "text-[#725d4b] hover:bg-[#fcfaf7] hover:text-[#351d0e]"
+                      ? "border-[#f07816] bg-[#ffe8cf] text-[#351d0e]"
+                      : "border-transparent text-[#5b4839] hover:bg-white/70"
                   }`}
                 >
-                  <Icon size={18} />
+                  <Icon size={18} className="shrink-0 text-[#a34720]" />
                   {label}
                   {id === "orders" && !ordersLoading && !ordersError && (
-                    <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-xs text-[#8b735e]">{orders.length}</span>
+                    <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[10px] text-[#8b735e]">{orders.length}</span>
                   )}
                 </button>
               ))}
             </nav>
-            <div className="mt-3 hidden border-t border-[#eee4d8] pt-3 lg:block">
+            <div className="mt-3 border-t border-[#e7d8c8] pt-2">
               <button
                 type="button"
                 onClick={logout}
-                className="inline-flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#725d4b] transition hover:bg-red-50 hover:text-red-700"
+                className="inline-flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-bold text-[#5b4839] transition hover:bg-white/70 hover:text-[#a34720] sm:text-sm"
               >
-                <LogOut size={18} />
-                Sign out
+                <LogOut size={18} className="text-[#e87500]" />
+                Logout
               </button>
             </div>
           </aside>
@@ -271,7 +361,7 @@ function Account() {
             id={`account-panel-${activeTab}`}
             role="tabpanel"
             aria-labelledby={`account-tab-${activeTab}`}
-            className="min-h-[420px] rounded-2xl border border-[#eee4d8] bg-white p-5 shadow-sm sm:p-7"
+            className="min-h-[320px] rounded-2xl border border-[#eee4d8] bg-white p-5 shadow-[0_8px_24px_rgba(53,29,14,0.06)] sm:p-6 lg:p-7"
           >
             {activeTab === "profile" && (
               <>
