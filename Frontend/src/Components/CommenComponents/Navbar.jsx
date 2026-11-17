@@ -1,4 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../PrivateRouter/AuthContext";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
@@ -6,6 +7,7 @@ import {
   Menu,
   X,
   User,
+  LogOut,
   Heart,
   ShoppingCart,
   Search,
@@ -393,44 +395,45 @@ const Navbar = () => {
         </div>
       </PageContainer>
 
-      {/* Logout Modal */}
-
-      {logoutConfirm && (
-
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-
-          <div className="bg-white rounded-xl shadow-xl w-[320px] p-6 text-center">
-
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              Confirm Logout
-            </h2>
-
-            <p className="text-sm text-gray-500 mb-6">
-              Are you sure you want to logout?
-            </p>
-
-            <div className="flex justify-center gap-4">
-
-              <button
-                onClick={() => setLogoutConfirm(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={confirmLogout}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600"
-              >
-                Logout
-              </button>
-
+      {logoutConfirm && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#261208]/55 px-4 py-6 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-dialog-title"
+            className="w-full max-w-sm overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-2xl shadow-[#351d0e]/30"
+          >
+            <div className="h-2 bg-gradient-to-r from-[#f07816] via-[#ffb36b] to-[#d9650b]" />
+            <div className="px-7 pb-7 pt-8 text-center sm:px-9">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-[#d9650b] ring-8 ring-orange-50">
+                <LogOut size={27} strokeWidth={2.2} />
+              </div>
+              <h2 id="logout-dialog-title" className="text-xl font-bold tracking-tight text-[#351d0e]">
+                Confirm logout
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[#8b735e]">
+                Are you sure you want to log out of your account?
+              </p>
+              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+                <button
+                  type="button"
+                  onClick={() => setLogoutConfirm(false)}
+                  className="rounded-xl border border-orange-200 bg-orange-50 px-5 py-3 text-sm font-semibold text-[#7b4a25] transition hover:border-orange-300 hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-2"
+                >
+                  Stay signed in
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmLogout}
+                  className="rounded-xl bg-gradient-to-r from-[#f07816] to-[#d9650b] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:from-[#e36d0d] hover:to-[#c85a08] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
+                >
+                  Log out
+                </button>
+              </div>
             </div>
-
           </div>
-
-        </div>
-
+        </div>,
+        document.body
       )}
       {mobileMenu && (
         <div className="fixed inset-x-0 bottom-0 top-[76px] z-50 sm:top-[84px] lg:hidden">
