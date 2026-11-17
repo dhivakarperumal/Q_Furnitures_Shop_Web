@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera,
   Check,
@@ -28,6 +28,7 @@ import { AuthContext } from "../PrivateRouter/AuthContext";
 import { resolveMediaUrl } from "../utils/media";
 import PageContainer from "./CommenComponents/PageContainer";
 import PageHeader from "./CommenComponents/PageHeader";
+import OrderDetailsModal from "./OrderDetailsModal";
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-[#ddd5cd] bg-white px-4 py-2.5 text-sm text-[#351d0e] outline-none transition placeholder:text-[#a99a8a] focus:border-primary focus:ring-4 focus:ring-orange-100";
@@ -108,6 +109,7 @@ function Account() {
     profile_image: user?.profile_image || "",
   });
   const [orders, setOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [addresses, setAddresses] = useState([]);
   const [selectedOrderFilter, setSelectedOrderFilter] = useState("All Orders");
   const [profileLoading, setProfileLoading] = useState(true);
@@ -149,6 +151,7 @@ function Account() {
   const [reloadAddresses, setReloadAddresses] = useState(0);
   const userId = user?.id;
   const userProfileImage = user?.profile_image;
+  const closeOrderDetails = useCallback(() => setSelectedOrder(null), []);
 
   useEffect(() => {
     if (!addressFormOpen) return undefined;
@@ -821,9 +824,13 @@ function Account() {
                           </div>
                         </div>
                         <div className="mt-3 flex justify-end border-t border-[#f1e7dd] pt-3">
-                          <Link to="/ordersmain" className="text-xs font-bold text-[#a34720] hover:underline">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrder(order)}
+                            className="text-xs font-bold text-[#a34720] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                          >
                             View Details
-                          </Link>
+                          </button>
                         </div>
                       </article>
                       );
@@ -1158,6 +1165,7 @@ function Account() {
         </div>
         </PageContainer>
       </main>
+      {selectedOrder && <OrderDetailsModal order={selectedOrder} onClose={closeOrderDetails} />}
     </>
   );
 }
