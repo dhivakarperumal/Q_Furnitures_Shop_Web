@@ -357,9 +357,6 @@ const Orders = ({ statusFilter = "All" }) => {
             <table className="w-full min-w-[1100px] text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr className="bg-gradient-to-r from-secondary-dark to-secondary-light border-b border-secondary-dark">
-                  <th scope="col" className="w-12 px-4 py-4">
-                    <input type="checkbox" aria-label="Select all orders" className="rounded border-gray-300 text-[#4318FF] focus:ring-[#4318FF]" />
-                  </th>
                   <th scope="col" className="w-28 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order ID</th>
                   <th scope="col" className="min-w-[220px] px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Customer</th>
                   <th scope="col" className="w-32 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Amount</th>
@@ -372,11 +369,11 @@ const Orders = ({ statusFilter = "All" }) => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">Loading orders...</td>
+                    <td colSpan="7" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">Loading orders...</td>
                   </tr>
                 ) : currentItems.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">{isNewOrdersPage ? "No new orders placed today." : "No orders found."}</td>
+                    <td colSpan="7" className="px-6 py-10 text-center text-gray-400 text-sm font-semibold">{isNewOrdersPage ? "No new orders placed today." : "No orders found."}</td>
                   </tr>
                 ) : (
                   currentItems.map((order, idx) => {
@@ -387,9 +384,6 @@ const Orders = ({ statusFilter = "All" }) => {
 
                     return (
                       <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
-                        <td className="w-12 px-4 py-4">
-                          <input type="checkbox" className="rounded border-gray-300 text-[#4318FF] focus:ring-[#4318FF]" />
-                        </td>
                         <td className="w-28 px-4 py-4 text-[13px] font-black text-[#4318FF]">{formatOrderId(order)}</td>
                         <td className="min-w-[220px] px-4 py-4">
                           <div className="flex items-center gap-3">

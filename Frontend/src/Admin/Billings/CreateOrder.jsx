@@ -9,6 +9,17 @@ import { formatCurrency } from "../../utils/currency";
 
 const roundCurrency = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 
+function parseArray(value) {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== "string" || !value) return [];
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
 function calculateOrderTotals(items, discountType, discountValue, gstRate) {
     const subtotal = roundCurrency(items.reduce((sum, item) => sum + Number(item.total || 0), 0));
     const discount = roundCurrency(Math.max(0, Number(discountValue) || 0));
@@ -33,6 +44,8 @@ const CreateOrder = () => {
     const [loading, setLoading] = useState(false);
     const [createdOrderId, setCreatedOrderId] = useState("");
     const [categories, setCategories] = useState([]);
+    const [combos, setCombos] = useState([]);
+    const [catalogType, setCatalogType] = useState("product");
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [productSort, setProductSort] = useState("default");
     const [products, setProducts] = useState([]);
@@ -81,6 +94,19 @@ const CreateOrder = () => {
                 setProducts(productList);
                 setUsers(userRes.data);
                 setCategories(catRes.data);
+
+                try {
+                    const { data: comboData } = await api.get("/combos", {
+                        params: { page: 1, limit: 100, status: "Active" }
+                    });
+                    if (!Array.isArray(comboData?.combos)) {
+                        throw new Error("The combos response did not contain a combo list.");
+                    }
+                    setCombos(comboData.combos);
+                } catch (error) {
+                    console.error("Error fetching combos:", error);
+                    toast.error(error.response?.data?.message || "Failed to load combos");
+                }
             } catch (error) {
                 console.error("Error fetching data:", error);
                 toast.error("Failed to load initial data");
@@ -187,7 +213,51 @@ const CreateOrder = () => {
         updateTotal(updatedItems);
 
         setSelectedProductForVariant(null);
-        setProductSearchTerm("");
+    };
+
+    const handleComboClick = (combo) => {
+        const existingItemIndex = formData.items.findIndex(
+            (item) => Number(item.combo_id) === Number(combo.id),
+        );
+        const price = Number(combo.offer_price ?? combo.selling_price ?? combo.price ?? 0);
+        const updatedItems = [...formData.items];
+
+        if (existingItemIndex > -1) {
+            updatedItems[existingItemIndex].quantity += 1;
+            updatedItems[existingItemIndex].total =
+                updatedItems[existingItemIndex].price * updatedItems[existingItemIndex].quantity;
+        } else {
+            const images = parseArray(combo.images);
+            const image = images[Number(combo.main_image_index) || 0] || images[0] || combo.image;
+            updatedItems.push({
+                combo_id: combo.id,
+                combo_items: parseArray(combo.combo_items),
+                name: combo.name,
+                price,
+                quantity: 1,
+                total: price,
+                image: resolveImageUrl(image),
+            });
+        }
+
+        updateTotal(updatedItems);
+    };
+
+    const handleComboQuantityChange = (comboId, amount) => {
+        const updatedItems = [...formData.items];
+        const itemIndex = updatedItems.findIndex(
+            (item) => Number(item.combo_id) === Number(comboId),
+        );
+        if (itemIndex < 0) return;
+
+        const item = updatedItems[itemIndex];
+        if (amount < 0 && item.quantity <= 1) {
+            updatedItems.splice(itemIndex, 1);
+        } else {
+            item.quantity += amount;
+            item.total = item.price * item.quantity;
+        }
+        updateTotal(updatedItems);
     };
 
     const handleRemoveItem = (index) => {
@@ -239,6 +309,15 @@ const CreateOrder = () => {
         formData.discount_value,
         formData.gst_rate,
     );
+    const hasProductItems = formData.items.some((item) => item.product_id != null);
+    const hasComboItems = formData.items.some((item) => item.combo_id != null);
+    const orderComposition = hasProductItems && hasComboItems
+        ? "Mixed"
+        : hasComboItems
+            ? "Combo"
+            : hasProductItems
+                ? "Single"
+                : "Select items";
     const discountValue = Number(formData.discount_value);
     const gstRate = Number(formData.gst_rate);
     const pricingError = !Number.isFinite(discountValue) || discountValue < 0
@@ -291,7 +370,7 @@ const CreateOrder = () => {
             p.product_code?.toLowerCase().includes(searchTerm);
         const matchesCategory = !selectedCategory || p.category === selectedCategory.name;
         const isAvailable = String(p.status || "").toLowerCase() === "active" && Number(p.total_stock || p.stock || 0) > 0;
-        return matchesSearch && matchesCategory && isAvailable;
+        return matchesSearch && matchesCategory && isAvailable && p.product_type !== "Combo Product";
     }).sort((a, b) => {
         if (productSort === "name") {
             return String(a.name || "").localeCompare(String(b.name || ""));
@@ -303,6 +382,14 @@ const CreateOrder = () => {
         }
         return 0;
     });
+    const filteredCombos = combos.filter((combo) =>
+        String(combo.status || "").toLowerCase() === "active" &&
+        Number(combo.total_stock || 0) > 0 &&
+        (
+            String(combo.name || "").toLowerCase().includes(shopProductSearch.trim().toLowerCase()) ||
+            String(combo.combo_code || "").toLowerCase().includes(shopProductSearch.trim().toLowerCase())
+        )
+    );
 
     const filteredUsers = users.filter(u =>
         u.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
@@ -334,7 +421,7 @@ const CreateOrder = () => {
             <Toaster position="top-right" />
 
             <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto lg:grid-cols-[minmax(8rem,0.55fr)_minmax(0,2.45fr)_minmax(17rem,1.2fr)] lg:overflow-hidden">
-                {step === 1 && (
+                {step === 1 && catalogType === "product" && (
                     <aside className="min-h-0 overflow-y-auto rounded-xl border border-gray-200 bg-white p-4 shadow-sm lg:col-start-1 lg:row-start-1">
                         <h2 className="text-sm font-black uppercase tracking-widest text-slate-700">Categories</h2>
                         <nav className="mt-3 flex flex-col gap-1">
@@ -377,29 +464,58 @@ const CreateOrder = () => {
                     </aside>
                 )}
 
-                <div className={`min-h-0 space-y-4 overflow-y-auto lg:row-start-1 lg:overflow-y-auto ${step === 1 ? "lg:col-start-2" : "lg:col-start-1 lg:col-span-2"}`}>
+                <div className={`min-h-0 space-y-4 overflow-y-auto lg:row-start-1 lg:overflow-y-auto ${step === 1 ? (catalogType === "product" ? "lg:col-start-2" : "lg:col-start-1 lg:col-span-2") : "lg:col-start-1 lg:col-span-2"}`}>
                     {step === 1 ? (
                         /* Step 1: Product Selection */
                         <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 lg:p-5">
                             <div className="space-y-5">
-                                <div className="flex items-center justify-between gap-3">
-                                    <h2 className="text-sm font-black text-slate-700">Products</h2>
-                                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                                        Sort
-                                        <select
-                                            value={productSort}
-                                            onChange={(event) => setProductSort(event.target.value)}
-                                            className="rounded-lg border border-gray-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-primary"
-                                            aria-label="Sort products"
-                                        >
-                                            <option value="default">Default</option>
-                                            <option value="name">Name A-Z</option>
-                                            <option value="price-asc">Price: Low to High</option>
-                                            <option value="price-desc">Price: High to Low</option>
-                                        </select>
-                                    </label>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <h2 className="text-sm font-black text-slate-700">
+                                            {catalogType === "product" ? "Products" : "Combos"}
+                                        </h2>
+                                        <div className="inline-flex rounded-lg bg-slate-100 p-1">
+                                            {[
+                                                { value: "product", label: "Single Products" },
+                                                { value: "combo", label: "Combos" },
+                                            ].map(({ value, label }) => (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    onClick={() => setCatalogType(value)}
+                                                    aria-pressed={catalogType === value}
+                                                    className={`rounded-md px-3 py-1.5 text-xs font-bold transition ${
+                                                        catalogType === value
+                                                            ? "bg-white text-primary-dark shadow-sm"
+                                                            : "text-slate-500 hover:text-slate-800"
+                                                    }`}
+                                                >
+                                                    {label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-primary-dark">
+                                            Order Type: {orderComposition}
+                                        </span>
+                                    </div>
+                                    {catalogType === "product" && (
+                                        <label className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                                            Sort
+                                            <select
+                                                value={productSort}
+                                                onChange={(event) => setProductSort(event.target.value)}
+                                                className="rounded-lg border border-gray-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-primary"
+                                                aria-label="Sort products"
+                                            >
+                                                <option value="default">Default</option>
+                                                <option value="name">Name A-Z</option>
+                                                <option value="price-asc">Price: Low to High</option>
+                                                <option value="price-desc">Price: High to Low</option>
+                                            </select>
+                                        </label>
+                                    )}
                                 </div>
-                                {filteredProducts.length > 0 ? (
+                                {catalogType === "product" ? (filteredProducts.length > 0 ? (
                                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
                                         {filteredProducts.map(product => {
                                             const productImage = getProductVariants(product)[0]?.images?.[0] || product.image;
@@ -479,6 +595,86 @@ const CreateOrder = () => {
                                 ) : (
                                     <p className="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm font-medium text-gray-400">
                                         No available products match your filters.
+                                    </p>
+                                )) : filteredCombos.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                                        {filteredCombos.map((combo) => {
+                                            const images = parseArray(combo.images);
+                                            const image = images[Number(combo.main_image_index) || 0] || images[0] || combo.image;
+                                            const price = Number(combo.offer_price ?? combo.selling_price ?? combo.price ?? 0);
+                                            const quantity = formData.items
+                                                .filter((item) => Number(item.combo_id) === Number(combo.id))
+                                                .reduce((total, item) => total + item.quantity, 0);
+                                            return (
+                                                <div
+                                                    key={combo.id}
+                                                    className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleComboClick(combo)}
+                                                        aria-label={`Add combo ${combo.name}`}
+                                                        className="block w-full text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
+                                                    >
+                                                        <div className="aspect-[4/3] bg-gray-50">
+                                                            {image ? (
+                                                                <img
+                                                                    src={resolveImageUrl(image)}
+                                                                    alt={combo.name}
+                                                                    className="h-full w-full object-cover"
+                                                                    onError={(event) => { event.currentTarget.style.display = "none"; }}
+                                                                />
+                                                            ) : (
+                                                                <div className="flex h-full items-center justify-center text-gray-300">
+                                                                    <FiPackage size={28} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="px-2.5 pt-2">
+                                                            <p className="line-clamp-2 min-h-8 text-xs font-bold leading-4 text-slate-800">{combo.name}</p>
+                                                            <p className="truncate text-[9px] font-semibold text-primary-dark">Combo</p>
+                                                        </div>
+                                                    </button>
+                                                    <div className="flex min-h-9 items-center justify-between gap-1 px-2.5 pb-2">
+                                                        <span className="truncate text-xs font-black text-primary-dark">{formatCurrency(price)}</span>
+                                                        {quantity === 0 ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleComboClick(combo)}
+                                                                aria-label={`Add combo ${combo.name}`}
+                                                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-dark"
+                                                            >
+                                                                <FiPlus size={15} />
+                                                            </button>
+                                                        ) : (
+                                                            <div className="flex shrink-0 items-center gap-1 rounded-full bg-orange-50 p-0.5 text-primary-dark">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleComboQuantityChange(combo.id, -1)}
+                                                                    aria-label={`Decrease ${combo.name} quantity`}
+                                                                    className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-orange-100"
+                                                                >
+                                                                    <FiMinus size={12} />
+                                                                </button>
+                                                                <span className="min-w-4 text-center text-xs font-black">{quantity}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleComboQuantityChange(combo.id, 1)}
+                                                                    aria-label={`Increase ${combo.name} quantity`}
+                                                                    className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-orange-100"
+                                                                >
+                                                                    <FiPlus size={12} />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm font-medium text-gray-400">
+                                        No available combos match your search.
                                     </p>
                                 )}
                             </div>
@@ -756,7 +952,9 @@ const CreateOrder = () => {
                                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Order Type</label>
-                                        <div className="w-full rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-bold text-primary-dark">Shop Order</div>
+                                        <div className="w-full rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-bold text-primary-dark">
+                                            {orderComposition === "Select items" ? "Select items to set order type" : `${orderComposition} Order`}
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Payment Type</label>

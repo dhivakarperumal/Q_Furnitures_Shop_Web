@@ -175,6 +175,15 @@ const Checkout = () => {
     (total, item) => total + Number(item.price || 0) * Number(item.quantity || 0),
     0,
   );
+  const hasComboItems = cart.some((item) => item.item_type === "combo" || item.combo_id != null);
+  const hasProductItems = cart.some((item) => item.item_type !== "combo" && item.combo_id == null);
+  const orderComposition = hasComboItems && hasProductItems
+    ? "Mixed"
+    : hasComboItems
+      ? "Combo"
+      : hasProductItems
+        ? "Single"
+        : "Select items";
   const gstAmount = Math.round((subtotal * GST_RATE + Number.EPSILON) * 100) / 100;
   const total = subtotal + gstAmount;
 
@@ -553,7 +562,9 @@ const Checkout = () => {
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#351d0e] text-white"><ShoppingBag size={19} /></span>
                     <div>
                       <h2 className="text-base font-semibold text-[#351d0e] sm:text-lg">Order summary</h2>
-                      <p className="text-xs text-[#8b735e]">Review your items and total</p>
+                      <p className="text-xs text-[#8b735e]">
+                        Order type: <span className="font-bold text-[#a34720]">{orderComposition}</span>
+                      </p>
                     </div>
                   </div>
                   <div className="p-4 sm:p-5">
