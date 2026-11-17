@@ -10,7 +10,7 @@ const PageHeader = ({ title, background }) => {
     >
       <div
         aria-hidden="true"
-        className="absolute inset-0 scale-105 bg-cover bg-center blur-[1px]"
+        className="absolute inset-0 scale-105 bg-cover bg-center"
         style={{ backgroundImage: `url(${bgImage})` }}
       />
       <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
