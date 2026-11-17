@@ -437,13 +437,13 @@ function Account() {
 
   return (
     <>
-      <PageHeader title="My Account"/>
-      <main className="min-h-[65vh] bg-[#fffaf5] text-[#351d0e]">
+      <PageHeader title="My Account" />
+      <main className="min-h-[65vh] bg-[linear-gradient(180deg,#fffaf5_0%,#fff7ef_100%)] text-[#351d0e]">
         <PageContainer>
-        <div className="grid gap-4 pb-8 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-5 lg:pb-10">
-          <aside className="h-fit overflow-hidden rounded-2xl border border-[#f1e7dd] bg-[#fff7ef] p-3 shadow-sm sm:p-4">
-            <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f5dfc8] text-lg font-bold text-[#a34720]">
+        <div className="grid gap-5 py-7 sm:py-9 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6 lg:py-12">
+          <aside className="h-fit overflow-hidden rounded-2xl border border-[#f1e7dd] bg-white p-3 shadow-[0_10px_30px_rgba(53,29,14,0.07)] sm:p-4">
+            <div className="flex items-center gap-3 rounded-xl bg-gradient-to-br from-[#fff1e2] to-[#fffaf5] px-3 py-3">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f5dfc8] text-lg font-bold text-[#a34720] ring-2 ring-white shadow-sm">
                 {profile.profile_image ? (
                   <img src={resolveMediaUrl(profile.profile_image)} alt="" className="h-full w-full object-cover" />
                 ) : initials || <UserRound size={25} />}
@@ -453,7 +453,7 @@ function Account() {
                 <span className="mt-0.5 block truncate text-xs text-[#725d4b]">{profile.email || user?.email}</span>
               </span>
             </div>
-            <nav aria-label="Account sections" role="tablist" className="mt-3 flex gap-1 overflow-x-auto lg:flex-col">
+            <nav aria-label="Account sections" role="tablist" className="mt-4 flex gap-1.5 overflow-x-auto lg:flex-col">
               {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -463,10 +463,10 @@ function Account() {
                   aria-selected={activeTab === id}
                   aria-controls={`account-panel-${id}`}
                   onClick={() => setActiveTab(id)}
-                  className={`inline-flex min-h-10 shrink-0 items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-left text-xs font-bold transition sm:text-sm lg:w-full ${
+                  className={`inline-flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition sm:text-sm lg:w-full ${
                     activeTab === id
-                      ? "border-[#f07816] bg-[#ffe8cf] text-[#351d0e]"
-                      : "border-transparent text-[#5b4839] hover:bg-white/70"
+                      ? "bg-[#fff0df] text-[#351d0e] shadow-sm ring-1 ring-inset ring-[#f6d2b2]"
+                      : "text-[#5b4839] hover:bg-[#fffaf5]"
                   }`}
                 >
                   <Icon size={18} className="shrink-0 text-[#a34720]" />
@@ -483,7 +483,7 @@ function Account() {
             id={`account-panel-${activeTab}`}
             role="tabpanel"
             aria-labelledby={`account-tab-${activeTab}`}
-            className="min-h-[320px] rounded-2xl border border-[#eee4d8] bg-white p-5 shadow-[0_8px_24px_rgba(53,29,14,0.06)] sm:p-6 lg:p-7"
+            className="min-h-[320px] rounded-2xl border border-[#eee4d8] bg-white p-5 shadow-[0_12px_32px_rgba(53,29,14,0.07)] sm:p-7 lg:p-8"
           >
             {activeTab === "profile" && (
               <>
