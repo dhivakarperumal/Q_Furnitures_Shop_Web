@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { Armchair, Heart, Minus, Plus, ShoppingBag, Star } from "lucide-react";
+import { Armchair, Heart, Minus, Plus, ShoppingBag, ShoppingCart, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
 import { resolveMediaUrl } from "../../utils/media";
@@ -161,5 +161,132 @@ export default function ProductCard({ product, compact = false }) {
         </div>
       </div>
     </article>
+  );
+}
+
+export function ProductTableRow({ product }) {
+  const { cart, wishlist, addToCart, updateCartQuantity, toggleWishlist } = useContext(StoreContext);
+  const productId = product.id ?? product.product_id;
+  const image = getProductImage(product);
+  const defaultVariant = product.variants?.[0] || null;
+  const defaultVariantColor = String(defaultVariant?.colorName || defaultVariant?.color || defaultVariant?.colour || "Default");
+  const defaultVariantSize = String(defaultVariant?.size || defaultVariant?.selectedSizes?.[0] || "Free Size");
+  const price = Number(product.offer_price ?? product.selling_price ?? product.mrp) || 0;
+  const mrp = Number(product.mrp) || 0;
+  const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const rating = Number(product.rating) || 0;
+  const stock = Number(product.total_stock) || 0;
+  const availableStock = getProductStock(product, defaultVariant, defaultVariantSize);
+  const isWishlisted = wishlist.some((item) =>
+    String(item.product_id ?? item.productId ?? item.id) === String(productId),
+  );
+  const cartItem = cart.find((item) =>
+    String(item.product_id ?? item.productId ?? item.id) === String(productId) &&
+    String(item.colorName || item.variant_color || "Default").trim().toLowerCase() === defaultVariantColor.trim().toLowerCase() &&
+    String(item.size || item.variant_size || "Free Size").trim().toLowerCase() === defaultVariantSize.trim().toLowerCase(),
+  );
+  const material = defaultVariant?.material || product.material_type || product.material || "—";
+
+  return (
+    <tr className="border-t border-[#eee4d8] transition-colors hover:bg-[#fffaf4]">
+      <td className="px-3 py-2.5">
+        <div className="flex min-w-[230px] items-center gap-3">
+          <Link
+            to={`/products/${productId}`}
+            aria-label={`View ${product.name} details`}
+            className="flex h-14 w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#f7f1e9]"
+          >
+            {image ? (
+              <img src={image} alt={product.name} loading="lazy" className="h-full w-full object-contain" />
+            ) : (
+              <Armchair size={28} className="text-[#c7b5a2]" strokeWidth={1.2} />
+            )}
+          </Link>
+          <div className="min-w-0">
+            <Link to={`/products/${productId}`} className="line-clamp-2 text-xs font-semibold leading-4 text-[#351d0e] hover:text-[#a34720]">
+              {product.name}
+            </Link>
+            <p className="mt-0.5 text-[10px] text-[#8b7b6d]">
+              SKU: {product.product_code || `QF-${String(productId).padStart(4, "0")}`}
+            </p>
+          </div>
+        </div>
+      </td>
+      <td className="px-3 py-2.5 text-center">
+        <span className="inline-flex whitespace-nowrap rounded-full bg-[#fff0e2] px-2.5 py-1 text-[10px] font-semibold text-[#704322]">
+          {product.category || "Furniture"}
+        </span>
+      </td>
+      <td className="px-3 py-2.5">
+        <span className="whitespace-nowrap text-xs text-[#493b30]">{material}</span>
+      </td>
+      <td className="px-3 py-2.5">
+        <div className="flex items-center justify-center gap-1 whitespace-nowrap" aria-label={`Rated ${rating.toFixed(1)} out of 5`}>
+          <span className="inline-flex text-[#ed9b00]" aria-hidden="true">
+            {Array.from({ length: 5 }, (_, index) => (
+              <Star key={index} size={12} className={index < Math.round(rating) ? "fill-current" : "text-[#d7cabe]"} />
+            ))}
+          </span>
+          <span className="text-[10px] text-[#594b3d]">{rating.toFixed(1)}</span>
+        </div>
+      </td>
+      <td className="px-3 py-2.5 text-center">
+        <p className="whitespace-nowrap text-xs font-bold text-[#251c15]">{formatPrice(price)}</p>
+        {mrp > price && <p className="whitespace-nowrap text-[10px] text-[#96897e] line-through">{formatPrice(mrp)}</p>}
+      </td>
+      <td className="px-3 py-2.5 text-center">
+        {discount > 0 ? (
+          <span className="inline-flex whitespace-nowrap rounded-full bg-[#fff0e2] px-2.5 py-1 text-[10px] font-bold text-[#c33b17]">
+            {discount}% OFF
+          </span>
+        ) : <span className="text-xs text-[#8b7b6d]">—</span>}
+      </td>
+      <td className="px-3 py-2.5">
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => toggleWishlist(product)}
+            aria-label={isWishlisted ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
+            aria-pressed={isWishlisted}
+            className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-[#fff0e2] ${isWishlisted ? "text-rose-600" : "text-[#743d2b] hover:text-rose-600"}`}
+          >
+            <Heart size={17} fill={isWishlisted ? "currentColor" : "none"} />
+          </button>
+          {cartItem ? (
+            <div className="inline-flex h-8 items-center overflow-hidden rounded-md border border-[#e87500]/30 bg-white">
+              <button
+                type="button"
+                onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) - 1)}
+                disabled={Number(cartItem.quantity) <= 1}
+                aria-label={`Decrease ${product.name} quantity`}
+                className="flex h-full w-7 items-center justify-center text-[#a34720] disabled:opacity-40"
+              >
+                <Minus size={13} />
+              </button>
+              <span aria-live="polite" className="min-w-5 text-center text-xs font-semibold">{cartItem.quantity}</span>
+              <button
+                type="button"
+                onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) + 1)}
+                disabled={Number(cartItem.quantity) >= availableStock}
+                aria-label={`Increase ${product.name} quantity`}
+                className="flex h-full w-7 items-center justify-center text-[#a34720] disabled:opacity-40"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => addToCart(product)}
+              disabled={stock <= 0}
+              aria-label={`Add ${product.name} to cart`}
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-[#e87500] text-white transition hover:bg-[#ca6100] disabled:cursor-not-allowed disabled:bg-[#c7b5a2]"
+            >
+              <ShoppingCart size={16} />
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
   );
 }
