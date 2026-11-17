@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Armchair, ArrowLeft, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
 import { resolveMediaUrl } from "../../utils/media";
@@ -131,27 +132,29 @@ const HomeCategories = () => {
               const image = getCategoryImage(category.images);
 
               return (
-                <article
-                  key={category.catId || category.id || category.name}
-                  className="group w-28 shrink-0 snap-start sm:w-32 lg:w-36"
-                >
-                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-[#f6eee5] to-[#eee1d3]">
-                    {image ? (
-                      <img
-                        src={image}
-                        alt={category.name}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-[#a38365]">
-                        <Armchair size={46} strokeWidth={1.2} />
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="mt-2 line-clamp-1 text-center text-xs font-semibold text-[#351d0e] sm:text-sm">
-                    {category.name}
-                  </h3>
+                <article key={category.catId || category.id || category.name} className="w-28 shrink-0 snap-start sm:w-32 lg:w-36">
+                  <Link
+                    to={`/shop?category=${encodeURIComponent(category.name)}`}
+                    className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                  >
+                    <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-[#f6eee5] to-[#eee1d3]">
+                      {image ? (
+                        <img
+                          src={image}
+                          alt=""
+                          loading="lazy"
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-[#a38365]">
+                          <Armchair size={46} strokeWidth={1.2} />
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="mt-2 line-clamp-1 text-center text-xs font-semibold text-[#351d0e] transition-colors group-hover:text-[#e87500] sm:text-sm">
+                      {category.name}
+                    </h3>
+                  </Link>
                 </article>
               );
             })}

@@ -134,8 +134,9 @@ function createProductRouter(productService) {
       const limit = Math.min(100, Math.max(1, Number.parseInt(request.query.limit, 10) || 10));
       const search = typeof request.query.search === "string" ? request.query.search.trim() : "";
       const status = typeof request.query.status === "string" ? request.query.status : "All";
+      const category = typeof request.query.category === "string" ? request.query.category.trim() : "";
       const excludeComboProducts = request.query.exclude_combo_products === "true";
-      return response.json(await productService.list({ page, limit, search, status, excludeComboProducts }));
+      return response.json(await productService.list({ page, limit, search, status, category, excludeComboProducts }));
     } catch (error) {
       return next(error);
     }

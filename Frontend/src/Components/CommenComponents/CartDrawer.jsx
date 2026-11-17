@@ -1,4 +1,5 @@
 import React, { useContext, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiMinus, FiPlus, FiShoppingCart, FiTrash2, FiX } from "react-icons/fi";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
@@ -29,7 +30,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
     navigate(path);
   };
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 z-[60] overflow-hidden transition-opacity duration-300 ${isOpen ? "visible opacity-100" : "invisible opacity-0"}`}
       aria-hidden={!isOpen}
@@ -181,7 +182,8 @@ const CartDrawer = ({ isOpen, onClose }) => {
           </div>
         )}
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

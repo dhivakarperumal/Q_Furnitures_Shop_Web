@@ -15,7 +15,7 @@ const PageHeader = ({ title, background }) => {
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-r from-[#fff3e3]/45 via-[#fff3e3]/45 to-[#fff3e3]/45"
+        className="absolute inset-0 bg-gradient-to-r from-[#fff3e3]/45 via-[#fff3e3]/20 to-[#fff3e3]/20"
       />
       <div className="relative">
         <h1 className="mb-2 text-2xl font-bold text-[#ef7412] sm:text-3xl md:mb-3 md:text-4xl lg:text-5xl">

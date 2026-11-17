@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiHeart, FiShoppingCart, FiX, FiTrash2 } from "react-icons/fi";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
@@ -58,7 +59,7 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
     }));
   };
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 z-[60] overflow-hidden transition-opacity duration-300 ${isOpen ? "visible opacity-100" : "invisible opacity-0"}`}
       aria-hidden={!isOpen}
@@ -172,7 +173,8 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
           </div>
         )}
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

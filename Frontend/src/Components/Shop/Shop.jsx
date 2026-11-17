@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -15,9 +16,15 @@ import api from "../../api";
 import { resolveMediaUrl } from "../../utils/media";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
-import ProductCard from "./ProductCard";
+import ProductCard, { ProductListCard } from "./ProductCard";
 
 const MAX_PRICE = 600000;
+const SORT_OPTIONS = [
+  { value: "featured", label: "Featured" },
+  { value: "price-low", label: "Price: Low to High" },
+  { value: "price-high", label: "Price: High to Low" },
+  { value: "rating", label: "Top Rated" },
+];
 const MATERIALS = ["Solid Wood", "Engineered Wood", "Upholstered", "Plywood", "Metal"];
 const COLORS = [
   ["Natural Teak", "#e7c090"],
@@ -44,13 +51,28 @@ function getProductImage(product) {
 }
 
 function FilterSection({ title, children }) {
+  const [isOpen, setIsOpen] = useState(true);
+  const contentId = useId();
+
   return (
-    <section className="border-t border-[#eee4d8] py-3.5">
-      <h3 className="mb-2.5 flex items-center justify-between text-[13px] font-bold text-[#302218]">
-        {title}
-        <ChevronDown size={15} className="text-[#745d48]" />
+    <section className="border-b border-[#f0e2d3] py-3 last:border-0">
+      <h3 className="text-[12px] font-bold text-[#302218]">
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          aria-controls={contentId}
+          onClick={() => setIsOpen((open) => !open)}
+          className="flex w-full items-center justify-between rounded-lg text-left transition hover:text-[#a84e00] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+        >
+          {title}
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#fff2e3] text-[#b65b12]">
+            <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? "" : "-rotate-90"}`} />
+          </span>
+        </button>
       </h3>
-      {children}
+      <div id={contentId} hidden={!isOpen} className="pt-2">
+        {children}
+      </div>
     </section>
   );
 }
@@ -79,9 +101,36 @@ const Shop = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [listView, setListView] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [priceEdit, setPriceEdit] = useState(null);
+  const sortDropdownRef = useRef(null);
+  const sortMenuRef = useRef(null);
+  const sortButtonRef = useRef(null);
   const priceDraft = priceEdit?.query === searchParams.toString() ? priceEdit.value : maxPrice;
   const productsPerPage = filterOpen ? 12 : 15;
+  const selectedSortLabel = SORT_OPTIONS.find((option) => option.value === sort)?.label || "Featured";
+
+  useEffect(() => {
+    if (!sortOpen) return undefined;
+
+    sortMenuRef.current?.querySelector("button")?.focus();
+    const handlePointerDown = (event) => {
+      if (!sortDropdownRef.current?.contains(event.target)) setSortOpen(false);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setSortOpen(false);
+        sortButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [sortOpen]);
 
   useEffect(() => {
     let active = true;
@@ -220,7 +269,9 @@ const Shop = () => {
   const pageStart = pagination.total ? (currentPage - 1) * productsPerPage + 1 : 0;
   const pageEnd = Math.min(currentPage * productsPerPage, pagination.total);
   const productGridClass = listView
-    ? "grid-cols-1"
+    ? filterOpen
+      ? "grid-cols-1 sm:grid-cols-2"
+      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
     : filterOpen
       ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
       : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
@@ -233,13 +284,28 @@ const Shop = () => {
         <p className="py-4 text-sm text-[#594333] sm:text-base">Discover quality furniture for every space.</p>
 
         <div className={`grid gap-5 ${filterOpen ? "lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)]" : "grid-cols-1"}`}>
-          {filterOpen && <aside id="shop-filter-sidebar" className="h-fit rounded-xl border border-[#e9ded2] bg-white px-3.5 shadow-[0_3px_15px_rgba(53,29,14,0.04)] lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
-            <div className="flex items-center justify-between py-3">
-              <h2 className="flex items-center gap-2 text-sm font-bold text-[#281b12]">
-                <SlidersHorizontal size={17} /> Filters
-              </h2>
-              <button type="button" onClick={clearFilters} className="text-[11px] font-semibold text-[#dc6500] hover:underline">
-                <span className="inline-flex items-center gap-1"><RotateCcw size={12} /> Clear all</span>
+          {filterOpen && <aside id="shop-filter-sidebar" className="h-fit rounded-2xl border border-[#ead8c7] bg-white px-4 shadow-[0_8px_24px_rgba(53,29,14,0.07)] lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
+            <div className="-mx-4 mb-1 flex items-center justify-between gap-2 rounded-t-2xl border-b border-[#f1e2d1] bg-gradient-to-r from-[#fff0df] via-[#fff8ef] to-white px-4 py-3.5">
+              <div>
+                <h2 className="flex items-center gap-2 text-sm font-extrabold text-[#302218]">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#e87500] text-white shadow-sm">
+                    <SlidersHorizontal size={16} />
+                  </span>
+                  Filters
+                  {filterChips.length > 0 && (
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-[#b65b12] shadow-sm">
+                      {filterChips.length}
+                    </span>
+                  )}
+                </h2>
+                <p className="ml-10 mt-0.5 text-[10px] text-[#8b735e]">Refine your furniture search</p>
+              </div>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#f0c99f] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#b65b12] shadow-sm transition hover:border-[#e87500] hover:bg-[#fff3e5]"
+              >
+                <RotateCcw size={11} /> Clear
               </button>
             </div>
 
@@ -247,16 +313,16 @@ const Shop = () => {
               {categoryError ? (
                 <p role="status" className="text-xs text-[#9a6b45]">{categoryError}</p>
               ) : (
-                <div className="max-h-44 space-y-2 overflow-y-auto">
+                <div className="max-h-44 space-y-0.5 overflow-y-auto">
                   {categories.map((item) => (
-                    <label key={item.id || item.catId || item.name} className="flex cursor-pointer items-center gap-2 text-xs text-[#47382b]">
+                    <label key={item.id || item.catId || item.name} className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-[#47382b] transition hover:bg-[#fff7ed]">
                       <input
                         type="checkbox"
                         checked={category === item.name}
                         onChange={() => updateParams({ category: category === item.name ? "" : item.name })}
-                        className="h-3.5 w-3.5 accent-[#e87500]"
+                        className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                       />
-                      <span className="flex-1">{item.name}</span>
+                      <span className="flex-1 font-medium group-hover:text-[#a84e00]">{item.name}</span>
                     </label>
                   ))}
                 </div>
@@ -264,44 +330,47 @@ const Shop = () => {
             </FilterSection>
 
             <FilterSection title="Price range">
-              <div className="mb-2 flex justify-between text-[11px] text-[#594b3d]">
-                <span>₹0</span><span>{priceDraft >= MAX_PRICE ? "₹6,00,000+" : `₹${priceDraft.toLocaleString("en-IN")}`}</span>
+              <div className="mb-2 flex justify-between text-[10px] font-semibold text-[#594b3d]">
+                <span className="rounded-md bg-[#f7f1e9] px-2 py-1">₹0</span>
+                <span className="rounded-md bg-[#fff0df] px-2 py-1 text-[#a84e00]">{priceDraft >= MAX_PRICE ? "₹6,00,000+" : `₹${priceDraft.toLocaleString("en-IN")}`}</span>
               </div>
-              <input
-                type="range"
-                min="10000"
-                max={MAX_PRICE}
-                step="5000"
-                value={priceDraft}
-                aria-label="Maximum price"
-                onChange={(event) => setPriceEdit({
-                  query: searchParams.toString(),
-                  value: Number(event.target.value),
-                })}
-                onPointerUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
-                onKeyUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
-                className="h-1.5 w-full cursor-pointer accent-[#e87500]"
-              />
+              <div className="rounded-xl border border-[#f1e4d6] bg-[#fffcf8] px-2.5 py-2">
+                <input
+                  type="range"
+                  min="10000"
+                  max={MAX_PRICE}
+                  step="5000"
+                  value={priceDraft}
+                  aria-label="Maximum price"
+                  onChange={(event) => setPriceEdit({
+                    query: searchParams.toString(),
+                    value: Number(event.target.value),
+                  })}
+                  onPointerUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
+                  onKeyUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
+                  className="h-2 w-full cursor-pointer accent-[#e87500]"
+                />
+              </div>
             </FilterSection>
 
             <FilterSection title="Material">
-              <div className="space-y-2">
+              <div className="space-y-0.5">
                 {MATERIALS.map((item) => (
-                  <label key={item} className="flex cursor-pointer items-center gap-2 text-xs text-[#47382b]">
+                  <label key={item} className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-[#47382b] transition hover:bg-[#fff7ed]">
                     <input
                       type="checkbox"
                       checked={material === item}
                       onChange={() => updateParams({ material: material === item ? "" : item })}
-                      className="h-3.5 w-3.5 accent-[#e87500]"
+                      className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                     />
-                    {item}
+                    <span className="font-medium group-hover:text-[#a84e00]">{item}</span>
                   </label>
                 ))}
               </div>
             </FilterSection>
 
             <FilterSection title="Color">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2.5">
                 {COLORS.map(([name, swatch]) => (
                   <button
                     key={name}
@@ -310,22 +379,23 @@ const Shop = () => {
                     aria-label={`Filter by ${name}`}
                     aria-pressed={color === name}
                     onClick={() => updateParams({ color: color === name ? "" : name })}
-                    className={`h-5 w-5 rounded-full border transition ${color === name ? "border-[#e87500] ring-2 ring-[#e87500]/30 ring-offset-1" : "border-[#d7cabe] hover:scale-110"}`}
+                    className={`h-6 w-6 rounded-full border-2 border-white shadow-sm transition hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${color === name ? "ring-2 ring-[#e87500]" : "ring-1 ring-[#e2d4c6]"}`}
                     style={{ backgroundColor: swatch }}
                   />
                 ))}
               </div>
+              <p className="mt-2 text-[10px] font-medium text-[#8b735e]">{color || "Choose a color"}</p>
             </FilterSection>
 
             <FilterSection title="Customer rating">
-              <div className="space-y-2">
+              <div className="space-y-0.5">
                 {[4, 3].map((rating) => (
-                  <label key={rating} className="flex cursor-pointer items-center gap-2 text-xs text-[#47382b]">
+                  <label key={rating} className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] text-[#47382b] transition hover:bg-[#fff7ed]">
                     <input
                       type="checkbox"
                       checked={minRating === String(rating)}
                       onChange={() => updateParams({ minRating: minRating === String(rating) ? "" : rating })}
-                      className="h-3.5 w-3.5 accent-[#e87500]"
+                      className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                     />
                     <span className="inline-flex text-[#ed9b00]">
                       {Array.from({ length: 5 }, (_, index) => (
@@ -339,30 +409,30 @@ const Shop = () => {
             </FilterSection>
 
             <FilterSection title="Availability">
-              <div className="space-y-2 pb-1">
+              <div className="space-y-0.5 pb-1">
                 {[["in-stock", "In stock"], ["out-of-stock", "Out of stock"]].map(([value, label]) => (
-                  <label key={value} className="flex cursor-pointer items-center gap-2 text-xs text-[#47382b]">
+                  <label key={value} className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-[#47382b] transition hover:bg-[#fff7ed]">
                     <input
                       type="checkbox"
                       checked={availability === value}
                       onChange={() => updateParams({ availability: availability === value ? "" : value })}
-                      className="h-3.5 w-3.5 accent-[#e87500]"
+                      className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                     />
-                    {label}
+                    <span className="font-medium group-hover:text-[#a84e00]">{label}</span>
                   </label>
                 ))}
               </div>
             </FilterSection>
 
             <FilterSection title="Offers">
-              <label className="flex cursor-pointer items-center gap-2 pb-1 text-xs text-[#47382b]">
+              <label className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-[#47382b] transition hover:bg-[#fff7ed]">
                 <input
                   type="checkbox"
                   checked={onSale}
                   onChange={() => updateParams({ onSale: onSale ? "" : "true" })}
-                  className="h-3.5 w-3.5 accent-[#e87500]"
+                  className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                 />
-                On sale
+                <span className="font-medium group-hover:text-[#a84e00]">On sale</span>
               </label>
             </FilterSection>
           </aside>}
@@ -371,50 +441,85 @@ const Shop = () => {
             aria-label="Furniture products"
             className="min-w-0"
           >
-            <form onSubmit={handleSearch} className="flex items-center gap-2 rounded-lg border border-[#dccfc1] bg-white p-1.5 shadow-sm">
-              <Search size={18} className="ml-2 shrink-0 text-[#4c392a]" />
-              <input
-                key={searchTerm}
-                type="search"
-                name="search"
-                defaultValue={searchTerm}
-                placeholder="Search furniture, e.g., sofa, bed, dining..."
-                aria-label="Search furniture"
-                className="min-w-0 flex-1 bg-transparent px-1 py-2 text-xs text-[#351d0e] outline-none placeholder:text-[#998b7e] sm:text-sm"
-              />
-              <button type="submit" className="rounded-md bg-[#e87500] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ca6100] sm:px-6 sm:text-sm">
-                Search
-              </button>
-            </form>
-
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-[#58483a]">
-                Showing {pageStart}–{pageEnd} of {pagination.total} products
-                {searchTerm && <span className="ml-1 text-[#8b735e]">for “{searchTerm}”</span>}
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={toggleFilters}
-                  aria-expanded={filterOpen}
-                  aria-controls={filterOpen ? "shop-filter-sidebar" : undefined}
-                  className={`inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${filterOpen ? "bg-[#e87500] text-white" : "border border-[#ded2c6] bg-white text-[#4d3b2b] hover:border-[#e87500]"}`}
-                >
-                  <SlidersHorizontal size={15} />
-                  {filterOpen ? "Hide filters" : "Filters"}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <form onSubmit={handleSearch} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[#dccfc1] bg-white p-1.5 shadow-sm sm:max-w-[560px]">
+                <Search size={18} className="ml-2 shrink-0 text-[#4c392a]" />
+                <input
+                  key={searchTerm}
+                  type="search"
+                  name="search"
+                  defaultValue={searchTerm}
+                  placeholder="Search furniture, e.g., sofa, bed, dining..."
+                  aria-label="Search furniture"
+                  className="min-w-0 flex-1 bg-transparent px-1 py-2 text-xs text-[#351d0e] outline-none placeholder:text-[#998b7e] sm:text-sm"
+                />
+                <button type="submit" className="rounded-md bg-[#e87500] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ca6100] sm:px-6 sm:text-sm">
+                  Search
                 </button>
-                <label htmlFor="shop-sort" className="whitespace-nowrap text-xs font-semibold">Sort by:</label>
-                <select
-                  id="shop-sort"
-                  value={sort}
-                  onChange={(event) => updateParams({ sort: event.target.value === "featured" ? "" : event.target.value })}
-                  className="rounded-md border border-[#ded2c6] bg-white px-3 py-2 text-xs text-[#3b2b1f] outline-none focus:border-[#e87500]"
-                >
-                  <option value="featured">Featured</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="rating">Top Rated</option>
-                </select>
+              </form>
+              <div className="flex items-center gap-2">
+                <span id="sort-by-label" className="whitespace-nowrap text-xs font-semibold text-[#8b4b12]">Sort by:</span>
+                <div ref={sortDropdownRef} className="relative">
+                  <button
+                    ref={sortButtonRef}
+                    type="button"
+                    id="shop-sort"
+                    aria-labelledby="sort-by-label shop-sort-value"
+                    aria-haspopup="menu"
+                    aria-expanded={sortOpen}
+                    aria-controls="shop-sort-menu"
+                    onClick={() => setSortOpen((open) => !open)}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowDown" && !sortOpen) {
+                        event.preventDefault();
+                        setSortOpen(true);
+                      }
+                    }}
+                    className={`inline-flex h-9 min-w-[132px] items-center justify-between gap-3 rounded-lg border bg-[#fff8ef] px-3 text-xs font-semibold text-[#633b1d] outline-none transition focus-visible:ring-2 focus-visible:ring-[#e87500]/30 ${sortOpen ? "border-[#e87500] shadow-[0_0_0_2px_rgba(232,117,0,0.12)]" : "border-[#e87500]/60 hover:border-[#e87500]"}`}
+                  >
+                    <span id="shop-sort-value">{selectedSortLabel}</span>
+                    <ChevronDown size={14} aria-hidden="true" className={`shrink-0 text-[#c45d00] transition-transform ${sortOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {sortOpen && (
+                    <div
+                      ref={sortMenuRef}
+                      id="shop-sort-menu"
+                      role="menu"
+                      aria-labelledby="sort-by-label"
+                      onKeyDown={(event) => {
+                        if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+                        event.preventDefault();
+                        const menuItems = Array.from(sortMenuRef.current?.querySelectorAll('[role="menuitemradio"]') || []);
+                        const currentIndex = menuItems.indexOf(document.activeElement);
+                        const nextIndex = event.key === "Home"
+                          ? 0
+                          : event.key === "End"
+                            ? menuItems.length - 1
+                            : (currentIndex + (event.key === "ArrowDown" ? 1 : -1) + menuItems.length) % menuItems.length;
+                        menuItems[nextIndex]?.focus();
+                      }}
+                      className="absolute right-0 z-30 mt-2 w-52 origin-top-right overflow-hidden rounded-xl border border-[#efc18d] bg-white p-1.5 shadow-[0_12px_30px_rgba(53,29,14,0.16)]"
+                    >
+                      {SORT_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={sort === option.value}
+                          onClick={() => {
+                            updateParams({ sort: option.value === "featured" ? "" : option.value });
+                            setSortOpen(false);
+                            sortButtonRef.current?.focus();
+                          }}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs font-medium transition ${sort === option.value ? "bg-[#fff0df] font-bold text-[#a84e00]" : "text-[#554333] hover:bg-[#fff7ed] hover:text-[#a84e00]"}`}
+                        >
+                          {option.label}
+                          {sort === option.value && <Check size={14} aria-hidden="true" className="text-[#e87500]" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => setListView(false)}
@@ -436,6 +541,24 @@ const Shop = () => {
               </div>
             </div>
 
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-[#58483a]">
+                Showing {pageStart}–{pageEnd} of {pagination.total} products
+                {searchTerm && <span className="ml-1 text-[#8b735e]">for “{searchTerm}”</span>}
+              </p>
+              <button
+                type="button"
+                onClick={toggleFilters}
+                aria-expanded={filterOpen}
+                aria-controls={filterOpen ? "shop-filter-sidebar" : undefined}
+                aria-label={filterOpen ? "Hide filters" : "Show filters"}
+                className={`inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${filterOpen ? "bg-[#e87500] text-white" : "border border-[#efc18d] bg-[#fff8ef] text-[#8b4b12] hover:border-[#e87500] hover:bg-[#fff0df]"}`}
+              >
+                <SlidersHorizontal size={15} />
+                {filterOpen ? "Hide filters" : "Filters"}
+              </button>
+            </div>
+
             {(filterChips.length > 0 || searchTerm) && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {filterChips.map((chip) => (
@@ -453,17 +576,32 @@ const Shop = () => {
             )}
 
             {loading ? (
-              <div className={`mt-4 grid gap-3 ${productGridClass}`}>
-                {Array.from({ length: productsPerPage }, (_, index) => (
-                  <div key={index} className="overflow-hidden rounded-xl border border-[#eee4d8] bg-white">
-                    <div className="aspect-[4/3] animate-pulse bg-[#f1e9df]" />
-                    <div className="space-y-2 p-3">
-                      <div className="h-3 w-1/3 animate-pulse rounded bg-[#f1e9df]" />
-                      <div className="h-4 w-3/4 animate-pulse rounded bg-[#f1e9df]" />
+              listView ? (
+                <div className={`mt-4 grid gap-3 ${productGridClass}`}>
+                  {Array.from({ length: productsPerPage }, (_, index) => (
+                    <div key={index} className="flex h-[112px] overflow-hidden rounded-xl border border-[#eee4d8] bg-white">
+                      <div className="w-[38%] animate-pulse bg-[#f1e9df]" />
+                      <div className="flex-1 space-y-2 p-3">
+                        <div className="h-3 w-1/3 animate-pulse rounded bg-[#f1e9df]" />
+                        <div className="h-4 w-3/4 animate-pulse rounded bg-[#f1e9df]" />
+                        <div className="h-3 w-1/2 animate-pulse rounded bg-[#f1e9df]" />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={`mt-4 grid gap-3 ${productGridClass}`}>
+                  {Array.from({ length: productsPerPage }, (_, index) => (
+                    <div key={index} className="overflow-hidden rounded-xl border border-[#eee4d8] bg-white">
+                      <div className="aspect-[4/3] animate-pulse bg-[#f1e9df]" />
+                      <div className="space-y-2 p-3">
+                        <div className="h-3 w-1/3 animate-pulse rounded bg-[#f1e9df]" />
+                        <div className="h-4 w-3/4 animate-pulse rounded bg-[#f1e9df]" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
             ) : error ? (
               <div role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 px-5 py-10 text-center">
                 <p className="text-sm font-medium text-red-800">{error}</p>
@@ -474,42 +612,52 @@ const Shop = () => {
             ) : products.length ? (
               <>
                 <div className={`mt-4 grid gap-3 ${productGridClass}`}>
-                  {products.map((product) => <ProductCard key={product.id} product={product} compact />)}
+                  {products.map((product) => listView
+                    ? <ProductListCard key={product.id} product={product} />
+                    : <ProductCard key={product.id} product={product} compact />)}
                 </div>
 
                 {pagination.totalPages > 1 && (
-                  <nav className="mt-7 flex flex-wrap items-center justify-center gap-1.5" aria-label="Product pages">
-                    <button
-                      type="button"
-                      onClick={() => goToPage(currentPage - 1)}
-                      disabled={currentPage <= 1}
-                      className="inline-flex items-center gap-1 rounded-md border border-[#e5d8ca] bg-white px-3 py-2 text-xs text-[#695340] hover:bg-[#f4eadc] disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <ChevronLeft size={14} /> Previous
-                    </button>
-                    {Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
-                      .filter((page) => page === 1 || page === pagination.totalPages || Math.abs(page - currentPage) <= 1)
-                      .map((page, index, visiblePages) => (
-                        <span key={page} className="contents">
-                          {index > 0 && page - visiblePages[index - 1] > 1 && <span className="px-1 text-xs text-[#806d5d]">…</span>}
-                          <button
-                            type="button"
-                            onClick={() => goToPage(page)}
-                            aria-current={page === currentPage ? "page" : undefined}
-                            className={`h-9 min-w-9 rounded-md border px-2 text-xs font-semibold ${page === currentPage ? "border-[#e87500] bg-[#e87500] text-white" : "border-[#e5d8ca] bg-white text-[#4b3929] hover:bg-[#fff3e5]"}`}
-                          >
-                            {page}
-                          </button>
-                        </span>
-                      ))}
-                    <button
-                      type="button"
-                      onClick={() => goToPage(currentPage + 1)}
-                      disabled={currentPage >= pagination.totalPages}
-                      className="inline-flex items-center gap-1 rounded-md border border-[#e5d8ca] bg-white px-3 py-2 text-xs text-[#695340] hover:bg-[#f4eadc] disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Next <ChevronRight size={14} />
-                    </button>
+                  <nav
+                    className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-[#f0dfce] bg-gradient-to-r from-white via-[#fffaf4] to-white px-3 py-3 shadow-[0_6px_20px_rgba(53,29,14,0.05)] sm:flex-row sm:justify-between sm:px-4"
+                    aria-label="Product pages"
+                  >
+                    <p className="text-xs text-[#806d5d]">
+                      Page <span className="font-bold text-[#8b4b12]">{currentPage}</span> of {pagination.totalPages}
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#edd7c0] bg-white px-3 text-xs font-semibold text-[#695340] transition hover:border-[#e87500] hover:bg-[#fff3e5] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <ChevronLeft size={14} /> Previous
+                      </button>
+                      {Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
+                        .filter((page) => page === 1 || page === pagination.totalPages || Math.abs(page - currentPage) <= 1)
+                        .map((page, index, visiblePages) => (
+                          <span key={page} className="contents">
+                            {index > 0 && page - visiblePages[index - 1] > 1 && <span className="px-1 text-sm font-semibold text-[#b19a84]">…</span>}
+                            <button
+                              type="button"
+                              onClick={() => goToPage(page)}
+                              aria-current={page === currentPage ? "page" : undefined}
+                              className={`h-9 min-w-9 rounded-lg border px-2 text-xs font-bold transition ${page === currentPage ? "border-[#e87500] bg-gradient-to-b from-[#f58a1f] to-[#e87500] text-white shadow-[0_3px_8px_rgba(232,117,0,0.28)]" : "border-[#edd7c0] bg-white text-[#4b3929] hover:border-[#e87500] hover:bg-[#fff3e5]"}`}
+                            >
+                              {page}
+                            </button>
+                          </span>
+                        ))}
+                      <button
+                        type="button"
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage >= pagination.totalPages}
+                        className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#edd7c0] bg-white px-3 text-xs font-semibold text-[#695340] transition hover:border-[#e87500] hover:bg-[#fff3e5] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Next <ChevronRight size={14} />
+                      </button>
+                    </div>
                   </nav>
                 )}
               </>

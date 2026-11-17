@@ -1,4 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../PrivateRouter/AuthContext";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
@@ -6,16 +7,37 @@ import {
   Menu,
   X,
   User,
+  LogOut,
   Heart,
   ShoppingCart,
   Search,
 } from "lucide-react";
 import PageContainer from "./PageContainer";
 import api from "../../api";
-import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiPhone, FiChevronDown } from "react-icons/fi";
+import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut } from "react-icons/fi";
 import { FiChevronRight, FiTag } from "react-icons/fi";
 import CartDrawer from "./CartDrawer";
 import WishlistDrawer from "./WishlistDrawer";
+import { resolveMediaUrl } from "../../utils/media";
+
+const roomLinks = [
+  { name: "Living Room", slug: "living-room", icon: FiHome, description: "Relax and unwind" },
+  { name: "Bedroom", slug: "bedroom", icon: FiMoon, description: "Restful essentials" },
+  { name: "Dining Room", slug: "dining-room", icon: FiCoffee, description: "Gather around" },
+  { name: "Home Office", slug: "home-office", icon: FiMonitor, description: "Work comfortably" },
+];
+
+function getCategoryImage(images) {
+  if (Array.isArray(images)) return resolveMediaUrl(images[0] || "");
+  if (typeof images !== "string" || !images) return "";
+
+  try {
+    const parsedImages = JSON.parse(images);
+    return resolveMediaUrl(Array.isArray(parsedImages) ? parsedImages[0] : "");
+  } catch {
+    return resolveMediaUrl(images);
+  }
+}
 
 const Navbar = () => {
 
@@ -38,6 +60,7 @@ const Navbar = () => {
   const [orderCount, setOrderCount] = useState(0);
 
   const profileInitial = String(profileName || "U").trim().charAt(0).toUpperCase() || "U";
+  const profileImage = user?.profile_image ? resolveMediaUrl(user.profile_image) : "";
 
   const menuRef = useRef();
   const categoryRef = useRef();
@@ -172,7 +195,7 @@ const Navbar = () => {
 
   return (
 
-    <nav className="sticky top-0 z-50 rounded-b-[28px] border-b border-[#f0dfc9] bg-[#fffaf5]/95 shadow-[0_8px_24px_rgba(74,42,19,0.13)] backdrop-blur-md lg:rounded-b-[38px]">
+    <nav className="sticky top-0 z-50 border-b border-[#f0dfc9] bg-[#fffaf5]/95 shadow-[0_8px_24px_rgba(74,42,19,0.13)] backdrop-blur-md">
       <PageContainer>
         <div className="flex min-h-[76px] items-center justify-between gap-2 sm:min-h-[84px] sm:gap-3">
           <Link
@@ -181,9 +204,9 @@ const Navbar = () => {
             aria-label="Q Living Furniture home"
           >
             <img
-              src="/images/logo123.png"
+              src="/images/logo.png"
               alt="Q Living Furniture"
-              className="h-auto max-h-14 w-40 object-contain sm:max-h-16 sm:w-52 xl:w-56"
+              className="h-auto max-h-11 w-32 object-contain sm:max-h-12 sm:w-40 xl:w-44"
             />
           </Link>
 
@@ -209,23 +232,55 @@ const Navbar = () => {
                 <FiChevronDown className={`transition-transform ${categoryMenu ? "rotate-180" : ""}`} />
               </button>
               {categoryMenu && (
-                <div className="absolute left-0 top-full z-50 mt-2 max-h-80 w-56 overflow-y-auto rounded-xl border border-orange-100 bg-white py-2 shadow-xl">
-                  {categories.map((cat) => (
-                    <NavLink
-                      key={cat.id}
-                      to={`/category/${cat.slug || cat.name}`}
+                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(90vw,540px)] -translate-x-1/2 overflow-hidden rounded-2xl border border-[#f1dfca] bg-white">
+                  <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-[#fff5e9] to-white px-4 py-3.5">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c66a22]">Explore</p>
+                      <h3 className="mt-0.5 text-sm font-bold text-[#351d0e]">Shop by category</h3>
+                    </div>
+                    <Link
+                      to="/shop"
                       onClick={() => setCategoryMenu(false)}
-                      className={({ isActive }) =>
-                        `mx-2 block rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
-                          isActive ? "bg-[#ed720a] text-white shadow-sm" : "text-slate-700 hover:bg-orange-50 hover:text-orange-700"
-                        }`
-                      }
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold text-[#9b4e17] transition hover:bg-orange-50"
                     >
-                      {cat.name}
-                    </NavLink>
-                  ))}
-                  {categories.length === 0 && (
-                    <span className="block px-4 py-2.5 text-sm text-slate-500">Browse all furniture</span>
+                      View all <FiChevronRight size={15} />
+                    </Link>
+                  </div>
+                  {categories.length > 0 ? (
+                    <div className="grid max-h-[60vh] grid-cols-1 gap-1 overflow-y-auto p-2 sm:grid-cols-2">
+                      {categories.map((cat) => {
+                        const image = getCategoryImage(cat.images);
+                        return (
+                          <NavLink
+                            key={cat.catId || cat.id || cat.name}
+                            to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                            onClick={() => setCategoryMenu(false)}
+                            className={({ isActive }) =>
+                              `group flex min-w-0 items-center gap-3 rounded-xl border border-transparent px-2.5 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${
+                                isActive
+                                  ? "bg-orange-50 text-[#c96518]"
+                                  : "text-[#351d0e] hover:border-orange-100 hover:bg-[#fffaf5]"
+                              }`
+                            }
+                          >
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f7eee3] text-[#a38365] ring-1 ring-[#ead9c5]">
+                              {image ? (
+                                <img src={image} alt="" loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                              ) : (
+                                <FiTag size={18} />
+                              )}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate text-sm font-semibold">{cat.name}</span>
+                            <FiChevronRight size={15} className="shrink-0 text-[#b49a80] transition-transform group-hover:translate-x-0.5 group-hover:text-[#e87500]" />
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="px-6 py-8 text-center">
+                      <p className="text-sm font-semibold text-[#351d0e]">Browse our furniture collection</p>
+                      <p className="mt-1 text-xs text-[#8b735e]">Explore pieces made for every room.</p>
+                    </div>
                   )}
                 </div>
               )}
@@ -245,17 +300,29 @@ const Navbar = () => {
                 <FiChevronDown className={`transition-transform ${roomsMenu ? "rotate-180" : ""}`} />
               </button>
               {roomsMenu && (
-                <div className="absolute left-0 top-full z-50 mt-2 w-48 rounded-xl border border-orange-100 bg-white py-2 shadow-xl">
-                  {["Living Room", "Bedroom", "Dining Room", "Home Office"].map((room) => (
-                    <Link
-                      key={room}
-                      to={`/shop?room=${encodeURIComponent(room.toLowerCase().replace(/ /g, "-"))}`}
-                      onClick={() => setRoomsMenu(false)}
-                      className="block px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-orange-50 hover:text-orange-700"
-                    >
-                      {room}
-                    </Link>
-                  ))}
+                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(88vw,390px)] -translate-x-1/2 overflow-hidden rounded-3xl border border-[#f1dfca] bg-white">
+                  <div className="bg-gradient-to-r from-[#fff5e9] to-[#fff0df] px-5 py-4">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c66a22]">Made for every space</p>
+                    <h3 className="mt-1 text-base font-bold text-[#351d0e]">Shop by room</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5 p-4">
+                    {roomLinks.map(({ name, slug, icon: RoomIcon, description }) => (
+                      <Link
+                        key={slug}
+                        to={`/shop?room=${encodeURIComponent(slug)}`}
+                        onClick={() => setRoomsMenu(false)}
+                        className="group flex min-h-24 items-center gap-3 rounded-2xl border border-[#f3e7d9] bg-[#fffdfa] p-3 transition hover:border-orange-200 hover:bg-orange-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                      >
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-[#c96518] transition group-hover:bg-[#f07816] group-hover:text-white">
+                          <RoomIcon size={19} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-xs font-bold text-[#351d0e]">{name}</span>
+                          <span className="mt-1 block text-[10px] leading-4 text-[#8b735e]">{description}</span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -340,27 +407,92 @@ const Navbar = () => {
                   type="button"
                   onClick={() => setUserMenu(!userMenu)}
                   aria-label={`Open account menu for ${profileName}`}
+                  aria-expanded={userMenu}
+                  aria-haspopup="menu"
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac]"
                 >
-                  <User size={20} />
+                  {profileInitial}
                 </button>
                 {userMenu && (
-                  <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-orange-100 bg-white py-1 shadow-xl">
-                    <Link to="/account" className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-orange-50" onClick={() => setUserMenu(false)}>My Account</Link>
-                    <Link to="/ordersmain" className="flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-orange-50" onClick={() => setUserMenu(false)}>
-                      My Orders
-                      {orderCount > 0 && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">{orderCount}</span>}
-                    </Link>
+                  <div className="absolute right-0 top-full z-[70] mt-3 w-[min(88vw,330px)] overflow-hidden rounded-3xl border border-[#f1dfca] bg-white">
+                    <div className="bg-gradient-to-br from-[#fff0df] via-[#fff8ef] to-white p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f07816] to-[#d9650b] text-lg font-bold text-white ring-4 ring-white">
+                          {profileImage ? (
+                            <img src={profileImage} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            profileInitial
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c66a22]">Welcome back</p>
+                          <p className="mt-1 truncate text-base font-bold text-[#351d0e]">{profileName}</p>
+                          <p className="truncate text-xs text-[#8b735e]">{user.email || "Your Q Living account"}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-1 p-2.5">
+                      <Link
+                        to="/account"
+                        onClick={() => setUserMenu(false)}
+                        className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-orange-50"
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#c96518] group-hover:bg-white">
+                          <FiUser size={17} />
+                        </span>
+                        <span>
+                          <span className="block text-sm font-semibold text-[#351d0e]">My Account</span>
+                          <span className="block text-[11px] text-[#8b735e]">Profile and saved addresses</span>
+                        </span>
+                      </Link>
+                      <Link
+                        to="/ordersmain"
+                        onClick={() => setUserMenu(false)}
+                        className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-orange-50"
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#c96518] group-hover:bg-white">
+                          <FiShoppingBag size={17} />
+                        </span>
+                        <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                          <span>
+                            <span className="block text-sm font-semibold text-[#351d0e]">My Orders</span>
+                            <span className="block text-[11px] text-[#8b735e]">Track your purchases</span>
+                          </span>
+                          {orderCount > 0 && (
+                            <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[#f07816] px-2 text-xs font-bold text-white">
+                              {orderCount}
+                            </span>
+                          )}
+                        </span>
+                      </Link>
                     {user.role === "admin" && (
-                      <Link to="/admin" className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-orange-50" onClick={() => setUserMenu(false)}>Admin Panel</Link>
+                      <Link
+                        to="/admin"
+                        onClick={() => setUserMenu(false)}
+                        className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-orange-50"
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#c96518] group-hover:bg-white">
+                          <FiGrid size={17} />
+                        </span>
+                        <span>
+                          <span className="block text-sm font-semibold text-[#351d0e]">Admin Panel</span>
+                          <span className="block text-[11px] text-[#8b735e]">Manage your store</span>
+                        </span>
+                      </Link>
                     )}
+                    </div>
+                    <div className="border-t border-[#f3e7d9] p-2.5">
                     <button
                       type="button"
                       onClick={() => setLogoutConfirm(true)}
-                      className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
+                      className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-orange-50"
                     >
-                      Logout
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#c96518]">
+                        <FiLogOut size={17} />
+                      </span>
+                      <span className="text-sm font-semibold text-[#9b4e17]">Log out</span>
                     </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -393,44 +525,45 @@ const Navbar = () => {
         </div>
       </PageContainer>
 
-      {/* Logout Modal */}
-
-      {logoutConfirm && (
-
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-
-          <div className="bg-white rounded-xl shadow-xl w-[320px] p-6 text-center">
-
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              Confirm Logout
-            </h2>
-
-            <p className="text-sm text-gray-500 mb-6">
-              Are you sure you want to logout?
-            </p>
-
-            <div className="flex justify-center gap-4">
-
-              <button
-                onClick={() => setLogoutConfirm(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={confirmLogout}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600"
-              >
-                Logout
-              </button>
-
+      {logoutConfirm && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#261208]/55 px-4 py-6 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-dialog-title"
+            className="w-full max-w-sm overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-2xl shadow-[#351d0e]/30"
+          >
+            <div className="h-2 bg-gradient-to-r from-[#f07816] via-[#ffb36b] to-[#d9650b]" />
+            <div className="px-7 pb-7 pt-8 text-center sm:px-9">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-[#d9650b] ring-8 ring-orange-50">
+                <LogOut size={27} strokeWidth={2.2} />
+              </div>
+              <h2 id="logout-dialog-title" className="text-xl font-bold tracking-tight text-[#351d0e]">
+                Confirm logout
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[#8b735e]">
+                Are you sure you want to log out of your account?
+              </p>
+              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+                <button
+                  type="button"
+                  onClick={() => setLogoutConfirm(false)}
+                  className="rounded-xl border border-orange-200 bg-orange-50 px-5 py-3 text-sm font-semibold text-[#7b4a25] transition hover:border-orange-300 hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-2"
+                >
+                  Stay signed in
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmLogout}
+                  className="rounded-xl bg-gradient-to-r from-[#f07816] to-[#d9650b] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:from-[#e36d0d] hover:to-[#c85a08] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
+                >
+                  Log out
+                </button>
+              </div>
             </div>
-
           </div>
-
-        </div>
-
+        </div>,
+        document.body
       )}
       {mobileMenu && (
         <div className="fixed inset-x-0 bottom-0 top-[76px] z-50 sm:top-[84px] lg:hidden">
@@ -577,29 +710,35 @@ const Navbar = () => {
                 {/* Category List */}
                 <div className="flex flex-col p-5 space-y-3">
 
-                  {categories.map((cat) => (
-
-                    <NavLink
-                      key={cat.id}
-                      to={`/category/${cat.slug || cat.name}`}
-                      onClick={closeMobileMenu}
-                      className={({ isActive }) =>
-                        `flex items-center justify-between rounded-full px-4 py-3 text-sm font-medium transition ${
-                          isActive ? "bg-[#ed720a] text-white shadow-sm" : "text-gray-800 hover:text-orange-700"
-                        }`
-                      }
-                    >
-
-                      <div className="flex items-center gap-3">
-                        <FiTag size={16} />
-                        {cat.name}
-                      </div>
-
-                      <FiChevronRight size={16} />
-
-                    </NavLink>
-
-                  ))}
+                  {categories.map((cat) => {
+                    const image = getCategoryImage(cat.images);
+                    return (
+                      <NavLink
+                        key={cat.catId || cat.id || cat.name}
+                        to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                        onClick={closeMobileMenu}
+                        className={({ isActive }) =>
+                          `group flex items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
+                            isActive
+                              ? "border-[#ed720a] bg-[#ed720a] text-white shadow-sm"
+                              : "border-orange-100 bg-white text-[#351d0e] hover:border-orange-200 hover:bg-orange-50"
+                          }`
+                        }
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#f7eee3] text-[#a38365]">
+                            {image ? (
+                              <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
+                            ) : (
+                              <FiTag size={18} />
+                            )}
+                          </span>
+                          <span className="truncate">{cat.name}</span>
+                        </div>
+                        <FiChevronRight size={16} className="shrink-0 opacity-60 transition-transform group-hover:translate-x-0.5" />
+                      </NavLink>
+                    );
+                  })}
 
                 </div>
               </>
