@@ -55,6 +55,33 @@ const HomeCategories = () => {
     };
   }, [requestCategories]);
 
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider || loading || error || categories.length < 2) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      const maxScroll = slider.scrollWidth - slider.clientWidth;
+      if (maxScroll <= 0) return;
+
+      if (slider.scrollLeft >= maxScroll - 2) {
+        slider.style.scrollBehavior = "auto";
+        slider.scrollLeft = 0;
+        slider.style.scrollBehavior = "";
+        return;
+      }
+
+      const firstCategory = slider.firstElementChild;
+      if (!firstCategory) return;
+      const gap = Number.parseFloat(window.getComputedStyle(slider).columnGap) || 0;
+      slider.scrollBy({
+        left: firstCategory.getBoundingClientRect().width + gap,
+        behavior: "smooth",
+      });
+    }, 3500);
+
+    return () => window.clearInterval(intervalId);
+  }, [categories.length, error, loading]);
+
   const retryCategories = () => {
     setLoading(true);
     setError("");
