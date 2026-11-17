@@ -183,7 +183,7 @@ const Navbar = () => {
             <img
               src="/images/logo.png"
               alt="Q Living Furniture"
-              className="h-auto max-h-14 w-40 object-contain sm:max-h-16 sm:w-52 xl:w-56"
+              className="h-auto max-h-11 w-32 object-contain sm:max-h-12 sm:w-40 xl:w-44"
             />
           </Link>
 
