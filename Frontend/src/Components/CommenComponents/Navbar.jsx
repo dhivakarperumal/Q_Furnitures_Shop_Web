@@ -149,10 +149,16 @@ const Navbar = () => {
   }, [user]);
 
   const navClass = ({ isActive }) =>
-    `whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold transition-colors ${
+    `inline-flex items-center whitespace-nowrap text-[13px] transition-colors ${
       isActive
-        ? "text-[#e87500]"
-        : "text-[#351d0e] hover:text-[#e87500]"
+        ? "rounded-full bg-[#ed720a] px-4 py-2.5 font-bold text-white shadow-sm hover:bg-[#d65e00] xl:px-5"
+        : "px-1.5 py-2 font-semibold text-[#351d0e] hover:text-[#e87500]"
+    }`;
+  const mobileNavClass = ({ isActive }) =>
+    `flex items-center gap-3 rounded-full px-4 py-3 text-sm transition ${
+      isActive
+        ? "bg-[#ed720a] font-semibold text-white shadow-sm"
+        : "font-medium text-gray-800 hover:text-orange-700"
     }`;
 
   const handleSearch = (event) => {
@@ -210,8 +216,8 @@ const Navbar = () => {
                       to={`/category/${cat.slug || cat.name}`}
                       onClick={() => setCategoryMenu(false)}
                       className={({ isActive }) =>
-                        `block px-4 py-2.5 text-sm transition-colors ${
-                          isActive ? "bg-orange-50 font-semibold text-orange-700" : "text-slate-700 hover:bg-orange-50 hover:text-orange-700"
+                        `mx-2 block rounded-full px-4 py-2.5 text-sm transition-colors ${
+                          isActive ? "bg-[#ed720a] font-semibold text-white shadow-sm" : "text-slate-700 hover:bg-orange-50 hover:text-orange-700"
                         }`
                       }
                     >
@@ -264,11 +270,7 @@ const Navbar = () => {
             <NavLink to="/about" className={navClass}>About Us</NavLink>
             <NavLink
               to="/contactus"
-              className={({ isActive }) =>
-                `whitespace-nowrap rounded-full bg-[#ed720a] px-4 py-2.5 text-[13px] font-bold text-white shadow-sm transition hover:bg-[#d65e00] xl:px-5 ${
-                  isActive ? "ring-2 ring-[#ed720a]/25 ring-offset-2" : ""
-                }`
-              }
+              className={navClass}
             >
               Contact Us
             </NavLink>
@@ -490,11 +492,7 @@ const Navbar = () => {
                   <NavLink
                     to="/"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
-                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
-                      }`
-                    }
+                    className={mobileNavClass}
                   >
                     <FiHome size={16} />
                     Home
@@ -503,11 +501,7 @@ const Navbar = () => {
                   <NavLink
                     to="/shop"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
-                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
-                      }`
-                    }
+                    className={mobileNavClass}
                   >
                     <FiShoppingBag size={16} />
                     Shop
@@ -590,8 +584,8 @@ const Navbar = () => {
                       to={`/category/${cat.slug || cat.name}`}
                       onClick={closeMobileMenu}
                       className={({ isActive }) =>
-                        `flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium transition ${
-                          isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
+                        `flex items-center justify-between rounded-full px-4 py-3 text-sm transition ${
+                          isActive ? "bg-[#ed720a] font-semibold text-white shadow-sm" : "font-medium text-gray-800 hover:text-orange-700"
                         }`
                       }
                     >
@@ -637,11 +631,7 @@ const Navbar = () => {
                   <NavLink
                     to="/about"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
-                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
-                      }`
-                    }
+                    className={mobileNavClass}
                   >
                     <FiFileText size={16} />
                     About Us
@@ -650,11 +640,7 @@ const Navbar = () => {
                     <NavLink
                     to="/termsandconditions"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
-                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
-                      }`
-                    }
+                    className={mobileNavClass}
                   >
                     <FiFileText size={16} />
                     Terms And Conditions
@@ -664,11 +650,7 @@ const Navbar = () => {
                   <NavLink
                     to="/contactus"
                     onClick={closeMobileMenu}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
-                        isActive ? "font-semibold text-orange-600" : "text-gray-800 hover:text-orange-700"
-                      }`
-                    }
+                    className={mobileNavClass}
                   >
                     <FiPhone size={16} />
                     Contact Us
