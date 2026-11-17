@@ -371,17 +371,27 @@ const Orders = ({ statusFilter = "All" }) => {
         {viewMode === "table" ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px] text-left border-collapse whitespace-nowrap">
+            <table className="w-full min-w-[1200px] table-fixed text-left border-collapse whitespace-nowrap">
+              <colgroup>
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "13%" }} />
+              </colgroup>
               <thead>
                 <tr className="bg-gradient-to-r from-secondary-dark to-secondary-light border-b border-secondary-dark">
-                  <th scope="col" className="w-28 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order ID</th>
-                  <th scope="col" className="min-w-[220px] px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Customer</th>
-                  <th scope="col" className="w-32 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Amount</th>
-                  <th scope="col" className="w-28 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order Type</th>
-                  <th scope="col" className="w-28 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Payment</th>
-                  <th scope="col" className="w-40 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Status</th>
-                  <th scope="col" className="w-36 px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order Date</th>
-                  <th scope="col" className="w-24 px-4 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Actions</th>
+                  <th scope="col" className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order ID</th>
+                  <th scope="col" className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Customer</th>
+                  <th scope="col" className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Amount</th>
+                  <th scope="col" className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order Type</th>
+                  <th scope="col" className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Payment</th>
+                  <th scope="col" className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Status</th>
+                  <th scope="col" className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Order Date</th>
+                  <th scope="col" className="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#FCD34D]">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -402,28 +412,28 @@ const Orders = ({ statusFilter = "All" }) => {
 
                     return (
                       <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
-                        <td className="w-28 px-4 py-4 text-[13px] font-black text-[#4318FF]">{formatOrderId(order)}</td>
-                        <td className="min-w-[220px] px-4 py-4">
+                        <td className="px-4 py-4 text-[13px] font-black text-[#4318FF]">{formatOrderId(order)}</td>
+                        <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold shrink-0">
                               {customerName.charAt(0)}
                             </div>
                             <div>
-                              <div className="text-[13px] font-bold text-[#2B3674]">{customerName}</div>
-                              <div className="text-[11px] text-gray-400 font-medium mt-0.5">{customerPhone}</div>
+                              <div className="max-w-[170px] truncate text-[13px] font-bold text-[#2B3674]">{customerName}</div>
+                              <div className="mt-0.5 max-w-[170px] truncate text-[11px] font-medium text-gray-400">{customerPhone}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="w-32 px-4 py-4">
+                        <td className="px-4 py-4">
                           <div className="text-[13px] font-black text-[#2B3674]">₹{parseFloat(order.total_amount || 0).toLocaleString()}</div>
                           <div className="text-[11px] text-gray-400 font-medium mt-0.5">1 Item</div>
                         </td>
-                        <td className="w-28 px-4 py-4">
+                        <td className="px-4 py-4">
                           <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getOrderTypeClasses(getOrderType(order))}`}>
                             {getOrderType(order)}
                           </span>
                         </td>
-                        <td className="w-28 px-4 py-4">
+                        <td className="px-4 py-4">
                           <div className="flex flex-col items-start gap-1">
                             <span className={`px-2.5 py-1 rounded text-[10px] font-bold ${paymentMethod === "Online" ? "bg-[#dcfce7] text-[#16a34a]" : "bg-[#f4f1ff] text-[#4318FF]"}`}>
                               {paymentMethod}
@@ -431,7 +441,7 @@ const Orders = ({ statusFilter = "All" }) => {
                             <span className="text-[10px] text-gray-500 font-medium">{paymentStatus}</span>
                           </div>
                         </td>
-                        <td className="w-40 px-4 py-4">
+                        <td className="px-4 py-4">
                           <div className="flex flex-col items-start gap-1 relative group/status">
                             <select
                               value={order.status}
@@ -454,11 +464,11 @@ const Orders = ({ statusFilter = "All" }) => {
                             </div>
                           </div>
                         </td>
-                        <td className="w-36 px-4 py-4">
+                        <td className="px-4 py-4">
                           <div className="text-[12px] font-bold text-[#2B3674]">{order.created_at ? new Date(order.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Unknown"}</div>
                           <div className="text-[11px] text-gray-500 font-medium">{order.created_at ? new Date(order.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : ""}</div>
                         </td>
-                        <td className="w-24 px-4 py-4">
+                        <td className="px-4 py-4">
                           <div className="flex items-center justify-center gap-2">
                             <Link to={`/admin/orders/${order.id}`} className="p-1.5 border border-gray-200 rounded hover:bg-gray-100 text-[#4318FF] transition-colors shadow-sm">
                               <FiEye size={14} />

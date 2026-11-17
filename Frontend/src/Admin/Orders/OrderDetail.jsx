@@ -100,7 +100,8 @@ const OrderDetail = () => {
                         const componentQuantity = Number(component.quantity || 1) * Number(i.quantity || 1);
                         const variant = escapeHtml([component.variant_color, component.variant_size].filter(Boolean).join(" · "));
                         const name = escapeHtml(component.product_name || `Product #${component.product_id}`);
-                        return `<li style="margin:3px 0;">${name} × ${componentQuantity}${variant ? ` (${variant})` : ""}</li>`;
+                        const componentImage = escapeHtml(getProductImage(component));
+                        return `<li style="display:flex;align-items:center;gap:8px;margin:6px 0;"><img src="${componentImage}" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:4px;border:1px solid #ddd;" /><span>${name} × ${componentQuantity}${variant ? ` (${variant})` : ""}</span></li>`;
                     }).join("")}</ul>`
                     : "";
 
@@ -485,9 +486,23 @@ const OrderDetail = () => {
                                                                     key={`${component.product_id}-${index}`}
                                                                     className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-orange-100 pt-2 text-xs"
                                                                 >
-                                                                    <span className="font-semibold text-slate-700">
-                                                                        {component.product_name || `Product #${component.product_id}`}
-                                                                        {variant && <span className="ml-2 font-normal text-slate-500">{variant}</span>}
+                                                                    <span className="flex min-w-0 items-center gap-3">
+                                                                        <img
+                                                                            src={getProductImage(component)}
+                                                                            alt={component.product_name || ""}
+                                                                            className="h-10 w-10 shrink-0 rounded-lg border border-orange-100 bg-white object-cover"
+                                                                            onError={(event) => {
+                                                                                if (!event.currentTarget.src.includes("ui-avatars")) {
+                                                                                    event.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(component.product_name || "Product")}&background=random`;
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <span className="min-w-0">
+                                                                            <span className="block font-semibold text-slate-700">
+                                                                                {component.product_name || `Product #${component.product_id}`}
+                                                                            </span>
+                                                                            {variant && <span className="mt-0.5 block font-normal text-slate-500">{variant}</span>}
+                                                                        </span>
                                                                     </span>
                                                                     <span className="font-bold text-primary-dark">Qty: {quantity}</span>
                                                                 </li>
