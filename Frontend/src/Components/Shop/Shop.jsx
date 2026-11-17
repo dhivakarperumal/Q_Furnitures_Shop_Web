@@ -55,23 +55,22 @@ function FilterSection({ title, children }) {
   const contentId = useId();
 
   return (
-    <section className="border-t border-[#eee4d8] py-3.5">
-      <h3 className="text-[13px] font-bold text-[#302218]">
+    <section className="border-b border-[#f0e2d3] py-3 last:border-0">
+      <h3 className="text-[12px] font-bold text-[#302218]">
         <button
           type="button"
           aria-expanded={isOpen}
           aria-controls={contentId}
           onClick={() => setIsOpen((open) => !open)}
-          className="flex w-full items-center justify-between text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+          className="flex w-full items-center justify-between rounded-lg text-left transition hover:text-[#a84e00] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
         >
           {title}
-          <ChevronDown
-            size={15}
-            className={`text-[#745d48] transition-transform duration-200 ${isOpen ? "" : "-rotate-90"}`}
-          />
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#fff2e3] text-[#b65b12]">
+            <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? "" : "-rotate-90"}`} />
+          </span>
         </button>
       </h3>
-      <div id={contentId} hidden={!isOpen} className="pt-2.5">
+      <div id={contentId} hidden={!isOpen} className="pt-2">
         {children}
       </div>
     </section>
@@ -285,13 +284,28 @@ const Shop = () => {
         <p className="py-4 text-sm text-[#594333] sm:text-base">Discover quality furniture for every space.</p>
 
         <div className={`grid gap-5 ${filterOpen ? "lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)]" : "grid-cols-1"}`}>
-          {filterOpen && <aside id="shop-filter-sidebar" className="h-fit rounded-xl border border-[#e9ded2] bg-white px-3.5 shadow-[0_3px_15px_rgba(53,29,14,0.04)] lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
-            <div className="flex items-center justify-between py-3">
-              <h2 className="flex items-center gap-2 text-sm font-bold text-[#281b12]">
-                <SlidersHorizontal size={17} /> Filters
-              </h2>
-              <button type="button" onClick={clearFilters} className="text-[11px] font-semibold text-[#dc6500] hover:underline">
-                <span className="inline-flex items-center gap-1"><RotateCcw size={12} /> Clear all</span>
+          {filterOpen && <aside id="shop-filter-sidebar" className="h-fit rounded-2xl border border-[#ead8c7] bg-white px-4 shadow-[0_8px_24px_rgba(53,29,14,0.07)] lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
+            <div className="-mx-4 mb-1 flex items-center justify-between gap-2 rounded-t-2xl border-b border-[#f1e2d1] bg-gradient-to-r from-[#fff0df] via-[#fff8ef] to-white px-4 py-3.5">
+              <div>
+                <h2 className="flex items-center gap-2 text-sm font-extrabold text-[#302218]">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#e87500] text-white shadow-sm">
+                    <SlidersHorizontal size={16} />
+                  </span>
+                  Filters
+                  {filterChips.length > 0 && (
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-[#b65b12] shadow-sm">
+                      {filterChips.length}
+                    </span>
+                  )}
+                </h2>
+                <p className="ml-10 mt-0.5 text-[10px] text-[#8b735e]">Refine your furniture search</p>
+              </div>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#f0c99f] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#b65b12] shadow-sm transition hover:border-[#e87500] hover:bg-[#fff3e5]"
+              >
+                <RotateCcw size={11} /> Clear
               </button>
             </div>
 
@@ -299,16 +313,16 @@ const Shop = () => {
               {categoryError ? (
                 <p role="status" className="text-xs text-[#9a6b45]">{categoryError}</p>
               ) : (
-                <div className="max-h-44 space-y-2 overflow-y-auto">
+                <div className="max-h-44 space-y-0.5 overflow-y-auto">
                   {categories.map((item) => (
-                    <label key={item.id || item.catId || item.name} className="flex cursor-pointer items-center gap-2 text-xs text-[#47382b]">
+                    <label key={item.id || item.catId || item.name} className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-[#47382b] transition hover:bg-[#fff7ed]">
                       <input
                         type="checkbox"
                         checked={category === item.name}
                         onChange={() => updateParams({ category: category === item.name ? "" : item.name })}
-                        className="h-3.5 w-3.5 accent-[#e87500]"
+                        className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                       />
-                      <span className="flex-1">{item.name}</span>
+                      <span className="flex-1 font-medium group-hover:text-[#a84e00]">{item.name}</span>
                     </label>
                   ))}
                 </div>
@@ -316,44 +330,47 @@ const Shop = () => {
             </FilterSection>
 
             <FilterSection title="Price range">
-              <div className="mb-2 flex justify-between text-[11px] text-[#594b3d]">
-                <span>₹0</span><span>{priceDraft >= MAX_PRICE ? "₹6,00,000+" : `₹${priceDraft.toLocaleString("en-IN")}`}</span>
+              <div className="mb-2 flex justify-between text-[10px] font-semibold text-[#594b3d]">
+                <span className="rounded-md bg-[#f7f1e9] px-2 py-1">₹0</span>
+                <span className="rounded-md bg-[#fff0df] px-2 py-1 text-[#a84e00]">{priceDraft >= MAX_PRICE ? "₹6,00,000+" : `₹${priceDraft.toLocaleString("en-IN")}`}</span>
               </div>
-              <input
-                type="range"
-                min="10000"
-                max={MAX_PRICE}
-                step="5000"
-                value={priceDraft}
-                aria-label="Maximum price"
-                onChange={(event) => setPriceEdit({
-                  query: searchParams.toString(),
-                  value: Number(event.target.value),
-                })}
-                onPointerUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
-                onKeyUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
-                className="h-1.5 w-full cursor-pointer accent-[#e87500]"
-              />
+              <div className="rounded-xl border border-[#f1e4d6] bg-[#fffcf8] px-2.5 py-2">
+                <input
+                  type="range"
+                  min="10000"
+                  max={MAX_PRICE}
+                  step="5000"
+                  value={priceDraft}
+                  aria-label="Maximum price"
+                  onChange={(event) => setPriceEdit({
+                    query: searchParams.toString(),
+                    value: Number(event.target.value),
+                  })}
+                  onPointerUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
+                  onKeyUp={() => updateParams({ maxPrice: priceDraft >= MAX_PRICE ? "" : priceDraft })}
+                  className="h-2 w-full cursor-pointer accent-[#e87500]"
+                />
+              </div>
             </FilterSection>
 
             <FilterSection title="Material">
-              <div className="space-y-2">
+              <div className="space-y-0.5">
                 {MATERIALS.map((item) => (
-                  <label key={item} className="flex cursor-pointer items-center gap-2 text-xs text-[#47382b]">
+                  <label key={item} className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-[#47382b] transition hover:bg-[#fff7ed]">
                     <input
                       type="checkbox"
                       checked={material === item}
                       onChange={() => updateParams({ material: material === item ? "" : item })}
-                      className="h-3.5 w-3.5 accent-[#e87500]"
+                      className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                     />
-                    {item}
+                    <span className="font-medium group-hover:text-[#a84e00]">{item}</span>
                   </label>
                 ))}
               </div>
             </FilterSection>
 
             <FilterSection title="Color">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2.5">
                 {COLORS.map(([name, swatch]) => (
                   <button
                     key={name}
@@ -362,22 +379,23 @@ const Shop = () => {
                     aria-label={`Filter by ${name}`}
                     aria-pressed={color === name}
                     onClick={() => updateParams({ color: color === name ? "" : name })}
-                    className={`h-5 w-5 rounded-full border transition ${color === name ? "border-[#e87500] ring-2 ring-[#e87500]/30 ring-offset-1" : "border-[#d7cabe] hover:scale-110"}`}
+                    className={`h-6 w-6 rounded-full border-2 border-white shadow-sm transition hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${color === name ? "ring-2 ring-[#e87500]" : "ring-1 ring-[#e2d4c6]"}`}
                     style={{ backgroundColor: swatch }}
                   />
                 ))}
               </div>
+              <p className="mt-2 text-[10px] font-medium text-[#8b735e]">{color || "Choose a color"}</p>
             </FilterSection>
 
             <FilterSection title="Customer rating">
-              <div className="space-y-2">
+              <div className="space-y-0.5">
                 {[4, 3].map((rating) => (
-                  <label key={rating} className="flex cursor-pointer items-center gap-2 text-xs text-[#47382b]">
+                  <label key={rating} className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] text-[#47382b] transition hover:bg-[#fff7ed]">
                     <input
                       type="checkbox"
                       checked={minRating === String(rating)}
                       onChange={() => updateParams({ minRating: minRating === String(rating) ? "" : rating })}
-                      className="h-3.5 w-3.5 accent-[#e87500]"
+                      className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                     />
                     <span className="inline-flex text-[#ed9b00]">
                       {Array.from({ length: 5 }, (_, index) => (
@@ -391,30 +409,30 @@ const Shop = () => {
             </FilterSection>
 
             <FilterSection title="Availability">
-              <div className="space-y-2 pb-1">
+              <div className="space-y-0.5 pb-1">
                 {[["in-stock", "In stock"], ["out-of-stock", "Out of stock"]].map(([value, label]) => (
-                  <label key={value} className="flex cursor-pointer items-center gap-2 text-xs text-[#47382b]">
+                  <label key={value} className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-[#47382b] transition hover:bg-[#fff7ed]">
                     <input
                       type="checkbox"
                       checked={availability === value}
                       onChange={() => updateParams({ availability: availability === value ? "" : value })}
-                      className="h-3.5 w-3.5 accent-[#e87500]"
+                      className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                     />
-                    {label}
+                    <span className="font-medium group-hover:text-[#a84e00]">{label}</span>
                   </label>
                 ))}
               </div>
             </FilterSection>
 
             <FilterSection title="Offers">
-              <label className="flex cursor-pointer items-center gap-2 pb-1 text-xs text-[#47382b]">
+              <label className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-[#47382b] transition hover:bg-[#fff7ed]">
                 <input
                   type="checkbox"
                   checked={onSale}
                   onChange={() => updateParams({ onSale: onSale ? "" : "true" })}
-                  className="h-3.5 w-3.5 accent-[#e87500]"
+                  className="h-4 w-4 cursor-pointer rounded border-[#d9c6b3] accent-[#e87500]"
                 />
-                On sale
+                <span className="font-medium group-hover:text-[#a84e00]">On sale</span>
               </label>
             </FilterSection>
           </aside>}
