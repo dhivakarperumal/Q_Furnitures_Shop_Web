@@ -27,6 +27,7 @@ import api from "../api";
 import { AuthContext } from "../PrivateRouter/AuthContext";
 import { resolveMediaUrl } from "../utils/media";
 import PageContainer from "./CommenComponents/PageContainer";
+import PageHeader from "./CommenComponents/PageHeader";
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-[#ddd5cd] bg-white px-4 py-2.5 text-sm text-[#351d0e] outline-none transition placeholder:text-[#a99a8a] focus:border-primary focus:ring-4 focus:ring-orange-100";
@@ -435,32 +436,10 @@ function Account() {
     .join("");
 
   return (
-    <main className="min-h-[65vh] bg-[#fffaf5] text-[#351d0e]">
-      <section className="relative isolate min-h-[130px] overflow-hidden bg-[#f3e5d7] sm:min-h-[160px]">
-        <img src={accountHeroImage} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-center" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#fff8f0] via-[#fff8f0]/95 to-[#fff8f0]/10" />
+    <>
+      <PageHeader title="My Account"/>
+      <main className="min-h-[65vh] bg-[#fffaf5] text-[#351d0e]">
         <PageContainer>
-          <div className="flex min-h-[130px] items-center py-5 sm:min-h-[160px]">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#806d5d]">Your Q Furnitures account</p>
-              <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                My <span className="text-[#ef7412]">Account</span>
-              </h1>
-              <p className="mt-1 text-sm text-[#594333]">Manage your profile, addresses, orders and account settings.</p>
-            </div>
-          </div>
-        </PageContainer>
-      </section>
-
-      <PageContainer>
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 py-3 text-xs text-[#725d4b]">
-          <Link to="/" className="inline-flex items-center gap-1.5 hover:text-[#e87500]">
-            <Home size={14} /> Home
-          </Link>
-          <span className="text-[#e87500]">›</span>
-          <span aria-current="page">My Account</span>
-        </nav>
-
         <div className="grid gap-4 pb-8 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-5 lg:pb-10">
           <aside className="h-fit overflow-hidden rounded-2xl border border-[#f1e7dd] bg-[#fff7ef] p-3 shadow-sm sm:p-4">
             <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
@@ -1116,8 +1095,9 @@ function Account() {
             )}
           </section>
         </div>
-      </PageContainer>
-    </main>
+        </PageContainer>
+      </main>
+    </>
   );
 }
 
