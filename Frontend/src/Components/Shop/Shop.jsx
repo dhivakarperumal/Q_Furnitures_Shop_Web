@@ -423,7 +423,7 @@ const Shop = () => {
             aria-label="Furniture products"
             className="min-w-0"
           >
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <form onSubmit={handleSearch} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[#dccfc1] bg-white p-1.5 shadow-sm sm:max-w-[560px]">
                 <Search size={18} className="ml-2 shrink-0 text-[#4c392a]" />
                 <input
@@ -439,24 +439,6 @@ const Shop = () => {
                   Search
                 </button>
               </form>
-              <button
-                type="button"
-                onClick={toggleFilters}
-                aria-expanded={filterOpen}
-                aria-controls={filterOpen ? "shop-filter-sidebar" : undefined}
-                aria-label={filterOpen ? "Hide filters" : "Show filters"}
-                className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${filterOpen ? "bg-[#e87500] text-white" : "border border-[#efc18d] bg-[#fff8ef] text-[#8b4b12] hover:border-[#e87500] hover:bg-[#fff0df]"}`}
-              >
-                <SlidersHorizontal size={15} />
-                <span className="hidden sm:inline">{filterOpen ? "Hide filters" : "Filters"}</span>
-              </button>
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-[#58483a]">
-                Showing {pageStart}–{pageEnd} of {pagination.total} products
-                {searchTerm && <span className="ml-1 text-[#8b735e]">for “{searchTerm}”</span>}
-              </p>
               <div className="flex items-center gap-2">
                 <span id="sort-by-label" className="whitespace-nowrap text-xs font-semibold text-[#8b4b12]">Sort by:</span>
                 <div ref={sortDropdownRef} className="relative">
@@ -464,7 +446,7 @@ const Shop = () => {
                     ref={sortButtonRef}
                     type="button"
                     id="shop-sort"
-                    aria-labelledby={`sort-by-label shop-sort-value`}
+                    aria-labelledby="sort-by-label shop-sort-value"
                     aria-haspopup="menu"
                     aria-expanded={sortOpen}
                     aria-controls="shop-sort-menu"
@@ -539,6 +521,24 @@ const Shop = () => {
                   <List size={17} />
                 </button>
               </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-[#58483a]">
+                Showing {pageStart}–{pageEnd} of {pagination.total} products
+                {searchTerm && <span className="ml-1 text-[#8b735e]">for “{searchTerm}”</span>}
+              </p>
+              <button
+                type="button"
+                onClick={toggleFilters}
+                aria-expanded={filterOpen}
+                aria-controls={filterOpen ? "shop-filter-sidebar" : undefined}
+                aria-label={filterOpen ? "Hide filters" : "Show filters"}
+                className={`inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${filterOpen ? "bg-[#e87500] text-white" : "border border-[#efc18d] bg-[#fff8ef] text-[#8b4b12] hover:border-[#e87500] hover:bg-[#fff0df]"}`}
+              >
+                <SlidersHorizontal size={15} />
+                {filterOpen ? "Hide filters" : "Filters"}
+              </button>
             </div>
 
             {(filterChips.length > 0 || searchTerm) && (
