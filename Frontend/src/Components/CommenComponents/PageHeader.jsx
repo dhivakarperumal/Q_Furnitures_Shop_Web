@@ -13,7 +13,6 @@ const PageHeader = ({ title, background }) => {
         className="absolute inset-0 scale-105 bg-cover bg-center"
         style={{ backgroundImage: `url(${bgImage})` }}
       />
-      <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
       <div className="relative">
         <h1 className="mb-2 text-2xl font-bold sm:text-3xl md:mb-3 md:text-4xl lg:text-5xl">
           {title}
