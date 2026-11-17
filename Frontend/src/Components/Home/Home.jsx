@@ -17,7 +17,6 @@ const Home = () => (
     <FeaturedCombos />
     <TopRatedProducts />
     <OfferProducts />
-    
     <HomeReviews />
   </main>
 );
