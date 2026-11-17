@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronLeft,
@@ -44,13 +44,29 @@ function getProductImage(product) {
 }
 
 function FilterSection({ title, children }) {
+  const [isOpen, setIsOpen] = useState(true);
+  const contentId = useId();
+
   return (
     <section className="border-t border-[#eee4d8] py-3.5">
-      <h3 className="mb-2.5 flex items-center justify-between text-[13px] font-bold text-[#302218]">
-        {title}
-        <ChevronDown size={15} className="text-[#745d48]" />
+      <h3 className="text-[13px] font-bold text-[#302218]">
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          aria-controls={contentId}
+          onClick={() => setIsOpen((open) => !open)}
+          className="flex w-full items-center justify-between text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+        >
+          {title}
+          <ChevronDown
+            size={15}
+            className={`text-[#745d48] transition-transform duration-200 ${isOpen ? "" : "-rotate-90"}`}
+          />
+        </button>
       </h3>
-      {children}
+      <div id={contentId} hidden={!isOpen} className="pt-2.5">
+        {children}
+      </div>
     </section>
   );
 }
