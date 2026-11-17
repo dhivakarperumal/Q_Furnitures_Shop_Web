@@ -29,7 +29,7 @@ function formatPrice(value) {
   }).format(Number(value) || 0);
 }
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, compact = false }) {
   const { cart, wishlist, addToCart, updateCartQuantity, toggleWishlist } = useContext(StoreContext);
   const productId = product.id ?? product.product_id;
   const image = getProductImage(product);
