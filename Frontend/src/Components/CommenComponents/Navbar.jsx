@@ -172,7 +172,7 @@ const Navbar = () => {
 
   return (
 
-    <nav className="sticky top-0 z-50 rounded-b-[28px] border-b border-[#f0dfc9] bg-[#fffaf5]/95 shadow-[0_8px_24px_rgba(74,42,19,0.13)] backdrop-blur-md lg:rounded-b-[38px]">
+    <nav className="sticky top-0 z-50 border-b border-[#f0dfc9] bg-[#fffaf5]/95 shadow-[0_8px_24px_rgba(74,42,19,0.13)] backdrop-blur-md">
       <PageContainer>
         <div className="flex min-h-[76px] items-center justify-between gap-2 sm:min-h-[84px] sm:gap-3">
           <Link
@@ -181,7 +181,7 @@ const Navbar = () => {
             aria-label="Q Living Furniture home"
           >
             <img
-              src="/images/logo123.png"
+              src="/images/logo.png"
               alt="Q Living Furniture"
               className="h-auto max-h-14 w-40 object-contain sm:max-h-16 sm:w-52 xl:w-56"
             />
