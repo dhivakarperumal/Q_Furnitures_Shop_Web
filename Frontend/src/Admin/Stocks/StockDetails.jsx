@@ -189,7 +189,7 @@ const StockDetails = () => {
         const numericValue = Number.parseInt(value, 10);
         setVariantAdditions(prev => ({
             ...prev,
-            [key]: Number.isFinite(numericValue) ? Math.max(0, numericValue) : 0
+            [key]: value === "" ? "" : Number.isFinite(numericValue) ? Math.max(0, numericValue) : 0
         }));
     };
 
@@ -202,43 +202,75 @@ const StockDetails = () => {
         if (!selectedProduct) return;
         setIsUpdating(true);
         try {
-            let newTotalStock = 0;
-            const vars = Array.isArray(updatedVariants) ? updatedVariants : [];
-            const hasVariantsWithSizes = vars.some(v => v.sizesStock && Object.keys(v.sizesStock).length > 0);
+            const vars = Array.isArray(updatedVariants)
+                ? updatedVariants.map((variant) => ({
+                    ...variant,
+                    ...(variant.sizesStock ? { sizesStock: { ...variant.sizesStock } } : {}),
+                }))
+                : [];
+            const hasVariantStock = vars.some((variant) =>
+                variant.stock != null ||
+                variant.total_stock != null ||
+                Object.keys(variant.sizesStock || {}).length > 0,
+            );
+            let addedStock = 0;
 
-            if (hasVariantsWithSizes) {
+            if (hasVariantStock) {
                 vars.forEach((v, vIndex) => {
-                    Object.keys(v.sizesStock || {}).forEach(size => {
-                        const key = `${vIndex}-${size}`;
-                        const currentQty = parseInt(v.sizesStock?.[size] || 0, 10) || 0;
-                        const addedQty = parseInt(variantAdditions[key] || 0, 10) || 0;
-                        const finalQty = currentQty + addedQty;
-                        v.sizesStock[size] = finalQty;
-                        newTotalStock += finalQty;
-                    });
+                    const sizes = Object.keys(v.sizesStock || {});
+                    if (sizes.length) {
+                        sizes.forEach((size) => {
+                            const key = `${vIndex}-${size}`;
+                            const currentQty = Number.parseInt(v.sizesStock[size], 10) || 0;
+                            const addedQty = Number.parseInt(variantAdditions[key], 10) || 0;
+                            v.sizesStock[size] = currentQty + addedQty;
+                            addedStock += addedQty;
+                        });
+                        return;
+                    }
+
+                    const key = `${vIndex}-variant`;
+                    const currentQty = Number.parseInt(v.stock ?? v.total_stock ?? 0, 10) || 0;
+                    const addedQty = Number.parseInt(variantAdditions[key], 10) || 0;
+                    if (v.stock != null || v.total_stock == null) v.stock = currentQty + addedQty;
+                    else v.total_stock = currentQty + addedQty;
+                    addedStock += addedQty;
                 });
             } else {
-                const currentStock = getCurrentStockValue(selectedProduct);
-                const addedStock = parseInt(manualTotalStock) || 0;
-                newTotalStock = currentStock + addedStock;
+                addedStock = Number.parseInt(manualTotalStock, 10) || 0;
             }
 
-            const status = newTotalStock <= 0 ? "Out of Stock" : newTotalStock <= Number(selectedProduct.minimum_stock ?? 5) ? "Low Stock" : "Active";
+            if (addedStock <= 0) {
+                toast.error("Enter a quantity greater than 0");
+                return;
+            }
+
+            const newTotalStock = getCurrentStockValue(selectedProduct) + addedStock;
 
             const payload = {
                 ...selectedProduct,
                 total_stock: newTotalStock.toString(),
                 stock: newTotalStock.toString(),
-                status: status,
+                status: selectedProduct.status || "Active",
                 variants: vars
             };
 
-            await api.put(`/products/` + selectedProduct.id, payload);
-
-            setProducts(products.map(p =>
-                p.id === selectedProduct.id
-                    ? { ...p, total_stock: newTotalStock, available_stock: newTotalStock, variants: vars, status: status }
-                    : p
+            const { data: savedProduct } = await api.put(`/products/${selectedProduct.id}`, payload);
+            setProducts((current) => current.map((product) =>
+                String(product.id) === String(selectedProduct.id) ? savedProduct : product,
+            ));
+            setStockCached((current) => Object.fromEntries(
+                Object.entries(current).map(([key, data]) => [
+                    key,
+                    {
+                        ...data,
+                        products: Array.isArray(data.products)
+                            ? data.products.map((product) =>
+                                String(product.id) === String(selectedProduct.id) ? savedProduct : product,
+                            )
+                            : data.products,
+                    },
+                ]),
             ));
 
             toast.success("Stock updated successfully");
@@ -606,7 +638,11 @@ const StockDetails = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-6">
-                                    {updatedVariants.length > 0 && updatedVariants.some(v => v.sizesStock && Object.keys(v.sizesStock).length > 0) ? (
+                                    {updatedVariants.length > 0 && updatedVariants.some((variant) =>
+                                        variant.stock != null ||
+                                        variant.total_stock != null ||
+                                        Object.keys(variant.sizesStock || {}).length > 0,
+                                    ) ? (
                                         // Variant Based Stock
                                         <div className="space-y-4">
                                             {updatedVariants.map((variant, vIndex) => (
@@ -636,12 +672,27 @@ const StockDetails = () => {
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <p className="text-xs text-gray-400 font-medium">No sizes configured for this variant.</p>
+                                                        <div className="rounded-xl border border-gray-200 bg-white p-3">
+                                                            <div className="mb-1 flex items-center justify-between">
+                                                                <label className="text-[10px] font-black uppercase text-gray-400">Variant stock</label>
+                                                                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-black text-gray-500">
+                                                                    Curr: {variant.stock ?? variant.total_stock ?? 0}
+                                                                </span>
+                                                            </div>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                value={variantAdditions[`${vIndex}-variant`] ?? ""}
+                                                                onChange={(event) => handleVariantStockChange(vIndex, "variant", event.target.value)}
+                                                                className="w-full border-b border-gray-100 bg-transparent pb-1 text-base font-black text-slate-800 outline-none transition-colors placeholder:text-gray-300 focus:border-primary"
+                                                                placeholder="Add"
+                                                            />
+                                                        </div>
                                                     )}
                                                 </div>
                                             ))}
                                             <p className="rounded-xl bg-orange-50 p-3 text-center text-xs font-bold text-primary-dark">
-                                                Total stock will be auto-calculated from variants.
+                                                Available stock increases by the combined quantity added to variants.
                                             </p>
                                         </div>
                                     ) : (

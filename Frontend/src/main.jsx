@@ -18,6 +18,7 @@ const Contact = React.lazy(() => import("./Components/Contact/Contact.jsx"));
 const Account = React.lazy(() => import("./Components/Account.jsx"));
 const Shop = React.lazy(() => import("./Components/Shop/Shop.jsx"));
 const ComboOffers = React.lazy(() => import("./Components/Shop/ComboOffers.jsx"));
+const ComboDetails = React.lazy(() => import("./Components/Shop/ComboDetails.jsx"));
 const ProductsDetails = React.lazy(() => import("./Components/Shop/ProductsDetails.jsx"));
 const Checkout = React.lazy(() => import("./Components/Shop/Checkout.jsx"));
 const MyOrders = React.lazy(() => import("./Components/MyOrders.jsx"));
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
       },
       { path: "shop", element: <Shop /> },
       { path: "combo", element: <ComboOffers /> },
+      { path: "combo/:id", element: <ComboDetails /> },
       { path: "products/:id", element: <ProductsDetails /> },
       {
         path: "ordersmain",

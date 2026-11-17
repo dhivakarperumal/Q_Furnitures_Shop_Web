@@ -105,6 +105,11 @@ const CartDrawer = ({ isOpen, onClose }) => {
                           <FiTrash2 size={16} />
                         </button>
                       </div>
+                      {item.item_type === "combo" && item.combo_items?.length > 0 && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Includes {item.combo_items.length} {item.combo_items.length === 1 ? "product" : "products"}
+                        </p>
+                      )}
                       <p className="mt-1 text-sm font-semibold text-primary">₹{Number(item.price || 0).toFixed(2)}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                         {item.colorName && (

@@ -76,7 +76,7 @@ const AddStock = () => {
     };
 
     const getCurrentStockValue = (product) => {
-        const current = Number.parseInt(product?.total_stock ?? product?.stock ?? 0, 10) || 0;
+        const current = Number.parseInt(product?.available_stock ?? product?.total_stock ?? product?.stock ?? 0, 10) || 0;
         return Math.max(0, current);
     };
 
@@ -84,23 +84,39 @@ const AddStock = () => {
         if (!selectedProduct) return;
         setIsSaving(true);
         try {
-            const updatedVariants = [...selectedProduct.variants];
+            const updatedVariants = selectedProduct.variants.map((variant) => ({
+                ...variant,
+                ...(variant.sizesStock ? { sizesStock: { ...variant.sizesStock } } : {}),
+            }));
             let addedTotal = 0;
-            const hasVariantsWithSizes = updatedVariants.some(v => v.sizesStock && Object.keys(v.sizesStock).length > 0);
+            const hasVariantStock = updatedVariants.some((variant) =>
+                variant.stock != null ||
+                variant.total_stock != null ||
+                Object.keys(variant.sizesStock || {}).length > 0,
+            );
 
-            if (hasVariantsWithSizes) {
+            if (hasVariantStock) {
                 updatedVariants.forEach((v, vIndex) => {
-                    if (v.sizesStock) {
-                        Object.keys(v.sizesStock).forEach(size => {
+                    const sizes = Object.keys(v.sizesStock || {});
+                    if (sizes.length) {
+                        sizes.forEach((size) => {
                             const key = `${vIndex}-${size}`;
                             const addition = parseInt(stockAdditions[key]) || 0;
                             v.sizesStock[size] = (parseInt(v.sizesStock[size]) || 0) + addition;
                             addedTotal += addition;
                         });
+                        return;
                     }
+
+                    const key = `${vIndex}-variant`;
+                    const current = Number.parseInt(v.stock ?? v.total_stock ?? 0, 10) || 0;
+                    const addition = Number.parseInt(stockAdditions[key], 10) || 0;
+                    if (v.stock != null || v.total_stock == null) v.stock = current + addition;
+                    else v.total_stock = current + addition;
+                    addedTotal += addition;
                 });
             } else {
-                addedTotal = parseInt(manualTotalStockAdd) || 0;
+                addedTotal = Number.parseInt(manualTotalStockAdd, 10) || 0;
             }
 
             if (addedTotal === 0) {
@@ -111,13 +127,12 @@ const AddStock = () => {
 
             const oldTotal = getCurrentStockValue(selectedProduct);
             const newTotalStock = oldTotal + addedTotal;
-            const status = newTotalStock <= 0 ? "Out of Stock" : newTotalStock < 10 ? "Low Stock" : "Active";
 
             const payload = {
                 ...selectedProduct,
                 total_stock: newTotalStock.toString(),
                 stock: newTotalStock.toString(),
-                status: status,
+                status: selectedProduct.status || "Active",
                 variants: updatedVariants
             };
 
@@ -131,7 +146,11 @@ const AddStock = () => {
         }
     };
 
-    const hasSizes = selectedProduct && selectedProduct.variants && selectedProduct.variants.some(v => v.sizesStock && Object.keys(v.sizesStock).length > 0);
+    const hasVariantStock = selectedProduct?.variants?.some((variant) =>
+        variant.stock != null ||
+        variant.total_stock != null ||
+        Object.keys(variant.sizesStock || {}).length > 0,
+    );
 
     return (
         <div className="min-h-screen space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 font-sans">
@@ -249,47 +268,70 @@ const AddStock = () => {
                                         Step 2: Enter New Stock Details
                                     </label>
 
-                                    {hasSizes ? (
+                                    {hasVariantStock ? (
                                         <div className="space-y-6">
                                             {selectedProduct.variants.map((v, vIndex) => {
-                                                if (!v.sizesStock || Object.keys(v.sizesStock).length === 0) return null;
+                                                const sizes = Object.keys(v.sizesStock || {});
                                                 return (
                                                     <div key={vIndex} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm sm:p-5">
                                                         <div className="flex items-center gap-3 mb-4">
                                                             <div className="h-5 w-5 rounded-full border border-gray-200 shadow-sm" style={{ backgroundColor: v.color }}></div>
                                                             <span className="text-sm font-black text-slate-800">{v.colorName || 'Default Shade'}</span>
                                                         </div>
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                            {Object.entries(v.sizesStock).map(([size, currentStock]) => {
-                                                                const key = `${vIndex}-${size}`;
-                                                                const added = parseInt(stockAdditions[key]) || 0;
-                                                                const oldTotal = parseInt(currentStock) || 0;
-                                                                const newTotalMatch = oldTotal + added;
-                                                                return (
-                                                                    <div key={size} className="rounded-xl border border-orange-100/70 bg-orange-50/40 p-3">
-                                                                        <div className="flex justify-between items-center mb-2">
-                                                                            <label className="text-[10px] font-black text-gray-400 uppercase">{size}</label>
-                                                                            <span className="rounded-md bg-white px-1.5 py-0.5 text-[9px] font-black text-gray-500">Curr: {oldTotal}</span>
+                                                        {sizes.length ? (
+                                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                                {Object.entries(v.sizesStock).map(([size, currentStock]) => {
+                                                                    const key = `${vIndex}-${size}`;
+                                                                    const added = parseInt(stockAdditions[key]) || 0;
+                                                                    const oldTotal = parseInt(currentStock) || 0;
+                                                                    return (
+                                                                        <div key={size} className="rounded-xl border border-orange-100/70 bg-orange-50/40 p-3">
+                                                                            <div className="mb-2 flex items-center justify-between">
+                                                                                <label className="text-[10px] font-black uppercase text-gray-400">{size}</label>
+                                                                                <span className="rounded-md bg-white px-1.5 py-0.5 text-[9px] font-black text-gray-500">Curr: {oldTotal}</span>
+                                                                            </div>
+                                                                            <div className="relative mt-1">
+                                                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-primary">+</div>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={stockAdditions[key] || ""}
+                                                                                    onChange={(event) => handleAdditionChange(key, event.target.value)}
+                                                                                    className="w-full rounded-lg border border-orange-100 bg-white py-2.5 pl-8 pr-3 text-lg font-black text-primary-dark shadow-inner outline-none transition-all placeholder:text-gray-300 focus:border-primary focus:ring-2 focus:ring-orange-100"
+                                                                                    placeholder="0"
+                                                                                />
+                                                                            </div>
+                                                                            {added > 0 && (
+                                                                                <p className="mt-2 text-right text-[10px] font-bold tracking-tight text-emerald-500">
+                                                                                    New Total = {oldTotal + added}
+                                                                                </p>
+                                                                            )}
                                                                         </div>
-                                                                        <div className="relative mt-1">
-                                                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-primary">+</div>
-                                                                            <input
-                                                                                type="text"
-                                                                                value={stockAdditions[key] || ""}
-                                                                                onChange={(e) => handleAdditionChange(key, e.target.value)}
-                                                                                className="w-full rounded-lg border border-orange-100 bg-white py-2.5 pl-8 pr-3 text-lg font-black text-primary-dark shadow-inner outline-none transition-all placeholder:text-gray-300 focus:border-primary focus:ring-2 focus:ring-orange-100"
-                                                                                placeholder="0"
-                                                                            />
-                                                                        </div>
-                                                                        {added > 0 && (
-                                                                            <p className="text-[10px] text-emerald-500 font-bold mt-2 text-right tracking-tight">
-                                                                                New Total = {newTotalMatch}
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
+                                                                    );
+                                                                })}
+                                                                <p className="rounded-xl bg-orange-50 p-3 text-center text-xs font-bold text-primary-dark">
+                                                                    Available stock increases by the combined quantity added to variants.
+                                                                </p>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="rounded-xl border border-orange-100/70 bg-orange-50/40 p-3">
+                                                                <div className="mb-2 flex items-center justify-between">
+                                                                    <label className="text-[10px] font-black uppercase text-gray-400">Variant stock</label>
+                                                                    <span className="rounded-md bg-white px-1.5 py-0.5 text-[9px] font-black text-gray-500">
+                                                                        Curr: {v.stock ?? v.total_stock ?? 0}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="relative mt-1">
+                                                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-primary">+</div>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={stockAdditions[`${vIndex}-variant`] || ""}
+                                                                        onChange={(event) => handleAdditionChange(`${vIndex}-variant`, event.target.value)}
+                                                                        className="w-full rounded-lg border border-orange-100 bg-white py-2.5 pl-8 pr-3 text-lg font-black text-primary-dark shadow-inner outline-none transition-all placeholder:text-gray-300 focus:border-primary focus:ring-2 focus:ring-orange-100"
+                                                                        placeholder="0"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )
                                             })}

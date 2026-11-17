@@ -6,6 +6,10 @@ const { calculateCartTotals, normalizeOrder } = require("../modules/orderService
 function checkoutItems(cartItems) {
   return cartItems.map((item) => ({
     product_id: item.product_id,
+    ...(item.combo_id == null ? {} : {
+      combo_id: item.combo_id,
+      combo_items: item.combo_items,
+    }),
     quantity: item.quantity,
     variant_color: item.colorName || item.variant_color || "",
     variant_size: item.size || item.variant_size || "",
@@ -29,14 +33,17 @@ function checkoutPayload(body, userId, cartItems, paymentMethod) {
 
 function getCartFingerprint(cartItems) {
   const contents = cartItems
-    .map((item) => [
-      item.id,
-      item.product_id,
-      item.quantity,
-      item.price,
-      item.colorName || item.variant_color || "",
-      item.size || item.variant_size || "",
-    ].join(":"))
+    .map((item) => {
+      const parts = [item.id, item.product_id];
+      if (item.combo_id != null) parts.push(item.combo_id);
+      parts.push(
+        item.quantity,
+        item.price,
+        item.colorName || item.variant_color || "",
+        item.size || item.variant_size || "",
+      );
+      return parts.join(":");
+    })
     .sort()
     .join("|");
   return crypto.createHash("sha256").update(contents).digest("hex");

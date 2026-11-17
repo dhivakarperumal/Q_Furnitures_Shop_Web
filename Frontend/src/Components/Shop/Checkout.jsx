@@ -548,6 +548,11 @@ const Checkout = () => {
                                 {item.colorName ? ` · ${item.colorName}` : ""}
                                 {item.size ? ` · ${item.size}` : ""}
                               </p>
+                              {item.item_type === "combo" && item.combo_items?.length > 0 && (
+                                <p className="mt-1 text-xs text-[#8b735e]">
+                                  Includes {item.combo_items.length} {item.combo_items.length === 1 ? "product" : "products"}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <span className="shrink-0 text-sm font-semibold text-[#351d0e]">

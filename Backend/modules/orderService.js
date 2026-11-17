@@ -126,20 +126,48 @@ function normalizeOrder(body) {
       throw requestError(400, `Order item ${index + 1} is invalid.`);
     }
 
-    const productId = Number(item.product_id);
+    const hasProductId = item.product_id != null && item.product_id !== "";
+    const hasComboId = item.combo_id != null && item.combo_id !== "";
+    const productId = hasProductId ? Number(item.product_id) : null;
+    const comboId = hasComboId ? Number(item.combo_id) : null;
     const quantity = Number(item.quantity);
-    if (!Number.isSafeInteger(productId) || productId < 1) {
-      throw requestError(400, `Order item ${index + 1} has an invalid product.`);
+    if (hasProductId === hasComboId ||
+        (hasProductId && (!Number.isSafeInteger(productId) || productId < 1)) ||
+        (hasComboId && (!Number.isSafeInteger(comboId) || comboId < 1))) {
+      throw requestError(400, `Order item ${index + 1} must identify one valid product or combo.`);
     }
     if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 10000) {
       throw requestError(400, `Order item ${index + 1} quantity must be a whole number between 1 and 10,000.`);
     }
 
+    let comboItems = null;
+    if (hasComboId && Array.isArray(item.combo_items)) {
+      comboItems = item.combo_items.map((component, componentIndex) => {
+        const componentProductId = Number(component?.product_id);
+        const componentQuantity = Number(component?.quantity);
+        const variantIndex = Number(component?.variant_index || 0);
+        if (!Number.isSafeInteger(componentProductId) || componentProductId < 1 ||
+            !Number.isSafeInteger(componentQuantity) || componentQuantity < 1 ||
+            !Number.isSafeInteger(variantIndex) || variantIndex < 0) {
+          throw requestError(400, `Combo component ${componentIndex + 1} is invalid.`);
+        }
+        return {
+          product_id: componentProductId,
+          quantity: componentQuantity,
+          variant_index: variantIndex,
+          variant_color: readText(component.variant_color, "Variant colour", { max: 100 }),
+          variant_size: readText(component.variant_size, "Variant size", { max: 100 }),
+        };
+      });
+    }
+
     return {
       productId,
+      comboId,
       quantity,
       variantColor: readText(item.variant_color, "Variant colour", { max: 100 }),
       variantSize: readText(item.variant_size, "Variant size", { max: 100 }),
+      comboItems,
     };
   });
 
@@ -244,14 +272,18 @@ function getProductImage(productData, variant) {
 }
 
 function mapOrderItem(row) {
+  const comboSnapshot = row.combo_snapshot == null ? {} : parseProductData(row.combo_snapshot);
   return {
     ...row,
     product_id: row.product_id == null ? null : Number(row.product_id),
+    combo_id: row.combo_id == null ? null : Number(row.combo_id),
+    item_type: row.combo_id == null && row.combo_snapshot == null ? "product" : "combo",
     product_name: row.product_name,
     name: row.product_name,
     price: Number(row.price),
     quantity: Number(row.quantity),
     total: Number(row.total),
+    combo_items: Array.isArray(comboSnapshot.combo_items) ? comboSnapshot.combo_items : [],
   };
 }
 
@@ -344,6 +376,122 @@ function createOrderService(pool) {
         let subtotal = 0;
 
         for (const [itemIndex, item] of order.items.entries()) {
+          if (item.comboId != null) {
+            const [comboRows] = await connection.execute(
+              "SELECT id, name, offer_price, status, combo_data FROM combos WHERE id = ? FOR UPDATE",
+              [item.comboId],
+            );
+            const combo = comboRows[0];
+            if (!combo) throw requestError(404, "A selected combo no longer exists.");
+            if (combo.status !== "Active") throw requestError(409, `${combo.name} is not available for sale.`);
+            const comboData = parseProductData(combo.combo_data);
+            const comboItems = item.comboItems?.length ? item.comboItems : comboData.combo_items;
+            if (!Array.isArray(comboItems) || !comboItems.length) {
+              throw requestError(409, `${combo.name} does not have any available component products.`);
+            }
+            const seenComponentIds = new Set();
+            for (const component of comboItems) {
+              const componentId = Number(component.product_id);
+              if (seenComponentIds.has(componentId)) {
+                throw requestError(409, `${combo.name} contains a duplicate component product.`);
+              }
+              seenComponentIds.add(componentId);
+            }
+            const componentIds = [...new Set(comboItems.map((component) => Number(component.product_id)))]
+              .sort((left, right) => left - right);
+            if (componentIds.some((id) => !Number.isSafeInteger(id) || id < 1)) {
+              throw requestError(409, `${combo.name} contains an invalid component product.`);
+            }
+            const [components] = await connection.execute(
+              `SELECT p.id, p.name, p.product_code, p.status, p.total_stock, p.product_data,
+                      ps.available_stock
+               FROM products p
+               LEFT JOIN product_stock ps ON ps.product_id = p.id
+               WHERE p.id IN (${componentIds.map(() => "?").join(",")})
+               ORDER BY p.id FOR UPDATE`,
+              componentIds,
+            );
+            const componentById = new Map(components.map((component) => [Number(component.id), component]));
+            if (componentById.size !== componentIds.length) {
+              throw requestError(409, `${combo.name} includes a component product that no longer exists.`);
+            }
+
+            for (const componentItem of comboItems) {
+              const component = componentById.get(Number(componentItem.product_id));
+              if (!component || component.status !== "Active") {
+                throw requestError(409, `${component?.name || "A combo component"} is not available for sale.`);
+              }
+              const requiredQuantity = Number(componentItem.quantity) * item.quantity;
+              if (!Number.isSafeInteger(requiredQuantity) || requiredQuantity < 1) {
+                throw requestError(409, `${combo.name} has an invalid component quantity.`);
+              }
+              const totalStock = Number(component.total_stock);
+              const availableStock = component.available_stock == null
+                ? totalStock
+                : Math.min(totalStock, Number(component.available_stock));
+              if (!Number.isFinite(availableStock) || availableStock < requiredQuantity) {
+                throw requestError(409, `There is not enough stock for ${component.name}.`);
+              }
+
+              const componentData = parseProductData(component.product_data);
+              const variants = Array.isArray(componentData.variants) ? componentData.variants : [];
+              const variantIndex = Number(componentItem.variant_index || 0);
+              const variant = variants[variantIndex];
+              if (!variants.length && variantIndex !== 0) {
+                throw requestError(409, `The selected variant for ${component.name} is no longer available.`);
+              }
+              if (variants.length && !variant) {
+                throw requestError(409, `The selected variant for ${component.name} is no longer available.`);
+              }
+              const selectedComponent = {
+                variantColor: componentItem.variant_color || "",
+                variantSize: componentItem.variant_size || "",
+              };
+              if (variant && (!variantColorMatches(variant, selectedComponent.variantColor) ||
+                  !variantSizeMatches(variant, selectedComponent.variantSize))) {
+                throw requestError(409, `The selected variant for ${component.name} has changed.`);
+              }
+              if (variant) {
+                const componentQuantity = { ...selectedComponent, quantity: requiredQuantity };
+                decreaseVariantStock(variant, componentQuantity);
+              }
+
+              await connection.execute(
+                "UPDATE products SET total_stock = ?, product_data = ? WHERE id = ?",
+                [totalStock - requiredQuantity, JSON.stringify(componentData), component.id],
+              );
+              await connection.execute(
+                `INSERT INTO product_stock (product_id, available_stock)
+                 VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE available_stock = VALUES(available_stock)`,
+                [component.id, availableStock - requiredQuantity],
+              );
+            }
+
+            const cartPrice = options.useCartPrices ? Number(body.items[itemIndex]?.price) : null;
+            const price = options.useCartPrices ? roundCurrency(cartPrice) : Number(combo.offer_price);
+            if (!Number.isFinite(price) || price < 0) {
+              throw requestError(409, `A valid price is unavailable for ${combo.name}.`);
+            }
+            const lineTotal = roundCurrency(price * item.quantity);
+            subtotal = roundCurrency(subtotal + lineTotal);
+            const image = getProductImage(comboData, null);
+            orderItems.push({
+              product_id: null,
+              combo_id: combo.id,
+              combo_snapshot: { combo_items: comboItems },
+              product_name: combo.name,
+              name: combo.name,
+              price,
+              quantity: item.quantity,
+              total: lineTotal,
+              variant_color: "",
+              variant_size: "",
+              image,
+            });
+            continue;
+          }
+
           const [products] = await connection.execute(
             `SELECT id, name, selling_price, offer_price, total_stock, status, product_data
              FROM products WHERE id = ? FOR UPDATE`,
@@ -390,6 +538,8 @@ function createOrderService(pool) {
 
           orderItems.push({
             product_id: product.id,
+            combo_id: null,
+            combo_snapshot: null,
             product_name: product.name,
             name: product.name,
             price,
@@ -464,11 +614,14 @@ function createOrderService(pool) {
         for (const item of orderItems) {
           await connection.execute(
             `INSERT INTO order_items
-             (order_id, product_id, product_name, price, quantity, total, variant_color, variant_size, image)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             (order_id, product_id, combo_id, combo_snapshot, product_name, price, quantity,
+              total, variant_color, variant_size, image)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               result.insertId,
               item.product_id,
+              item.combo_id,
+              item.combo_snapshot ? JSON.stringify(item.combo_snapshot) : null,
               item.product_name,
               item.price,
               item.quantity,

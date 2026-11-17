@@ -37,6 +37,50 @@ test("validates combo specification names and values", () => {
   );
 });
 
+test("lists the current available stock from combo component inventory", async () => {
+  const comboRow = {
+    id: 32,
+    legacy_product_id: null,
+    combo_code: "QFC-2026-00032",
+    name: "Living room set",
+    category: "Living Room Furniture",
+    mrp: 500,
+    offer: 10,
+    offer_type: "Percentage",
+    offer_price: 450,
+    selling_price: 450,
+    total_stock: 10,
+    rating: 5,
+    status: "Active",
+    combo_data: JSON.stringify({
+      combo_items: [
+        { product_id: 1, quantity: 1, variant_index: 0 },
+        { product_id: 2, quantity: 2, variant_index: 0 },
+      ],
+    }),
+  };
+  const pool = {
+    async execute(sql) {
+      if (sql.startsWith("SELECT * FROM combos")) return [[comboRow]];
+      if (sql.includes("FROM products p")) {
+        return [[
+          { id: 1, status: "Active", total_stock: 10, available_stock: 5, product_data: "{}" },
+          { id: 2, status: "Active", total_stock: 8, available_stock: 6, product_data: "{}" },
+        ]];
+      }
+      if (sql.startsWith("SELECT COUNT(*) AS total FROM combos")) return [[{ total: 1 }]];
+      if (sql.includes("SUM(status = 'Active')")) {
+        return [[{ total: 1, active: 1, inactive: 0, lowStock: 0 }]];
+      }
+      throw new Error(`Unexpected combo query: ${sql}`);
+    },
+  };
+
+  const result = await createComboService(pool).list({ page: 1, limit: 10, status: "Active" });
+
+  assert.equal(result.combos[0].total_stock, 3);
+});
+
 test("creates a combo in the separate combos table using catalog prices and stock", async () => {
   let insertedValues;
   const comboRow = {
