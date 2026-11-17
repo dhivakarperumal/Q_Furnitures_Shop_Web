@@ -199,20 +199,6 @@ const Hero = () => {
           </PageContainer>
         </div>
 
-        {!loading && !loadError && banners.length > 1 && (
-          <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2">
-            {banners.map((item, index) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-label={`Show banner ${index + 1}: ${item.title}`}
-                aria-current={index === currentIndex ? "true" : undefined}
-                onClick={() => setCurrentIndex(index)}
-                className={`h-2.5 rounded-full transition-all ${index === currentIndex ? "w-7 bg-primary" : "w-2.5 bg-secondary-dark/40 hover:bg-secondary-dark"}`}
-              />
-            ))}
-          </div>
-        )}
       </section>
     </>
   );
