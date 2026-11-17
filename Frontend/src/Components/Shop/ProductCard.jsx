@@ -31,19 +31,10 @@ function formatPrice(value) {
 }
 
 function getComboItemCount(product) {
-  if (Array.isArray(product.combo_items)) return product.combo_items.length;
-  if (typeof product.combo_items === "string") {
-    try {
-      const items = JSON.parse(product.combo_items);
-      return Array.isArray(items) ? items.length : 0;
-    } catch {
-      return 0;
-    }
-  }
-  return 0;
+  return Array.isArray(product.combo_items) ? product.combo_items.length : 0;
 }
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, compact = false }) {
   const { cart, wishlist, addToCart, updateCartQuantity, toggleWishlist } = useContext(StoreContext);
   const productId = product.id ?? product.product_id;
   const image = getProductImage(product);
@@ -68,7 +59,7 @@ export default function ProductCard({ product }) {
   );
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#eee4d8] bg-white shadow-[0_8px_24px_rgba(53,29,14,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(53,29,14,0.12)]">
+    <article className={`group flex h-full flex-col overflow-hidden border border-[#eee4d8] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(53,29,14,0.12)] ${compact ? "rounded-xl shadow-[0_3px_12px_rgba(53,29,14,0.05)]" : "rounded-2xl shadow-[0_8px_24px_rgba(53,29,14,0.06)]"}`}>
       <div className="relative aspect-[4/3] overflow-hidden bg-[#f7f1e9]">
         <Link to={`/products/${productId}`} aria-label={`View ${product.name} details`} className="absolute inset-0">
           {image ? (
@@ -85,7 +76,7 @@ export default function ProductCard({ product }) {
           )}
         </Link>
         {discount > 0 && (
-          <span className="absolute left-3 top-3 rounded-full bg-emerald-700 px-3 py-1 text-[11px] font-bold tracking-wide text-white">
+          <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-emerald-700 px-3 py-1 text-[11px] font-bold tracking-wide text-white">
             {discount}% OFF
           </span>
         )}
@@ -94,12 +85,12 @@ export default function ProductCard({ product }) {
           onClick={() => toggleWishlist(product)}
           aria-label={isWishlisted ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
           aria-pressed={isWishlisted}
-          className={`absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:scale-105 ${isWishlisted ? "text-rose-600" : "text-[#634d3b] hover:text-rose-600"}`}
+          className={`absolute right-2 top-2 z-10 flex items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:scale-105 ${compact ? "h-8 w-8" : "h-10 w-10"} ${isWishlisted ? "text-rose-600" : "text-[#634d3b] hover:text-rose-600"}`}
         >
-          <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
+          <Heart size={compact ? 16 : 18} fill={isWishlisted ? "currentColor" : "none"} />
         </button>
         {stock <= 0 && (
-          <span className="absolute bottom-3 left-3 rounded-full bg-[#351d0e]/90 px-3 py-1 text-xs font-semibold text-white">
+          <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-[#351d0e]/90 px-3 py-1 text-xs font-semibold text-white">
             Out of stock
           </span>
         )}
@@ -125,7 +116,7 @@ export default function ProductCard({ product }) {
           <span className="text-xs">rating</span>
         </div>
 
-        <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+        <div className={`mt-auto flex items-end justify-between gap-2 ${compact ? "pt-2" : "pt-4"}`}>
           <div>
             <p className="text-lg font-bold text-[#351d0e]">{formatPrice(price)}</p>
             {mrp > price && <p className="text-xs text-[#9a8979] line-through">{formatPrice(mrp)}</p>}

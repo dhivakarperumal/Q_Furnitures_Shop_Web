@@ -13,6 +13,8 @@ import Loader from "./Components/CommenComponents/Loader.jsx";
 
 // Lazy Load Main Components
 const Home = React.lazy(() => import("./Components/Home/Home.jsx"));
+const About = React.lazy(() => import("./Components/About/About.jsx"));
+const Contact = React.lazy(() => import("./Components/Contact/Contact.jsx"));
 const Shop = React.lazy(() => import("./Components/Shop/Shop.jsx"));
 const ComboOffers = React.lazy(() => import("./Components/Shop/ComboOffers.jsx"));
 const ComboDetails = React.lazy(() => import("./Components/Shop/ComboDetails.jsx"));
@@ -59,6 +61,8 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       { path: "/", element: <Home /> },
+      { path: "about", element: <About /> },
+      { path: "contactus", element: <Contact /> },
       { path: "shop", element: <Shop /> },
       { path: "combo", element: <ComboOffers /> },
       { path: "combo/:id", element: <ComboDetails /> },

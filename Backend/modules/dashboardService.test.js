@@ -57,6 +57,7 @@ test("dashboard data maps database values to the frontend response shape", async
 
   assert.equal(data.stats.length, 8);
   assert.equal(data.stats.find((stat) => stat.label === "Orders").value, 5);
+  assert.equal(data.stats.find((stat) => stat.label === "Orders").icon, "chair");
   assert.equal(data.stats.find((stat) => stat.label === "Revenue").value, 1000);
   assert.deepEqual(data.recentOrders[0], {
     id: "#ORD0007",
