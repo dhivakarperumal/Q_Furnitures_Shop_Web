@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
-import ProductCard from "../ProductCard";
+import ProductCard from "../Shop/ProductCard";
 
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);

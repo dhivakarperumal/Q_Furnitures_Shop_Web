@@ -641,6 +641,7 @@ async function initializeDatabase(pool) {
       product_id BIGINT UNSIGNED NULL,
       user_name VARCHAR(191) NOT NULL,
       user_email VARCHAR(191) NULL,
+      reviewer_user_id BIGINT UNSIGNED NULL,
       rating TINYINT UNSIGNED NOT NULL,
       comment TEXT NOT NULL,
       review_image VARCHAR(512) NULL,
@@ -650,10 +651,38 @@ async function initializeDatabase(pool) {
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       KEY reviews_status_created_idx (status, created_at),
       KEY reviews_rating_idx (rating),
+      UNIQUE KEY reviews_customer_product_unique (reviewer_user_id, product_id),
+      CONSTRAINT reviews_reviewer_fk
+        FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE SET NULL,
       CONSTRAINT reviews_product_fk
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [reviewerColumnRows] = await pool.execute(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews' AND COLUMN_NAME = 'reviewer_user_id'`,
+  );
+  if (!reviewerColumnRows.length) {
+    await pool.query("ALTER TABLE reviews ADD COLUMN reviewer_user_id BIGINT UNSIGNED NULL AFTER user_email");
+  }
+  const [reviewerIndexRows] = await pool.execute(
+    `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews'
+       AND INDEX_NAME = 'reviews_customer_product_unique'`,
+  );
+  if (!reviewerIndexRows.length) {
+    await pool.query("CREATE UNIQUE INDEX reviews_customer_product_unique ON reviews (reviewer_user_id, product_id)");
+  }
+  const [reviewerConstraintRows] = await pool.execute(
+    `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews'
+       AND CONSTRAINT_NAME = 'reviews_reviewer_fk'`,
+  );
+  if (!reviewerConstraintRows.length) {
+    await pool.query(
+      "ALTER TABLE reviews ADD CONSTRAINT reviews_reviewer_fk FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE SET NULL",
+    );
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS youtube_videos (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

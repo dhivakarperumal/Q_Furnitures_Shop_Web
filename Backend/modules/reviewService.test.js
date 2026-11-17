@@ -40,3 +40,44 @@ test("lists filtered reviews with unfiltered summary statistics", async () => {
   assert.deepEqual(calls[0].parameters, ["Pending", 5, "%Sana%", "%Sana%", "%Sana%", "%Sana%"]);
   assert.equal(calls[1].parameters.length, 0);
 });
+
+test("lists published reviews for one product and checks that customer's review", async () => {
+  const reviews = [{ id: 8, product_id: 12, user_name: "Sana", rating: 5 }];
+  const ownReview = { id: 9, status: "Pending" };
+  const calls = [];
+  const service = createReviewService({
+    async execute(sql, parameters = []) {
+      calls.push({ sql, parameters });
+      return [sql.includes("reviewer_user_id") ? [ownReview] : reviews];
+    },
+  });
+
+  assert.deepEqual(await service.listPublishedForProduct(12), reviews);
+  assert.deepEqual(await service.getCustomerReview(12, 42), ownReview);
+  assert.match(calls[0].sql, /reviews\.product_id = \?/);
+  assert.match(calls[0].sql, /reviews\.status = 'Published'/);
+  assert.deepEqual(calls[0].parameters, [12]);
+  assert.deepEqual(calls[1].parameters, [12, 42]);
+});
+
+test("creates a customer review using the account identity from the database", async () => {
+  const calls = [];
+  const expectedReview = { id: 10, user_name: "Sana", status: "Pending" };
+  const service = createReviewService({
+    async execute(sql, parameters = []) {
+      calls.push({ sql, parameters });
+      return sql.startsWith("INSERT INTO reviews")
+        ? [{ affectedRows: 1, insertId: 10 }]
+        : [[expectedReview]];
+    },
+  });
+
+  assert.deepEqual(await service.createCustomer({
+    product_id: 12,
+    rating: 5,
+    comment: "Great quality.",
+  }, 42), expectedReview);
+  assert.match(calls[0].sql, /SELECT \?, users\.id, users\.username, users\.email/);
+  assert.deepEqual(calls[0].parameters, [12, 5, "Great quality.", 42]);
+  assert.deepEqual(calls[1].parameters, [10]);
+});
