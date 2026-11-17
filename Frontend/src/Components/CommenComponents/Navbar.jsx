@@ -253,7 +253,7 @@ const Navbar = () => {
             </div>
 
             <NavLink to="/combo" className={({ isActive }) => `${navClass({ isActive })} relative`}>
-              Offers
+              Combos
               <span className="absolute -right-3 -top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] font-extrabold uppercase leading-none text-white">
                 Hot
               </span>
