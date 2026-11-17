@@ -193,7 +193,7 @@ function ComboBuilder({
       const variant = getVariant(product, item.variant_index);
       return { total: total + getUnitPrice(product, variant) * Number(item.quantity || 1) };
     }, { total: 0 }).total;
-    const originalTotal = form.mrp_mode === "manual"
+    const originalTotal = form.price_mode === "manual"
       ? Number(form.mrp) || 0
       : componentTotal;
     const availableComboStock = resolved.length
@@ -215,7 +215,7 @@ function ComboBuilder({
         ? originalTotal * (1 - Math.min(100, discount) / 100)
         : originalTotal - discount,
     );
-    const finalPrice = form.offer_price_mode === "manual"
+    const finalPrice = form.price_mode === "manual"
       ? Number(form.offer_price) || 0
       : automaticPrice;
 
@@ -228,7 +228,7 @@ function ComboBuilder({
       savings: Math.max(0, originalTotal - finalPrice),
       resolvedCount: resolved.length,
     };
-  }, [form.mrp, form.mrp_mode, form.offer, form.offer_price, form.offer_price_mode, form.offer_type, selectedProducts]);
+  }, [form.mrp, form.offer, form.offer_price, form.offer_type, form.price_mode, selectedProducts]);
 
   useEffect(() => {
     onSummaryChange(summary);
@@ -469,35 +469,35 @@ function ComboBuilder({
           <h3 className="text-sm font-bold text-slate-900">Combo pricing</h3>
           <p className="mt-1 text-xs text-slate-500">Use the selected products’ total or enter a custom MRP.</p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label>
-            <span className={labelClass}>MRP calculation</span>
-            <select name="mrp_mode" value={form.mrp_mode} onChange={setFormField} className={fieldClass}>
-              <option value="auto">Automatic product total</option>
-              <option value="manual">Enter manually</option>
+        <div className="grid gap-4 sm:grid-cols-6">
+          <label className="sm:col-span-3">
+            <span className={labelClass}>Price calculation</span>
+            <select name="price_mode" value={form.price_mode} onChange={setFormField} className={fieldClass}>
+              <option value="auto">Automatic MRP and offer price</option>
+              <option value="manual">Manual MRP and offer price</option>
             </select>
           </label>
-          <label>
+          <label className="sm:col-span-3">
             <span className={labelClass}>MRP</span>
             <input
               name="mrp"
               type="number"
               min="0"
               step="0.01"
-              value={form.mrp_mode === "manual" ? form.mrp : summary.originalTotal.toFixed(2)}
+              value={form.price_mode === "manual" ? form.mrp : summary.originalTotal.toFixed(2)}
               onChange={setFormField}
-              readOnly={form.mrp_mode !== "manual"}
-              className={`${fieldClass} ${form.mrp_mode !== "manual" ? "bg-slate-50" : ""}`}
+              readOnly={form.price_mode !== "manual"}
+              className={`${fieldClass} ${form.price_mode !== "manual" ? "bg-slate-50" : ""}`}
             />
           </label>
-          <label>
+          <label className="sm:col-span-2">
             <span className={labelClass}>Offer type</span>
             <select name="offer_type" value={form.offer_type} onChange={setFormField} className={fieldClass}>
               <option value="Percentage">Percentage</option>
               <option value="Fixed Amount">Fixed Amount</option>
             </select>
           </label>
-          <label>
+          <label className="sm:col-span-2">
             <span className={labelClass}>{form.offer_type === "Percentage" ? "Offer (%)" : "Offer amount (₹)"}</span>
             <input
               name="offer"
@@ -510,14 +510,7 @@ function ComboBuilder({
               className={fieldClass}
             />
           </label>
-          <label>
-            <span className={labelClass}>Price calculation</span>
-            <select name="offer_price_mode" value={form.offer_price_mode} onChange={setFormField} className={fieldClass}>
-              <option value="auto">Automatic</option>
-              <option value="manual">Manual final price</option>
-            </select>
-          </label>
-          <label>
+          <label className="sm:col-span-2">
             <span className={labelClass}>Offer price</span>
             <input
               name="offer_price"
@@ -525,10 +518,10 @@ function ComboBuilder({
               min="0"
               max={summary.originalTotal || undefined}
               step="0.01"
-              value={form.offer_price_mode === "manual" ? form.offer_price : summary.automaticPrice.toFixed(2)}
+              value={form.price_mode === "manual" ? form.offer_price : summary.automaticPrice.toFixed(2)}
               onChange={setFormField}
-              readOnly={form.offer_price_mode !== "manual"}
-              className={`${fieldClass} ${form.offer_price_mode !== "manual" ? "bg-slate-50" : ""}`}
+              readOnly={form.price_mode !== "manual"}
+              className={`${fieldClass} ${form.price_mode !== "manual" ? "bg-slate-50" : ""}`}
             />
           </label>
         </div>

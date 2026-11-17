@@ -61,11 +61,13 @@ function validateCombo(input) {
   if (!Number.isFinite(offer) || offer < 0 || (offerType === "Percentage" && offer > 100)) {
     throw comboError("Combo discount value is outside the allowed range.");
   }
-  const mrpMode = input.mrp_mode || "auto";
-  if (!["auto", "manual"].includes(mrpMode)) {
-    throw comboError("Combo MRP mode must be automatic or manual.");
+  const priceMode = input.price_mode || (
+    input.mrp_mode === "manual" || input.offer_price_mode === "manual" ? "manual" : "auto"
+  );
+  if (!["auto", "manual"].includes(priceMode)) {
+    throw comboError("Combo price mode must be automatic or manual.");
   }
-  if (mrpMode === "manual" && (!Number.isFinite(Number(input.mrp)) || Number(input.mrp) <= 0)) {
+  if (priceMode === "manual" && (!Number.isFinite(Number(input.mrp)) || Number(input.mrp) <= 0)) {
     throw comboError("Enter a manual combo MRP greater than zero.");
   }
   const rating = Number(input.rating ?? 5);
@@ -124,8 +126,9 @@ function validateCombo(input) {
     rating,
     offer,
     offer_type: offerType,
-    mrp_mode: mrpMode,
-    offer_price_mode: input.offer_price_mode === "manual" ? "manual" : "auto",
+    price_mode: priceMode,
+    mrp_mode: priceMode,
+    offer_price_mode: priceMode,
     combo_items: comboItems,
     specifications,
   };

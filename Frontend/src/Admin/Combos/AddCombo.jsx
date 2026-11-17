@@ -25,6 +25,7 @@ const initialForm = {
   trending_product: false,
   offer_product: true,
   mrp: "0",
+  price_mode: "auto",
   mrp_mode: "auto",
   offer_type: "Percentage",
   offer: "0",
@@ -118,6 +119,7 @@ function AddCombo() {
             ...previous,
             ...combo,
             combo_code: combo.combo_code || combo.product_code || "",
+            price_mode: combo.price_mode || (combo.mrp_mode === "manual" || combo.offer_price_mode === "manual" ? "manual" : "auto"),
             offer: String(combo.offer ?? 0),
             offer_price: String(combo.offer_price ?? 0),
             offer_price_mode: combo.offer_price_mode || "auto",
@@ -204,8 +206,13 @@ function AddCombo() {
       toast.error("Add a combo name and category to continue.");
       return;
     }
-    if (comboItems.length < 2 || summary.resolvedCount !== comboItems.length || summary.originalTotal <= 0) {
+    if (comboItems.length < 2 || summary.resolvedCount !== comboItems.length ||
+        (form.price_mode !== "manual" && summary.originalTotal <= 0)) {
       toast.error("Add at least two valid products to the combo.");
+      return;
+    }
+    if (form.price_mode === "manual" && (!Number.isFinite(Number(form.mrp)) || Number(form.mrp) <= 0)) {
+      toast.error("Enter a combo MRP greater than zero.");
       return;
     }
     if (form.offer_type === "Percentage" && (Number(form.offer) < 0 || Number(form.offer) > 100)) {
@@ -228,11 +235,11 @@ function AddCombo() {
         ? summary.originalTotal * (1 - (Number(form.offer) || 0) / 100)
         : summary.originalTotal - (Number(form.offer) || 0),
     );
-    const offerPrice = form.offer_price_mode === "manual"
+    const offerPrice = form.price_mode === "manual"
       ? Number(form.offer_price) || 0
       : automaticPrice;
-    if (offerPrice > summary.originalTotal) {
-      toast.error("Final combo price cannot exceed the original total.");
+    if (offerPrice < 0 || offerPrice > summary.originalTotal) {
+      toast.error("Offer price must be between zero and the combo MRP.");
       return;
     }
 
@@ -243,6 +250,9 @@ function AddCombo() {
       combo_code: form.combo_code.trim(),
       product_code: form.combo_code.trim(),
       mrp: summary.originalTotal,
+      price_mode: form.price_mode,
+      mrp_mode: form.price_mode,
+      offer_price_mode: form.price_mode,
       offer_price: offerPrice,
       selling_price: offerPrice,
       total_stock: summary.availableComboStock,

@@ -103,7 +103,7 @@ test("creates a combo in the separate combos table using catalog prices and stoc
   assert.deepEqual(created.specifications, [{ name: "Material", value: "Solid wood" }]);
 });
 
-test("uses a manually entered combo MRP as the discount base", async () => {
+test("saves manually entered combo MRP and offer price", async () => {
   let insertedValues;
   const comboRow = { id: 31, legacy_product_id: null };
   const connection = {
@@ -141,12 +141,13 @@ test("uses a manually entered combo MRP as the discount base", async () => {
   };
 
   const created = await createComboService(pool).create(validCombo({
-    mrp_mode: "manual",
+    price_mode: "manual",
     mrp: 700,
+    offer_price: 620,
   }), "admin-1");
 
   assert.equal(insertedValues[4], 700);
-  assert.equal(insertedValues[7], 630);
+  assert.equal(insertedValues[7], 620);
   assert.equal(created.mrp, 700);
-  assert.equal(created.offer_price, 630);
+  assert.equal(created.offer_price, 620);
 });
