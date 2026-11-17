@@ -4,10 +4,12 @@ import FeaturedCombos from "./FeaturedCombos";
 import HomeCategories from "./HomeCategories";
 import OfferBanners from "./OfferBanners";
 import HomeReviews from "./HomeReviews";
+import StoreBenefits from "./StoreBenefits";
 
 const Home = () => (
   <main className="bg-[#fcfaf7]">
     <Hero />
+    <StoreBenefits />
     <HomeCategories />
     <FeaturedProducts />
     <FeaturedCombos />
