@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ImagePlus, LoaderCircle, Save, Trash2, UploadCloud } from "lucide-react";
+import { ArrowLeft, ImagePlus, LoaderCircle, Plus, Save, Trash2, UploadCloud } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../api";
@@ -62,7 +62,7 @@ function Field({ label, name, value, onChange, type = "text", placeholder, requi
 
 function ComboSection({ title, description, children }) {
   return (
-    <section className="mb-5 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
       <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
         <h2 className="text-sm font-bold text-slate-900">{title}</h2>
         {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
@@ -80,6 +80,7 @@ function AddCombo() {
   const [form, setForm] = useState(initialForm);
   const [categories, setCategories] = useState(categoriesFallback);
   const [comboItems, setComboItems] = useState([]);
+  const [specifications, setSpecifications] = useState([{ name: "", value: "" }]);
   const [summary, setSummary] = useState({ originalTotal: 0, availableComboStock: 0, resolvedCount: 0 });
   const [images, setImages] = useState([]);
   const [imageRoles, setImageRoles] = useState([]);
@@ -121,6 +122,12 @@ function AddCombo() {
             rating: String(combo.rating ?? 5),
           }));
           setComboItems(Array.isArray(combo.combo_items) ? combo.combo_items : []);
+          setSpecifications(Array.isArray(combo.specifications) && combo.specifications.length
+            ? combo.specifications.map((specification) => ({
+              name: String(specification.name || ""),
+              value: String(specification.value || ""),
+            }))
+            : [{ name: "", value: "" }]);
           setImages(Array.isArray(combo.images) ? combo.images : []);
           setImageRoles(Array.isArray(combo.image_roles) ? combo.image_roles : (combo.images || []).map(() => "Combo view"));
           setMainImageIndex(Math.max(0, Number(combo.main_image_index) || 0));
@@ -207,6 +214,11 @@ function AddCombo() {
       toast.error("Combo offer end date must be on or after the start date.");
       return;
     }
+    const enteredSpecifications = specifications.filter(({ name, value }) => name.trim() || value.trim());
+    if (enteredSpecifications.some(({ name, value }) => !name.trim() || !value.trim())) {
+      toast.error("Add both a name and a value for each specification.");
+      return;
+    }
 
     const automaticPrice = Math.max(
       0,
@@ -234,6 +246,7 @@ function AddCombo() {
       total_stock: summary.availableComboStock,
       rating: Number(form.rating) || 5,
       combo_items: comboItems,
+      specifications: enteredSpecifications.map(({ name, value }) => ({ name: name.trim(), value: value.trim() })),
       images,
       image_roles: imageRoles,
       main_image_index: mainImageIndex,
@@ -274,114 +287,154 @@ function AddCombo() {
       </div>
 
       <form onSubmit={saveCombo} className="space-y-5">
-        <ComboSection title="Combo information" description="Combo records are saved separately from products.">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Combo name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. Living room essentials" required />
-            <div>
-              <Field label="Combo SKU / code · Auto-generated" name="combo_code" value={form.combo_code} onChange={handleChange} placeholder="Generated automatically when saved" readOnly />
-              <p className="mt-1.5 text-xs text-slate-500">The server assigns the final unique code when you save.</p>
-            </div>
-            <label className="block min-w-0">
-              <span className={labelClass}>Category <span className="text-rose-500">*</span></span>
-              <select className={inputClass} name="category" value={form.category} onChange={(event) => setForm((previous) => ({ ...previous, category: event.target.value, subcategory: "" }))} required>
-                <option value="">Select a category</option>
-                {categories.map((category) => <option key={category.id || category.name} value={category.name}>{category.name}</option>)}
-              </select>
-            </label>
-            <label className="block min-w-0">
-              <span className={labelClass}>Subcategory</span>
-              <select className={inputClass} name="subcategory" value={form.subcategory} onChange={handleChange} disabled={!subcategories.length}>
-                <option value="">Select a subcategory</option>
-                {subcategories.map((subcategory) => <option key={subcategory} value={subcategory}>{subcategory}</option>)}
-              </select>
-            </label>
-            <Field label="Brand" name="brand" value={form.brand} onChange={handleChange} placeholder="Brand or collection" />
-            <label className="block min-w-0">
-              <span className={labelClass}>Status</span>
-              <select className={inputClass} name="status" value={form.status} onChange={handleChange}>
-                {["Active", "Inactive", "Draft"].map((status) => <option key={status} value={status}>{status}</option>)}
-              </select>
-            </label>
-            <Field label="Rating" name="rating" value={form.rating} onChange={handleChange} type="number" min="1" max="5" step="0.1" />
-          </div>
-          <label className="block">
-            <span className={labelClass}>Combo description</span>
-            <textarea className={`${inputClass} min-h-28 resize-y`} name="description" value={form.description} onChange={handleChange} rows={4} placeholder="Describe the included products and bundle value…" />
-          </label>
-          <div className="grid gap-3 md:grid-cols-3">
-            {[
-              ["featured", "Featured combo"],
-              ["trending_product", "Trending combo"],
-              ["offer_product", "Combo offer"],
-            ].map(([name, label]) => (
-              <label key={name} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
-                {label}
-                <input type="checkbox" name={name} checked={Boolean(form[name])} onChange={handleChange} className="h-4 w-4 accent-orange-600" />
+        <div className="grid items-start gap-5 md:grid-cols-2">
+          <div className="min-w-0 space-y-5">
+            <ComboSection title="Combo information" description="Combo records are saved separately from products.">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Combo name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. Living room essentials" required />
+                <Field label="Combo SKU / code · Auto-generated" name="combo_code" value={form.combo_code} onChange={handleChange} placeholder="Generated automatically when saved" readOnly />
+                <label className="block min-w-0">
+                  <span className={labelClass}>Category <span className="text-rose-500">*</span></span>
+                  <select className={inputClass} name="category" value={form.category} onChange={(event) => setForm((previous) => ({ ...previous, category: event.target.value, subcategory: "" }))} required>
+                    <option value="">Select a category</option>
+                    {categories.map((category) => <option key={category.id || category.name} value={category.name}>{category.name}</option>)}
+                  </select>
+                </label>
+                <label className="block min-w-0">
+                  <span className={labelClass}>Subcategory</span>
+                  <select className={inputClass} name="subcategory" value={form.subcategory} onChange={handleChange} disabled={!subcategories.length}>
+                    <option value="">Select a subcategory</option>
+                    {subcategories.map((subcategory) => <option key={subcategory} value={subcategory}>{subcategory}</option>)}
+                  </select>
+                </label>
+                <Field label="Brand" name="brand" value={form.brand} onChange={handleChange} placeholder="Brand or collection" />
+                <label className="block min-w-0">
+                  <span className={labelClass}>Status</span>
+                  <select className={inputClass} name="status" value={form.status} onChange={handleChange}>
+                    {["Active", "Inactive", "Draft"].map((status) => <option key={status} value={status}>{status}</option>)}
+                  </select>
+                </label>
+                <Field label="Rating" name="rating" value={form.rating} onChange={handleChange} type="number" min="1" max="5" step="0.1" />
+              </div>
+              <label className="block">
+                <span className={labelClass}>Combo description</span>
+                <textarea className={`${inputClass} min-h-28 resize-y`} name="description" value={form.description} onChange={handleChange} rows={4} placeholder="Describe the included products and bundle value…" />
               </label>
-            ))}
-          </div>
-        </ComboSection>
+              <div className="grid gap-3 md:grid-cols-3">
+                {[
+                  ["featured", "Featured combo"],
+                  ["trending_product", "Trending combo"],
+                  ["offer_product", "Combo offer"],
+                ].map(([name, label]) => (
+                  <label key={name} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                    {label}
+                    <input type="checkbox" name={name} checked={Boolean(form[name])} onChange={handleChange} className="h-4 w-4 accent-orange-600" />
+                  </label>
+                ))}
+              </div>
+            </ComboSection>
 
-        <ComboSection title="Products and pricing" description="Choose existing catalog products, variants and quantities.">
-          <ComboBuilder
-            items={comboItems}
-            onChange={setComboItems}
-            onSummaryChange={setSummary}
-            form={form}
-            onFormChange={(name, value) => setForm((previous) => ({ ...previous, [name]: value }))}
-            categories={categories}
-          />
-        </ComboSection>
-
-        <ComboSection title="Images and delivery" description="Upload combo imagery and configure delivery details.">
-          <input ref={fileInputRef} className="hidden" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple onChange={(event) => uploadImages(event.target.files)} />
-          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-orange-200 bg-orange-50/40 px-4 py-7 text-center transition hover:border-orange-400 disabled:opacity-60">
-            {uploading ? <LoaderCircle size={24} className="animate-spin text-orange-600" /> : <UploadCloud size={24} className="text-orange-600" />}
-            <span className="mt-2 text-sm font-semibold text-slate-800">{uploading ? `Uploading… ${uploadProgress}%` : "Upload combo images"}</span>
-            <span className="mt-1 text-xs text-slate-500">JPG, PNG, WEBP · up to 10 images</span>
-            {uploading && <span className="mt-3 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-orange-100"><span className="block h-full bg-orange-500" style={{ width: `${uploadProgress}%` }} /></span>}
-          </button>
-          {images.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {images.map((image, index) => (
-                <div key={`${image}-${index}`} className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                  <img src={resolveMediaUrl(image)} alt={`Combo image ${index + 1}`} className="aspect-[4/3] w-full object-cover" />
-                  <div className="flex items-center justify-between gap-2 p-2">
-                    <button type="button" onClick={() => setMainImageIndex(index)} className={`inline-flex items-center gap-1 text-xs font-semibold ${mainImageIndex === index ? "text-orange-700" : "text-slate-500"}`}>
-                      <ImagePlus size={14} /> {mainImageIndex === index ? "Main image" : "Set main"}
-                    </button>
-                    <button type="button" onClick={() => {
-                      setImages((previous) => previous.filter((_, current) => current !== index));
-                      setImageRoles((previous) => previous.filter((_, current) => current !== index));
-                      setMainImageIndex((previous) => previous === index ? 0 : previous > index ? previous - 1 : previous);
-                    }} aria-label={`Remove image ${index + 1}`} className="text-rose-600 hover:text-rose-700">
-                      <Trash2 size={15} />
+            <ComboSection title="Specifications" description="Add one or more details for this combo.">
+              <div className="space-y-3">
+                {specifications.map((specification, index) => (
+                  <div key={index} className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                    <Field
+                      label="Specification name"
+                      value={specification.name}
+                      onChange={(event) => setSpecifications((previous) => previous.map((item, current) => (
+                        current === index ? { ...item, name: event.target.value } : item
+                      )))}
+                      placeholder="e.g. Material"
+                    />
+                    <Field
+                      label="Value"
+                      value={specification.value}
+                      onChange={(event) => setSpecifications((previous) => previous.map((item, current) => (
+                        current === index ? { ...item, value: event.target.value } : item
+                      )))}
+                      placeholder="e.g. Solid wood"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setSpecifications((previous) => previous.filter((_, current) => current !== index))}
+                      aria-label={`Remove specification ${index + 1}`}
+                      className="mb-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-100 text-rose-600 transition hover:bg-rose-50"
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSpecifications((previous) => [...previous, { name: "", value: "" }])}
+                className="inline-flex items-center gap-2 rounded-xl border border-orange-200 px-3.5 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-50"
+              >
+                <Plus size={16} /> Add specification
+              </button>
+            </ComboSection>
+
+            <ComboSection title="Images and delivery" description="Upload combo imagery and configure delivery details.">
+              <input ref={fileInputRef} className="hidden" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple onChange={(event) => uploadImages(event.target.files)} />
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-orange-200 bg-orange-50/40 px-4 py-7 text-center transition hover:border-orange-400 disabled:opacity-60">
+                {uploading ? <LoaderCircle size={24} className="animate-spin text-orange-600" /> : <UploadCloud size={24} className="text-orange-600" />}
+                <span className="mt-2 text-sm font-semibold text-slate-800">{uploading ? `Uploading… ${uploadProgress}%` : "Upload combo images"}</span>
+                <span className="mt-1 text-xs text-slate-500">JPG, PNG, WEBP · up to 10 images</span>
+                {uploading && <span className="mt-3 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-orange-100"><span className="block h-full bg-orange-500" style={{ width: `${uploadProgress}%` }} /></span>}
+              </button>
+              {images.length > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {images.map((image, index) => (
+                    <div key={`${image}-${index}`} className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                      <img src={resolveMediaUrl(image)} alt={`Combo image ${index + 1}`} className="aspect-[4/3] w-full object-cover" />
+                      <div className="flex items-center justify-between gap-2 p-2">
+                        <button type="button" onClick={() => setMainImageIndex(index)} className={`inline-flex items-center gap-1 text-xs font-semibold ${mainImageIndex === index ? "text-orange-700" : "text-slate-500"}`}>
+                          <ImagePlus size={14} /> {mainImageIndex === index ? "Main image" : "Set main"}
+                        </button>
+                        <button type="button" onClick={() => {
+                          setImages((previous) => previous.filter((_, current) => current !== index));
+                          setImageRoles((previous) => previous.filter((_, current) => current !== index));
+                          setMainImageIndex((previous) => previous === index ? 0 : previous > index ? previous - 1 : previous);
+                        }} aria-label={`Remove image ${index + 1}`} className="text-rose-600 hover:text-rose-700">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Field label="Warranty" name="warranty_period" value={form.warranty_period} onChange={handleChange} placeholder="e.g. 3 years" />
-            <Field label="Estimated delivery days" name="estimated_delivery_days" value={form.estimated_delivery_days} onChange={handleChange} type="number" min="0" />
-            <Field label="Delivery charges" name="delivery_charges" value={form.delivery_charges} onChange={handleChange} type="number" min="0" step="0.01" />
-            <Field label="Offer start date" name="offer_start_date" value={form.offer_start_date} onChange={handleChange} type="date" />
-            <Field label="Offer end date" name="offer_end_date" value={form.offer_end_date} onChange={handleChange} type="date" />
-            <Field label="Return policy" name="return_policy" value={form.return_policy} onChange={handleChange} />
+              )}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Field label="Warranty" name="warranty_period" value={form.warranty_period} onChange={handleChange} placeholder="e.g. 3 years" />
+                <Field label="Estimated delivery days" name="estimated_delivery_days" value={form.estimated_delivery_days} onChange={handleChange} type="number" min="0" />
+                <Field label="Delivery charges" name="delivery_charges" value={form.delivery_charges} onChange={handleChange} type="number" min="0" step="0.01" />
+              </div>
+              <div className="flex flex-wrap gap-5">
+                {[
+                  ["delivery_available", "Delivery available"],
+                  ["free_delivery", "Free delivery"],
+                ].map(([name, label]) => (
+                  <label key={name} className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input type="checkbox" name={name} checked={Boolean(form[name])} onChange={handleChange} className="h-4 w-4 accent-orange-600" />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </ComboSection>
           </div>
-          <div className="flex flex-wrap gap-5">
-            {[
-              ["delivery_available", "Delivery available"],
-              ["free_delivery", "Free delivery"],
-            ].map(([name, label]) => (
-              <label key={name} className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-                <input type="checkbox" name={name} checked={Boolean(form[name])} onChange={handleChange} className="h-4 w-4 accent-orange-600" />
-                {label}
-              </label>
-            ))}
+
+          <div className="min-w-0">
+            <ComboSection title="Products and pricing" description="Choose existing catalog products, variants and quantities.">
+              <ComboBuilder
+                items={comboItems}
+                onChange={setComboItems}
+                onSummaryChange={setSummary}
+                form={form}
+                onFormChange={(name, value) => setForm((previous) => ({ ...previous, [name]: value }))}
+                categories={categories}
+              />
+            </ComboSection>
           </div>
-        </ComboSection>
+        </div>
 
         <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur">
           <p className="text-xs text-slate-500">Combo stock is recalculated from selected component availability.</p>

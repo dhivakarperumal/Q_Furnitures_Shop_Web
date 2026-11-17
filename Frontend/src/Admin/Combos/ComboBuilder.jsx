@@ -468,14 +468,14 @@ function ComboBuilder({
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label>
-            <span className={labelClass}>Discount type</span>
+            <span className={labelClass}>Offer type</span>
             <select name="offer_type" value={form.offer_type} onChange={setFormField} className={fieldClass}>
               <option value="Percentage">Percentage</option>
               <option value="Fixed Amount">Fixed Amount</option>
             </select>
           </label>
           <label>
-            <span className={labelClass}>{form.offer_type === "Percentage" ? "Combo discount (%)" : "Combo discount amount (₹)"}</span>
+            <span className={labelClass}>{form.offer_type === "Percentage" ? "Offer (%)" : "Offer amount (₹)"}</span>
             <input
               name="offer"
               type="number"
@@ -495,7 +495,7 @@ function ComboBuilder({
             </select>
           </label>
           <label>
-            <span className={labelClass}>Final combo price</span>
+            <span className={labelClass}>Offer price</span>
             <input
               name="offer_price"
               type="number"
@@ -511,8 +511,8 @@ function ComboBuilder({
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Original total", formatPrice(summary.originalTotal)],
-            ["Combo price", formatPrice(summary.finalPrice)],
+            ["MRP", formatPrice(summary.originalTotal)],
+            ["Offer price", formatPrice(summary.finalPrice)],
             ["Customer savings", formatPrice(summary.savings)],
             ["Available combo stock", `${summary.availableComboStock} (${summary.stockState})`],
           ].map(([label, value]) => (
@@ -524,20 +524,6 @@ function ComboBuilder({
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <label>
-          <span className={labelClass}>Warranty</span>
-          <input name="warranty_period" value={form.warranty_period || ""} onChange={setFormField} placeholder="e.g. 3 years" className={fieldClass} />
-        </label>
-        <label>
-          <span className={labelClass}>Combo offer start date</span>
-          <input type="date" name="offer_start_date" value={form.offer_start_date || ""} onChange={setFormField} className={fieldClass} />
-        </label>
-        <label>
-          <span className={labelClass}>Combo offer end date</span>
-          <input type="date" name="offer_end_date" value={form.offer_end_date || ""} onChange={setFormField} className={fieldClass} />
-        </label>
-      </section>
     </div>
   );
 }
