@@ -149,16 +149,16 @@ const Navbar = () => {
   }, [user]);
 
   const navClass = ({ isActive }) =>
-    `inline-flex items-center whitespace-nowrap text-[13px] transition-colors ${
+    `inline-flex items-center whitespace-nowrap rounded-full px-3 py-2.5 text-[13px] font-semibold transition-colors ${
       isActive
-        ? "rounded-full bg-[#ed720a] px-4 py-2.5 font-bold text-white shadow-sm hover:bg-[#d65e00] xl:px-5"
-        : "px-1.5 py-2 font-semibold text-[#351d0e] hover:text-[#e87500]"
+        ? "bg-[#ed720a] text-white shadow-sm hover:bg-[#d65e00]"
+        : "text-[#351d0e] hover:text-[#e87500]"
     }`;
   const mobileNavClass = ({ isActive }) =>
-    `flex items-center gap-3 rounded-full px-4 py-3 text-sm transition ${
+    `flex items-center gap-3 rounded-full px-4 py-3 text-sm font-medium transition ${
       isActive
-        ? "bg-[#ed720a] font-semibold text-white shadow-sm"
-        : "font-medium text-gray-800 hover:text-orange-700"
+        ? "bg-[#ed720a] text-white shadow-sm"
+        : "text-gray-800 hover:text-orange-700"
     }`;
 
   const handleSearch = (event) => {
@@ -216,8 +216,8 @@ const Navbar = () => {
                       to={`/category/${cat.slug || cat.name}`}
                       onClick={() => setCategoryMenu(false)}
                       className={({ isActive }) =>
-                        `mx-2 block rounded-full px-4 py-2.5 text-sm transition-colors ${
-                          isActive ? "bg-[#ed720a] font-semibold text-white shadow-sm" : "text-slate-700 hover:bg-orange-50 hover:text-orange-700"
+                        `mx-2 block rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
+                          isActive ? "bg-[#ed720a] text-white shadow-sm" : "text-slate-700 hover:bg-orange-50 hover:text-orange-700"
                         }`
                       }
                     >
@@ -584,8 +584,8 @@ const Navbar = () => {
                       to={`/category/${cat.slug || cat.name}`}
                       onClick={closeMobileMenu}
                       className={({ isActive }) =>
-                        `flex items-center justify-between rounded-full px-4 py-3 text-sm transition ${
-                          isActive ? "bg-[#ed720a] font-semibold text-white shadow-sm" : "font-medium text-gray-800 hover:text-orange-700"
+                        `flex items-center justify-between rounded-full px-4 py-3 text-sm font-medium transition ${
+                          isActive ? "bg-[#ed720a] text-white shadow-sm" : "text-gray-800 hover:text-orange-700"
                         }`
                       }
                     >
