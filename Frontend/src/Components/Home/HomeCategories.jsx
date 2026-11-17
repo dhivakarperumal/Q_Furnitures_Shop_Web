@@ -161,7 +161,7 @@ const HomeCategories = () => {
               return (
                 <article
                   key={category.catId || category.id || category.name}
-                  className="basis-[calc((100%_-_24px)/3)] shrink-0 snap-start sm:basis-[calc((100%_-_80px)/6)] lg:basis-[calc((100%_-_128px)/9)]"
+                  className="basis-[calc((100%_-_24px)/3)] shrink-0 snap-start sm:basis-[calc((100%_-_80px)/6)] lg:basis-[calc((100%_-_144px)/10)]"
                 >
                   <Link
                     to={`/shop?category=${encodeURIComponent(category.name)}`}
