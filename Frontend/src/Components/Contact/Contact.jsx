@@ -1,6 +1,5 @@
 import {
   CalendarDays,
-  ChevronRight,
   Clock3,
   Headphones,
   Mail,
@@ -10,9 +9,9 @@ import {
   Phone,
   Send,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { resolveMediaUrl } from "../../utils/media";
 import PageContainer from "../CommenComponents/PageContainer";
+import PageHeader from "../CommenComponents/PageHeader";
 
 const heroImage = resolveMediaUrl("/uploads/banners/1a4fd15f-b369-42f2-9d40-47fcb5d305a2.png");
 const storeImage = resolveMediaUrl("/uploads/banners/3050044b-1e64-433a-9d86-6a9524a16c6e.png");
@@ -92,31 +91,13 @@ function ContactCard({ icon: Icon, title, detail, note, href }) {
 
 export default function Contact() {
   return (
-    <main className="overflow-hidden bg-[#fffaf5] text-[#351d0e]">
-      <section className="relative isolate min-h-[190px] overflow-hidden bg-[#f3e5d7] sm:min-h-[220px]">
-        <img src={heroImage} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-center" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#fff8f0] via-[#fff8f0]/95 to-[#fff8f0]/10" />
-        <PageContainer>
-          <div className="flex min-h-[190px] items-center py-7 sm:min-h-[220px]">
-            <div className="max-w-md">
-              <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-2 text-xs text-[#725d4b]">
-                <Link to="/" className="hover:text-[#e87500]">Home</Link>
-                <ChevronRight size={13} />
-                <span aria-current="page">Contact Us</span>
-              </nav>
-              <span className="mb-2 block h-0.5 w-9 rounded-full bg-[#f07816]" />
-              <h1 className="text-4xl font-extrabold leading-none tracking-tight sm:text-5xl">
-                Contact <span className="text-[#ef7412]">Us</span>
-              </h1>
-              <p className="mt-2 max-w-xs text-sm font-medium leading-5 text-[#351d0e]">
-                We’re here to help you with your furniture needs.
-              </p>
-            </div>
-          </div>
-        </PageContainer>
-      </section>
-
+    <>
+      <PageHeader title="Contact Us" />
+      <main className="overflow-hidden bg-[#fffaf5] text-[#351d0e]">
       <PageContainer>
+        <p className="pt-4 text-sm font-medium text-[#594333]">
+          We’re here to help you with your furniture needs.
+        </p>
         <section className="grid gap-5 py-5 lg:grid-cols-[0.8fr_2fr] lg:gap-6">
           <div>
             <h2 className="mb-3 text-xl font-extrabold">Get in Touch</h2>
@@ -274,6 +255,7 @@ export default function Contact() {
           </a>
         </section>
       </PageContainer>
-    </main>
+      </main>
+    </>
   );
 }
