@@ -403,6 +403,16 @@ const Shop = () => {
               <button type="submit" className="rounded-md bg-[#e87500] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ca6100] sm:px-6 sm:text-sm">
                 Search
               </button>
+              <button
+                type="button"
+                onClick={toggleFilters}
+                aria-expanded={filterOpen}
+                aria-controls={filterOpen ? "shop-filter-sidebar" : undefined}
+                className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${filterOpen ? "bg-[#e87500] text-white" : "border border-[#efc18d] bg-[#fff8ef] text-[#8b4b12] hover:border-[#e87500] hover:bg-[#fff0df]"}`}
+              >
+                <SlidersHorizontal size={15} />
+                <span className="hidden sm:inline">{filterOpen ? "Hide filters" : "Filters"}</span>
+              </button>
             </form>
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -411,28 +421,21 @@ const Shop = () => {
                 {searchTerm && <span className="ml-1 text-[#8b735e]">for “{searchTerm}”</span>}
               </p>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={toggleFilters}
-                  aria-expanded={filterOpen}
-                  aria-controls={filterOpen ? "shop-filter-sidebar" : undefined}
-                  className={`inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${filterOpen ? "bg-[#e87500] text-white" : "border border-[#ded2c6] bg-white text-[#4d3b2b] hover:border-[#e87500]"}`}
-                >
-                  <SlidersHorizontal size={15} />
-                  {filterOpen ? "Hide filters" : "Filters"}
-                </button>
-                <label htmlFor="shop-sort" className="whitespace-nowrap text-xs font-semibold">Sort by:</label>
-                <select
-                  id="shop-sort"
-                  value={sort}
-                  onChange={(event) => updateParams({ sort: event.target.value === "featured" ? "" : event.target.value })}
-                  className="rounded-md border border-[#ded2c6] bg-white px-3 py-2 text-xs text-[#3b2b1f] outline-none focus:border-[#e87500]"
-                >
-                  <option value="featured">Featured</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="rating">Top Rated</option>
-                </select>
+                <label htmlFor="shop-sort" className="whitespace-nowrap text-xs font-semibold text-[#8b4b12]">Sort by:</label>
+                <div className="relative">
+                  <select
+                    id="shop-sort"
+                    value={sort}
+                    onChange={(event) => updateParams({ sort: event.target.value === "featured" ? "" : event.target.value })}
+                    className="h-9 appearance-none rounded-lg border border-[#e87500]/60 bg-[#fff8ef] py-2 pl-3 pr-8 text-xs font-semibold text-[#633b1d] outline-none transition hover:border-[#e87500] focus:border-[#e87500] focus:ring-2 focus:ring-[#e87500]/20"
+                  >
+                    <option value="featured">Featured</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="rating">Top Rated</option>
+                  </select>
+                  <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#c45d00]" />
+                </div>
                 <button
                   type="button"
                   onClick={() => setListView(false)}
@@ -513,38 +516,46 @@ const Shop = () => {
                 </div>
 
                 {pagination.totalPages > 1 && (
-                  <nav className="mt-7 flex flex-wrap items-center justify-center gap-1.5" aria-label="Product pages">
-                    <button
-                      type="button"
-                      onClick={() => goToPage(currentPage - 1)}
-                      disabled={currentPage <= 1}
-                      className="inline-flex items-center gap-1 rounded-md border border-[#e5d8ca] bg-white px-3 py-2 text-xs text-[#695340] hover:bg-[#f4eadc] disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <ChevronLeft size={14} /> Previous
-                    </button>
-                    {Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
-                      .filter((page) => page === 1 || page === pagination.totalPages || Math.abs(page - currentPage) <= 1)
-                      .map((page, index, visiblePages) => (
-                        <span key={page} className="contents">
-                          {index > 0 && page - visiblePages[index - 1] > 1 && <span className="px-1 text-xs text-[#806d5d]">…</span>}
-                          <button
-                            type="button"
-                            onClick={() => goToPage(page)}
-                            aria-current={page === currentPage ? "page" : undefined}
-                            className={`h-9 min-w-9 rounded-md border px-2 text-xs font-semibold ${page === currentPage ? "border-[#e87500] bg-[#e87500] text-white" : "border-[#e5d8ca] bg-white text-[#4b3929] hover:bg-[#fff3e5]"}`}
-                          >
-                            {page}
-                          </button>
-                        </span>
-                      ))}
-                    <button
-                      type="button"
-                      onClick={() => goToPage(currentPage + 1)}
-                      disabled={currentPage >= pagination.totalPages}
-                      className="inline-flex items-center gap-1 rounded-md border border-[#e5d8ca] bg-white px-3 py-2 text-xs text-[#695340] hover:bg-[#f4eadc] disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Next <ChevronRight size={14} />
-                    </button>
+                  <nav
+                    className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-[#f0dfce] bg-gradient-to-r from-white via-[#fffaf4] to-white px-3 py-3 shadow-[0_6px_20px_rgba(53,29,14,0.05)] sm:flex-row sm:justify-between sm:px-4"
+                    aria-label="Product pages"
+                  >
+                    <p className="text-xs text-[#806d5d]">
+                      Page <span className="font-bold text-[#8b4b12]">{currentPage}</span> of {pagination.totalPages}
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#edd7c0] bg-white px-3 text-xs font-semibold text-[#695340] transition hover:border-[#e87500] hover:bg-[#fff3e5] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <ChevronLeft size={14} /> Previous
+                      </button>
+                      {Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
+                        .filter((page) => page === 1 || page === pagination.totalPages || Math.abs(page - currentPage) <= 1)
+                        .map((page, index, visiblePages) => (
+                          <span key={page} className="contents">
+                            {index > 0 && page - visiblePages[index - 1] > 1 && <span className="px-1 text-sm font-semibold text-[#b19a84]">…</span>}
+                            <button
+                              type="button"
+                              onClick={() => goToPage(page)}
+                              aria-current={page === currentPage ? "page" : undefined}
+                              className={`h-9 min-w-9 rounded-lg border px-2 text-xs font-bold transition ${page === currentPage ? "border-[#e87500] bg-gradient-to-b from-[#f58a1f] to-[#e87500] text-white shadow-[0_3px_8px_rgba(232,117,0,0.28)]" : "border-[#edd7c0] bg-white text-[#4b3929] hover:border-[#e87500] hover:bg-[#fff3e5]"}`}
+                            >
+                              {page}
+                            </button>
+                          </span>
+                        ))}
+                      <button
+                        type="button"
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage >= pagination.totalPages}
+                        className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#edd7c0] bg-white px-3 text-xs font-semibold text-[#695340] transition hover:border-[#e87500] hover:bg-[#fff3e5] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Next <ChevronRight size={14} />
+                      </button>
+                    </div>
                   </nav>
                 )}
               </>
