@@ -169,6 +169,7 @@ export default function Contact() {
                     className="h-10 w-full rounded-lg border border-[#e7d8c8] bg-white px-3 text-xs text-[#594333] outline-none transition focus:border-[#f07816] focus:ring-2 focus:ring-[#f07816]/15"
                   >
                     <option value="" disabled>Select a subject</option>
+                    <option>Custom furniture</option>
                     <option>Product enquiry</option>
                     <option>Order and delivery</option>
                     <option>Returns and refunds</option>
