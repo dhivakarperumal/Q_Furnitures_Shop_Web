@@ -15,7 +15,7 @@ import api from "../../api";
 import { resolveMediaUrl } from "../../utils/media";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
-import ProductCard, { ProductTableRow } from "./ProductCard";
+import ProductCard, { ProductListCard } from "./ProductCard";
 
 const MAX_PRICE = 600000;
 const MATERIALS = ["Solid Wood", "Engineered Wood", "Upholstered", "Plywood", "Metal"];
@@ -235,9 +235,11 @@ const Shop = () => {
 
   const pageStart = pagination.total ? (currentPage - 1) * productsPerPage + 1 : 0;
   const pageEnd = Math.min(currentPage * productsPerPage, pagination.total);
-  const productGridClass = filterOpen
-    ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-    : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
+  const productGridClass = listView
+    ? "grid-cols-1 sm:grid-cols-2"
+    : filterOpen
+      ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+      : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
 
   return (
     <>
@@ -468,19 +470,17 @@ const Shop = () => {
 
             {loading ? (
               listView ? (
-                <div className="mt-4 overflow-x-auto rounded-xl border border-[#e7d8c8] bg-white">
-                  <table className="w-full min-w-[790px] border-collapse">
-                    <thead className="bg-[#fbf0e4]">
-                      <tr>{["Product", "Category", "Material", "Rating", "Price", "Offer", "Action"].map((heading) => (
-                        <th key={heading} scope="col" className="px-3 py-3 text-left text-[11px] font-bold text-[#302218]">{heading}</th>
-                      ))}</tr>
-                    </thead>
-                    <tbody>{Array.from({ length: Math.min(productsPerPage, 8) }, (_, index) => (
-                      <tr key={index} className="border-t border-[#eee4d8]">
-                        <td colSpan={7} className="px-3 py-3"><div className="h-8 animate-pulse rounded bg-[#f7f1e9]" /></td>
-                      </tr>
-                    ))}</tbody>
-                  </table>
+                <div className={`mt-4 grid gap-3 ${productGridClass}`}>
+                  {Array.from({ length: productsPerPage }, (_, index) => (
+                    <div key={index} className="flex min-h-[116px] overflow-hidden rounded-xl border border-[#eee4d8] bg-white">
+                      <div className="w-[38%] animate-pulse bg-[#f1e9df]" />
+                      <div className="flex-1 space-y-2 p-3">
+                        <div className="h-3 w-1/3 animate-pulse rounded bg-[#f1e9df]" />
+                        <div className="h-4 w-3/4 animate-pulse rounded bg-[#f1e9df]" />
+                        <div className="h-3 w-1/2 animate-pulse rounded bg-[#f1e9df]" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className={`mt-4 grid gap-3 ${productGridClass}`}>
@@ -504,28 +504,11 @@ const Shop = () => {
               </div>
             ) : products.length ? (
               <>
-                {listView ? (
-                  <div className="mt-4 overflow-x-auto rounded-xl border border-[#e7d8c8] bg-white shadow-[0_3px_15px_rgba(53,29,14,0.04)]">
-                    <table className="w-full min-w-[790px] border-collapse text-left">
-                      <thead className="bg-[#fbf0e4]">
-                        <tr>
-                          {["Product", "Category", "Material", "Rating", "Price", "Offer", "Action"].map((heading) => (
-                            <th key={heading} scope="col" className="whitespace-nowrap px-3 py-3 text-[11px] font-bold text-[#302218]">
-                              {heading}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {products.map((product) => <ProductTableRow key={product.id} product={product} />)}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className={`mt-4 grid gap-3 ${productGridClass}`}>
-                    {products.map((product) => <ProductCard key={product.id} product={product} compact />)}
-                  </div>
-                )}
+                <div className={`mt-4 grid gap-3 ${productGridClass}`}>
+                  {products.map((product) => listView
+                    ? <ProductListCard key={product.id} product={product} />
+                    : <ProductCard key={product.id} product={product} compact />)}
+                </div>
 
                 {pagination.totalPages > 1 && (
                   <nav className="mt-7 flex flex-wrap items-center justify-center gap-1.5" aria-label="Product pages">
