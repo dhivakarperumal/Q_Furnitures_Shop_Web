@@ -33,6 +33,14 @@ const tabs = [
 ];
 
 const accountHeroImage = resolveMediaUrl("/uploads/banners/1a4fd15f-b369-42f2-9d40-47fcb5d305a2.png");
+const MAX_BIRTH_DATE = new Date().toISOString().slice(0, 10);
+
+function dateInputValue(value) {
+  if (!value) return "";
+  if (typeof value === "string") return value.slice(0, 10);
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+}
 
 function formatAmount(value) {
   const amount = Number(value || 0);
@@ -81,6 +89,14 @@ function Account() {
     name: user?.name || user?.username || "",
     email: user?.email || "",
     phone: user?.phone || "",
+    date_of_birth: dateInputValue(user?.date_of_birth),
+    profile_image: user?.profile_image || "",
+  });
+  const [savedProfile, setSavedProfile] = useState({
+    name: user?.name || user?.username || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    date_of_birth: dateInputValue(user?.date_of_birth),
     profile_image: user?.profile_image || "",
   });
   const [orders, setOrders] = useState([]);
@@ -100,6 +116,8 @@ function Account() {
   });
   const [reloadProfile, setReloadProfile] = useState(0);
   const [reloadOrders, setReloadOrders] = useState(0);
+  const userId = user?.id;
+  const userProfileImage = user?.profile_image;
 
   useEffect(() => {
     let active = true;
@@ -110,12 +128,15 @@ function Account() {
       try {
         const { data } = await api.get("/users/me");
         if (active) {
-          setProfile({
+          const nextProfile = {
             name: data.name || data.username || "",
             email: data.email || "",
             phone: data.phone || "",
-            profile_image: data.profile_image || user?.profile_image || "",
-          });
+            date_of_birth: dateInputValue(data.date_of_birth),
+            profile_image: data.profile_image || userProfileImage || "",
+          };
+          setProfile(nextProfile);
+          setSavedProfile(nextProfile);
         }
       } catch (error) {
         console.error("Could not load account profile:", error);
@@ -131,7 +152,7 @@ function Account() {
     return () => {
       active = false;
     };
-  }, [user?.id, reloadProfile]);
+  }, [userId, userProfileImage, reloadProfile]);
 
   useEffect(() => {
     let active = true;
@@ -183,12 +204,15 @@ function Account() {
     setProfileFormError("");
     try {
       const { data } = await api.put("/users/me", profile);
-      setProfile({
+      const nextProfile = {
         name: data.user.name || data.user.username || "",
         email: data.user.email || "",
         phone: data.user.phone || "",
+        date_of_birth: dateInputValue(data.user.date_of_birth),
         profile_image: data.user.profile_image || profile.profile_image || "",
-      });
+      };
+      setProfile(nextProfile);
+      setSavedProfile(nextProfile);
       updateUser(data.user);
       toast.success("Profile updated.");
     } catch (error) {
@@ -201,12 +225,7 @@ function Account() {
   }
 
   function cancelProfileChanges() {
-    setProfile({
-      name: user?.name || user?.username || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      profile_image: user?.profile_image || "",
-    });
+    setProfile(savedProfile);
     setProfileFormError("");
   }
 
@@ -230,10 +249,15 @@ function Account() {
     try {
       const { data } = await api.post("/uploads/profile-image", formData);
       updateUser(data.user);
+      const nextProfile = {
+        ...savedProfile,
+        profile_image: data.user.profile_image || data.url || "",
+      };
       setProfile((current) => ({
         ...current,
-        profile_image: data.user.profile_image || data.url || "",
+        profile_image: nextProfile.profile_image,
       }));
+      setSavedProfile((current) => ({ ...current, profile_image: nextProfile.profile_image }));
       toast.success("Profile photo updated.");
     } catch (error) {
       console.error("Could not update account photo:", error);
@@ -365,14 +389,10 @@ function Account() {
           >
             {activeTab === "profile" && (
               <>
-                <div className="mb-6 flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#fff0df] text-[#e87500]">
-                    <UserRound size={21} />
-                  </span>
-                  <div>
-                    <h2 className="text-xl font-bold">Profile</h2>
-                    <p className="text-sm text-[#806d5d]">Update your name and contact details.</p>
-                  </div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-extrabold">Profile</h2>
+                  <span className="mt-1 block h-0.5 w-10 rounded-full bg-[#f07816]" />
+                  <p className="mt-1 text-sm text-[#806d5d]">Update your personal information and keep your account details up to date.</p>
                 </div>
                 {profileError && (
                   <div role="alert" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -385,55 +405,118 @@ function Account() {
                     <LoaderCircle size={18} className="animate-spin" /> Loading your profile...
                   </div>
                 ) : (
-                  <form onSubmit={saveProfile} className="max-w-2xl space-y-5">
-                    <label className="block text-sm font-semibold">
-                      Full name
-                      <input
-                        className={inputClass}
-                        type="text"
-                        name="name"
-                        value={profile.name}
-                        onChange={(event) => setProfile((current) => ({ ...current, name: event.target.value }))}
-                        autoComplete="name"
-                        minLength={2}
-                        maxLength={120}
-                        required
-                      />
-                    </label>
-                    <label className="block text-sm font-semibold">
-                      Email address
-                      <input
-                        className={inputClass}
-                        type="email"
-                        name="email"
-                        value={profile.email}
-                        onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))}
-                        autoComplete="email"
-                        maxLength={191}
-                        required
-                      />
-                    </label>
-                    <label className="block text-sm font-semibold">
-                      Phone number
-                      <input
-                        className={inputClass}
-                        type="tel"
-                        name="phone"
-                        value={profile.phone}
-                        onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))}
-                        autoComplete="tel"
-                        maxLength={32}
-                      />
-                    </label>
-                    {profileFormError && <p role="alert" className="text-sm text-red-700">{profileFormError}</p>}
-                    <button
-                      type="submit"
-                      disabled={profileSaving}
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-dark disabled:cursor-wait disabled:opacity-60"
-                    >
-                      {profileSaving ? <LoaderCircle size={17} className="animate-spin" /> : <Check size={17} />}
-                      {profileSaving ? "Saving..." : "Save profile"}
-                    </button>
+                  <form onSubmit={saveProfile}>
+                    <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_160px]">
+                      <div className="grid content-start gap-x-5 gap-y-4 sm:grid-cols-2">
+                        <label className="block text-xs font-bold">
+                          Full Name <span className="text-red-600">*</span>
+                          <input
+                            className={inputClass}
+                            type="text"
+                            name="name"
+                            value={profile.name}
+                            onChange={(event) => setProfile((current) => ({ ...current, name: event.target.value }))}
+                            autoComplete="name"
+                            minLength={2}
+                            maxLength={120}
+                            required
+                          />
+                        </label>
+                        <label className="block text-xs font-bold">
+                          Email Address <span className="text-red-600">*</span>
+                          <input
+                            className={inputClass}
+                            type="email"
+                            name="email"
+                            value={profile.email}
+                            onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))}
+                            autoComplete="email"
+                            maxLength={191}
+                            required
+                          />
+                        </label>
+                        <label className="block text-xs font-bold">
+                          Phone Number
+                          <input
+                            className={inputClass}
+                            type="tel"
+                            name="phone"
+                            value={profile.phone}
+                            onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))}
+                            autoComplete="tel"
+                            maxLength={32}
+                          />
+                        </label>
+                        <label className="block text-xs font-bold">
+                          Date of Birth
+                          <input
+                            className={inputClass}
+                            type="date"
+                            name="date_of_birth"
+                            value={profile.date_of_birth}
+                            max={MAX_BIRTH_DATE}
+                            onChange={(event) => setProfile((current) => ({ ...current, date_of_birth: event.target.value }))}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="relative">
+                          <span className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-[#f5dfc8] text-3xl font-bold text-[#a34720]">
+                            {profile.profile_image ? (
+                              <img src={resolveMediaUrl(profile.profile_image)} alt={`${displayName}'s profile`} className="h-full w-full object-cover" />
+                            ) : initials || <UserRound size={38} />}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => photoInputRef.current?.click()}
+                            disabled={photoUploading}
+                            aria-label="Change profile photo"
+                            className="absolute bottom-1 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary text-white shadow-sm transition hover:bg-primary-dark disabled:opacity-60"
+                          >
+                            {photoUploading ? <LoaderCircle size={15} className="animate-spin" /> : <Camera size={15} />}
+                          </button>
+                        </div>
+                        <input
+                          ref={photoInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={uploadProfilePhoto}
+                          className="sr-only"
+                          aria-label="Upload a profile photo"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => photoInputRef.current?.click()}
+                          disabled={photoUploading}
+                          className="inline-flex items-center gap-2 rounded-lg border border-[#edc9a9] px-4 py-2 text-xs font-bold text-[#5b3821] transition hover:bg-[#fff5eb] disabled:opacity-60"
+                        >
+                          <Upload size={14} />
+                          {photoUploading ? "Uploading..." : "Change Photo"}
+                        </button>
+                        <p className="text-[10px] text-[#8b735e]">JPG, PNG or WebP up to 5 MB</p>
+                      </div>
+                    </div>
+
+                    {profileFormError && <p role="alert" className="mt-4 text-sm text-red-700">{profileFormError}</p>}
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <button
+                        type="submit"
+                        disabled={profileSaving}
+                        className="inline-flex min-w-32 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#f07816] to-[#df5d00] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:brightness-105 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {profileSaving ? <LoaderCircle size={16} className="animate-spin" /> : <Check size={16} />}
+                        {profileSaving ? "Saving..." : "Save Changes"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelProfileChanges}
+                        disabled={profileSaving || photoUploading}
+                        className="rounded-lg border border-[#edc9a9] px-5 py-2.5 text-xs font-bold text-[#5b3821] transition hover:bg-[#fff5eb] disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </form>
                 )}
               </>

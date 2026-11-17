@@ -3,7 +3,7 @@ const { randomBytes, randomUUID } = require("node:crypto");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 
-const USER_COLUMNS = "id, user_id, username, email, phone, profile_image, role, status, created_at, updated_at";
+const USER_COLUMNS = "id, user_id, username, email, phone, date_of_birth, profile_image, role, status, created_at, updated_at";
 const AUTH_USER_COLUMNS = `${USER_COLUMNS}, password_hash`;
 
 function toPublicUser(user) {
@@ -14,6 +14,7 @@ function toPublicUser(user) {
     name: user.username,
     email: user.email,
     phone: user.phone,
+    date_of_birth: user.date_of_birth || null,
     profile_image: user.profile_image || null,
     role: user.role,
     status: user.status,
@@ -36,6 +37,7 @@ function normalizeProfile(input) {
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
   const phone = typeof input.phone === "string" ? input.phone.trim() : "";
+  const dateOfBirth = typeof input.date_of_birth === "string" ? input.date_of_birth.trim() : "";
   if (name.length < 2 || name.length > 120) {
     throw accountError(400, "Name must be between 2 and 120 characters.");
   }
@@ -45,8 +47,17 @@ function normalizeProfile(input) {
   if (phone && (phone.length < 6 || phone.length > 32)) {
     throw accountError(400, "Phone number must be between 6 and 32 characters.");
   }
+  if (dateOfBirth) {
+    const parsedDate = new Date(`${dateOfBirth}T00:00:00.000Z`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) ||
+        Number.isNaN(parsedDate.getTime()) ||
+        parsedDate.toISOString().slice(0, 10) !== dateOfBirth ||
+        dateOfBirth > new Date().toISOString().slice(0, 10)) {
+      throw accountError(400, "Enter a valid date of birth that is not in the future.");
+    }
+  }
 
-  return { name, email, phone: phone || null };
+  return { name, email, phone: phone || null, date_of_birth: dateOfBirth || null };
 }
 
 function createAuthService(pool) {
@@ -103,8 +114,8 @@ function createAuthService(pool) {
       const profile = normalizeProfile(input);
       try {
         await pool.execute(
-          "UPDATE users SET username = ?, email = ?, phone = ? WHERE id = ?",
-          [profile.name, profile.email, profile.phone, userId],
+          "UPDATE users SET username = ?, email = ?, phone = ?, date_of_birth = ? WHERE id = ?",
+          [profile.name, profile.email, profile.phone, profile.date_of_birth, userId],
         );
       } catch (error) {
         if (error.code === "ER_DUP_ENTRY") {

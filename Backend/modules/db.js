@@ -378,6 +378,7 @@ async function initializeDatabase(pool) {
       username VARCHAR(120) NOT NULL,
       email VARCHAR(191) NOT NULL,
       phone VARCHAR(32) NULL,
+      date_of_birth DATE NULL,
       profile_image VARCHAR(255) NULL,
       password_hash VARCHAR(255) NOT NULL,
       role VARCHAR(32) NOT NULL DEFAULT 'customer',
@@ -1439,6 +1440,7 @@ async function initializeDatabase(pool) {
     ["status", "ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive') NOT NULL DEFAULT 'active'"],
     ["created_at", "ALTER TABLE users ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"],
     ["updated_at", "ALTER TABLE users ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
+    ["date_of_birth", "ALTER TABLE users ADD COLUMN date_of_birth DATE NULL"],
     ["profile_image", "ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) NULL"],
   ];
 
