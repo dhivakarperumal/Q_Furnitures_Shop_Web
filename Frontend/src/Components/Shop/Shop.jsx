@@ -4,7 +4,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Grid2X2,
-  Home,
   List,
   RotateCcw,
   Search,
@@ -227,36 +226,11 @@ const Shop = () => {
       : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
 
   return (
-    <main className="min-h-[60vh] bg-[#fcfaf7] pb-12 text-[#302218]">
-      <section className="relative isolate overflow-hidden border-y border-[#eddfd0] bg-[linear-gradient(100deg,#f5eadd_0%,#fbf5ec_48%,#ead4b9_100%)]">
-        {heroImage && (
-          <img
-            src={heroImage}
-            alt=""
-            className="absolute inset-y-0 right-0 -z-10 h-full w-[62%] object-cover object-center opacity-75 [mask-image:linear-gradient(to_right,transparent,black_28%)]"
-          />
-        )}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#f7ede2] via-[#f7ede2]/90 to-transparent" />
-        <PageContainer>
-          <div className="flex min-h-[122px] items-center py-6 sm:min-h-[148px]">
-            <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.17em] text-[#805a3b]">Q Living Furniture</p>
-              <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#351d0e] sm:text-[38px]">
-                Shop <span className="text-[#e87500]">Furniture</span>
-              </h1>
-              <p className="mt-1 text-sm text-[#594333] sm:text-base">Discover quality furniture for every space</p>
-            </div>
-          </div>
-        </PageContainer>
-      </section>
-
+    <>
+      <PageHeader title="Shop Furniture" />
+      <main className="min-h-[60vh] bg-[#fcfaf7] pb-12 text-[#302218]">
       <PageContainer>
-        <div className="flex items-center gap-2 py-3 text-xs text-[#725d4b]">
-          <Home size={13} />
-          <span>Home</span>
-          <ChevronRight size={13} />
-          <span className="font-semibold text-[#351d0e]">Shop</span>
-        </div>
+        <p className="py-4 text-sm text-[#594333] sm:text-base">Discover quality furniture for every space.</p>
 
         <div className={`grid gap-5 ${filterOpen ? "lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)]" : "grid-cols-1"}`}>
           {filterOpen && <aside id="shop-filter-sidebar" className="h-fit rounded-xl border border-[#e9ded2] bg-white px-3.5 shadow-[0_3px_15px_rgba(53,29,14,0.04)] lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
@@ -549,7 +523,8 @@ const Shop = () => {
           </section>
         </div>
       </PageContainer>
-    </main>
+      </main>
+    </>
   );
 };
 

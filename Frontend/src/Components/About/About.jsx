@@ -14,6 +14,7 @@ import {
 import { Link } from "react-router-dom";
 import { resolveMediaUrl } from "../../utils/media";
 import PageContainer from "../CommenComponents/PageContainer";
+import PageHeader from "../CommenComponents/PageHeader";
 
 const livingRoomImage = resolveMediaUrl("/uploads/banners/1a4fd15f-b369-42f2-9d40-47fcb5d305a2.png");
 const storyImage = resolveMediaUrl("/uploads/banners/3050044b-1e64-433a-9d86-6a9524a16c6e.png");
@@ -50,35 +51,27 @@ const steps = [
 ];
 
 const About = () => (
+  <>
+  <PageHeader title="About Us"  />
   <main className="overflow-hidden bg-[#fffaf4] text-[#351d0e]">
-    <section className="relative isolate min-h-[340px] overflow-hidden bg-[#f2e5d7] sm:min-h-[390px] lg:min-h-[430px]">
-      <img
-        src={livingRoomImage}
-        alt=""
-        fetchPriority="high"
-        className="absolute inset-0 -z-10 h-full w-full object-cover object-center"
-      />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#fffaf3] via-[#fffaf3]/90 to-[#fffaf3]/5" />
+    <section className="py-7 sm:py-9">
       <PageContainer>
-        <div className="flex min-h-[340px] items-center py-12 sm:min-h-[390px] lg:min-h-[430px]">
-          <div className="max-w-lg">
-            <p className="mb-4 inline-flex items-center gap-2 text-xs font-bold tracking-wide text-[#d9650b] sm:text-sm">
-              <span className="h-[3px] w-8 rounded-full bg-[#f07816]" />
-              About Dhiva Furniture
-            </p>
-            <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-[#351d0e] sm:text-5xl lg:text-6xl">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="max-w-2xl">
+            <p className="text-xs font-bold tracking-wide text-[#d9650b] sm:text-sm">About Dhiva Furniture</p>
+            <h2 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
               Furniture for <span className="text-[#ef7412]">Better Living</span>
-            </h1>
-            <p className="mt-4 max-w-md text-sm leading-6 text-[#594333] sm:text-base sm:leading-7">
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#594333] sm:text-base">
               Stylish, functional, and comfortable furniture to help every space feel like home.
             </p>
-            <a
-              href="#our-story"
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#ef7412] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#ef7412]/20 transition hover:-translate-y-0.5 hover:bg-[#d9650b]"
-            >
-              Our Story <ArrowRight size={16} />
-            </a>
           </div>
+          <a
+            href="#our-story"
+            className="inline-flex items-center gap-2 rounded-full bg-[#ef7412] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#ef7412]/20 transition hover:-translate-y-0.5 hover:bg-[#d9650b]"
+          >
+            Our Story <ArrowRight size={16} />
+          </a>
         </div>
       </PageContainer>
     </section>
@@ -249,6 +242,7 @@ const About = () => (
       </PageContainer>
     </section>
   </main>
+  </>
 );
 
 export default About;
