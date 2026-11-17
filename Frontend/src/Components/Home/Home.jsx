@@ -9,7 +9,7 @@ import StoreBenefits from "./StoreBenefits";
 const Home = () => (
   <main className="bg-[#fcfaf7]">
     <Hero />
-    <StoreBenefits />
+    {/* <StoreBenefits /> */}
     <HomeCategories />
     <FeaturedProducts />
     <FeaturedCombos />
