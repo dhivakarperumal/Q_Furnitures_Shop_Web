@@ -1,5 +1,6 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -18,6 +19,12 @@ import PageHeader from "../CommenComponents/PageHeader";
 import ProductCard, { ProductListCard } from "./ProductCard";
 
 const MAX_PRICE = 600000;
+const SORT_OPTIONS = [
+  { value: "featured", label: "Featured" },
+  { value: "price-low", label: "Price: Low to High" },
+  { value: "price-high", label: "Price: High to Low" },
+  { value: "rating", label: "Top Rated" },
+];
 const MATERIALS = ["Solid Wood", "Engineered Wood", "Upholstered", "Plywood", "Metal"];
 const COLORS = [
   ["Natural Teak", "#e7c090"],
@@ -95,9 +102,36 @@ const Shop = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [listView, setListView] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [priceEdit, setPriceEdit] = useState(null);
+  const sortDropdownRef = useRef(null);
+  const sortMenuRef = useRef(null);
+  const sortButtonRef = useRef(null);
   const priceDraft = priceEdit?.query === searchParams.toString() ? priceEdit.value : maxPrice;
   const productsPerPage = filterOpen ? 12 : 15;
+  const selectedSortLabel = SORT_OPTIONS.find((option) => option.value === sort)?.label || "Featured";
+
+  useEffect(() => {
+    if (!sortOpen) return undefined;
+
+    sortMenuRef.current?.querySelector("button")?.focus();
+    const handlePointerDown = (event) => {
+      if (!sortDropdownRef.current?.contains(event.target)) setSortOpen(false);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setSortOpen(false);
+        sortButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [sortOpen]);
 
   useEffect(() => {
     let active = true;
@@ -424,20 +458,67 @@ const Shop = () => {
                 {searchTerm && <span className="ml-1 text-[#8b735e]">for “{searchTerm}”</span>}
               </p>
               <div className="flex items-center gap-2">
-                <label htmlFor="shop-sort" className="whitespace-nowrap text-xs font-semibold text-[#8b4b12]">Sort by:</label>
-                <div className="relative">
-                  <select
+                <span id="sort-by-label" className="whitespace-nowrap text-xs font-semibold text-[#8b4b12]">Sort by:</span>
+                <div ref={sortDropdownRef} className="relative">
+                  <button
+                    ref={sortButtonRef}
+                    type="button"
                     id="shop-sort"
-                    value={sort}
-                    onChange={(event) => updateParams({ sort: event.target.value === "featured" ? "" : event.target.value })}
-                    className="h-9 appearance-none rounded-lg border border-[#e87500]/60 bg-[#fff8ef] py-2 pl-3 pr-8 text-xs font-semibold text-[#633b1d] outline-none transition hover:border-[#e87500] focus:border-[#e87500] focus:ring-2 focus:ring-[#e87500]/20"
+                    aria-labelledby={`sort-by-label shop-sort-value`}
+                    aria-haspopup="menu"
+                    aria-expanded={sortOpen}
+                    aria-controls="shop-sort-menu"
+                    onClick={() => setSortOpen((open) => !open)}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowDown" && !sortOpen) {
+                        event.preventDefault();
+                        setSortOpen(true);
+                      }
+                    }}
+                    className={`inline-flex h-9 min-w-[132px] items-center justify-between gap-3 rounded-lg border bg-[#fff8ef] px-3 text-xs font-semibold text-[#633b1d] outline-none transition focus-visible:ring-2 focus-visible:ring-[#e87500]/30 ${sortOpen ? "border-[#e87500] shadow-[0_0_0_2px_rgba(232,117,0,0.12)]" : "border-[#e87500]/60 hover:border-[#e87500]"}`}
                   >
-                    <option value="featured">Featured</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="rating">Top Rated</option>
-                  </select>
-                  <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#c45d00]" />
+                    <span id="shop-sort-value">{selectedSortLabel}</span>
+                    <ChevronDown size={14} aria-hidden="true" className={`shrink-0 text-[#c45d00] transition-transform ${sortOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {sortOpen && (
+                    <div
+                      ref={sortMenuRef}
+                      id="shop-sort-menu"
+                      role="menu"
+                      aria-labelledby="sort-by-label"
+                      onKeyDown={(event) => {
+                        if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+                        event.preventDefault();
+                        const menuItems = Array.from(sortMenuRef.current?.querySelectorAll('[role="menuitemradio"]') || []);
+                        const currentIndex = menuItems.indexOf(document.activeElement);
+                        const nextIndex = event.key === "Home"
+                          ? 0
+                          : event.key === "End"
+                            ? menuItems.length - 1
+                            : (currentIndex + (event.key === "ArrowDown" ? 1 : -1) + menuItems.length) % menuItems.length;
+                        menuItems[nextIndex]?.focus();
+                      }}
+                      className="absolute right-0 z-30 mt-2 w-52 origin-top-right overflow-hidden rounded-xl border border-[#efc18d] bg-white p-1.5 shadow-[0_12px_30px_rgba(53,29,14,0.16)]"
+                    >
+                      {SORT_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={sort === option.value}
+                          onClick={() => {
+                            updateParams({ sort: option.value === "featured" ? "" : option.value });
+                            setSortOpen(false);
+                            sortButtonRef.current?.focus();
+                          }}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs font-medium transition ${sort === option.value ? "bg-[#fff0df] font-bold text-[#a84e00]" : "text-[#554333] hover:bg-[#fff7ed] hover:text-[#a84e00]"}`}
+                        >
+                          {option.label}
+                          {sort === option.value && <Check size={14} aria-hidden="true" className="text-[#e87500]" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
