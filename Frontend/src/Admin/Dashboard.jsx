@@ -5,6 +5,7 @@ import api from "../api";
 import { toast, Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../utils/currency";
+import { Armchair } from "lucide-react";
 import {
     FiShoppingBag,
     FiUsers,
@@ -24,7 +25,7 @@ import {
     FiStar,
     FiSun
 } from "react-icons/fi";
-import { FaRupeeSign, FaTshirt, FaTruck } from "react-icons/fa";
+import { FaRupeeSign, FaTruck } from "react-icons/fa";
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -129,7 +130,7 @@ const Dashboard = () => {
 
     const getStatIcon = (iconStr, className = "text-white", size = 22) => {
         switch (iconStr) {
-            case "saree": return <FaTshirt className={className} size={size} />;
+            case "chair": return <Armchair className={className} size={size} />;
             case "bag": return <FiShoppingBag className={className} size={size} />;
             case "rupee": return <FaRupeeSign className={className} size={size} />;
             case "pending": return <FiClock className={className} size={size} />;
