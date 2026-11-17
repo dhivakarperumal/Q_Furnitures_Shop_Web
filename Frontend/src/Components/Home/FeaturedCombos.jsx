@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
-import ProductCard from "../Shop/ProductCard";
+import ComboOfferCard from "../Shop/ComboOfferCard";
 
 function FeaturedCombos() {
   const [combos, setCombos] = useState([]);
@@ -11,14 +11,13 @@ function FeaturedCombos() {
 
   useEffect(() => {
     let active = true;
-    api.get("/products", { params: { page: 1, limit: 100, status: "Active" } })
+    api.get("/combos", { params: { page: 1, limit: 100, status: "Active" } })
       .then(({ data }) => {
-        if (!Array.isArray(data?.products)) {
-          throw new Error("The products response did not contain a product list.");
+        if (!Array.isArray(data?.combos)) {
+          throw new Error("The combos response did not contain a combo list.");
         }
-        const featuredCombos = data.products.filter((product) =>
-          product.product_type === "Combo Product" &&
-          (product.featured === true || product.featured === 1),
+        const featuredCombos = data.combos.filter((combo) =>
+          (combo.featured === true || combo.featured === 1),
         ).slice(0, 5);
         if (active) setCombos(featuredCombos);
       })
@@ -61,7 +60,7 @@ function FeaturedCombos() {
           <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-5 text-center text-sm text-red-800">{error}</p>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {combos.map((combo) => <ProductCard key={combo.id} product={combo} />)}
+            {combos.map((combo) => <ComboOfferCard key={combo.id} combo={combo} />)}
           </div>
         )}
       </PageContainer>

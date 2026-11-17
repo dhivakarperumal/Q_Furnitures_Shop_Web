@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
-import ProductCard from "./ProductCard";
+import ComboOfferCard from "./ComboOfferCard";
 
 function ComboOffers() {
   const [combos, setCombos] = useState([]);
@@ -11,18 +11,17 @@ function ComboOffers() {
 
   useEffect(() => {
     let active = true;
-    api.get("/products", { params: { page: 1, limit: 100, status: "Active" } })
+    api.get("/combos", { params: { page: 1, limit: 100, status: "Active" } })
       .then(({ data }) => {
-        if (!Array.isArray(data?.products)) {
-          throw new Error("The products response did not contain a product list.");
+        if (!Array.isArray(data?.combos)) {
+          throw new Error("The combos response did not contain a combo list.");
         }
         const today = new Date().toISOString().slice(0, 10);
-        const availableCombos = data.products.filter((product) => {
-          if (product.product_type !== "Combo Product") return false;
-          if (product.offer_product === false || product.offer_product === 0) return false;
-          if (product.offer_start_date && product.offer_start_date > today) return false;
-          if (product.offer_end_date && product.offer_end_date < today) return false;
-          return Number(product.offer) > 0;
+        const availableCombos = data.combos.filter((combo) => {
+          if (combo.offer_product === false || combo.offer_product === 0) return false;
+          if (combo.offer_start_date && combo.offer_start_date > today) return false;
+          if (combo.offer_end_date && combo.offer_end_date < today) return false;
+          return true;
         });
         if (active) setCombos(availableCombos);
       })
@@ -62,7 +61,7 @@ function ComboOffers() {
             <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-6 text-center text-sm text-red-800">{error}</p>
           ) : combos.length ? (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {combos.map((combo) => <ProductCard key={combo.id} product={combo} />)}
+              {combos.map((combo) => <ComboOfferCard key={combo.id} combo={combo} />)}
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-[#d9c4aa] bg-white px-5 py-14 text-center">
