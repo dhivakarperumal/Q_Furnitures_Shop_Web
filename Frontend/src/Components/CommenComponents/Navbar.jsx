@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef, useEffect, useLayoutEffect } from "react";
+import React, { useContext, useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../PrivateRouter/AuthContext";
@@ -50,7 +50,6 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [mobileMenuTop, setMobileMenuTop] = useState(0);
   const [userMenu, setUserMenu] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [roomsMenu, setRoomsMenu] = useState(false);
@@ -78,7 +77,6 @@ const Navbar = () => {
   const isPagesActive = ["/about", "/contactus", "/privacy-policy"].includes(location.pathname);
 
   const menuRef = useRef();
-  const navbarRef = useRef(null);
   const categoryRef = useRef();
   const roomsRef = useRef();
   const pagesRef = useRef();
@@ -154,18 +152,6 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handler);
 
   }, []);
-
-  useLayoutEffect(() => {
-    if (!mobileMenu) return undefined;
-
-    const updateMenuPosition = () => {
-      setMobileMenuTop(navbarRef.current?.getBoundingClientRect().bottom || 0);
-    };
-
-    updateMenuPosition();
-    window.addEventListener("resize", updateMenuPosition);
-    return () => window.removeEventListener("resize", updateMenuPosition);
-  }, [mobileMenu]);
 
   // Fetch categories
   useEffect(() => {
@@ -244,7 +230,7 @@ const Navbar = () => {
 
   return (
 
-    <nav ref={navbarRef} className="sticky top-0 z-50 bg-[#fffaf5]/95 py-2 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 bg-[#fffaf5]/95 py-2 backdrop-blur-md">
       <PageContainer>
         <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f07816]/40 bg-white/95 px-3 shadow-[0_10px_30px_rgba(74,42,19,0.12)] sm:min-h-[76px] sm:gap-3 sm:px-4 lg:rounded-full lg:px-4 xl:flex-nowrap">
           <button
@@ -666,7 +652,7 @@ const Navbar = () => {
         document.body
       )}
       {mobileMenu && createPortal(
-        <div className="fixed inset-x-0 bottom-0 z-[60]" style={{ top: `${mobileMenuTop}px` }}>
+        <div className="fixed inset-0 z-[60]">
 
           {/* Overlay */}
           <div
@@ -681,7 +667,68 @@ const Navbar = () => {
             aria-label="Mobile navigation"
             className="absolute bottom-0 right-0 top-0 flex h-full w-[min(94vw,380px)] flex-col border-l border-[#f0dfce] bg-[#fffaf5] shadow-2xl"
           >
-            <div className="absolute inset-0 min-h-0 overflow-y-auto px-3 py-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4">
+              <div className="sticky top-0 z-10 -mx-3 mb-3 flex min-h-[76px] shrink-0 items-center justify-between gap-2 border-b border-[#f0dfce] bg-[#fffaf5] px-4 py-3">
+                <button
+                  type="button"
+                  onClick={closeMobileMenu}
+                  aria-label="Close menu"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark"
+                >
+                  <X size={18} />
+                </button>
+                <Link
+                  to="/"
+                  onClick={closeMobileMenu}
+                  aria-label="Q Living Furniture home"
+                  className="flex min-w-0 flex-1 justify-center"
+                >
+                  <img src="/images/logo.png" alt="Q Living Furniture" className="max-h-10 w-32 object-contain" />
+                </Link>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      closeMobileMenu();
+                      openWishlist(event);
+                    }}
+                    aria-label="Open wishlist"
+                    className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#351d0e] transition hover:bg-[#fff0df] hover:text-primary"
+                  >
+                    <Heart size={19} />
+                    {wishlist.length > 0 && (
+                      <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
+                        {wishlist.length > 9 ? "9+" : wishlist.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      closeMobileMenu();
+                      openCart(event);
+                    }}
+                    aria-label="Open cart"
+                    className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#351d0e] transition hover:bg-[#fff0df] hover:text-primary"
+                  >
+                    <ShoppingCart size={19} />
+                    {cart.length > 0 && (
+                      <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
+                        {cart.length > 9 ? "9+" : cart.length}
+                      </span>
+                    )}
+                  </button>
+                  <Link
+                    to={user ? "/account" : "/login"}
+                    onClick={closeMobileMenu}
+                    aria-label={user ? "Open account" : "Sign in"}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f7e4ca] text-xs font-bold text-[#351d0e] transition hover:bg-[#f1d3ac]"
+                  >
+                    {user ? profileInitial : <User size={18} />}
+                  </Link>
+                </div>
+              </div>
+              <div className="px-3">
 
             {/* MENU SCREEN */}
             {!mobileCategory && !mobileRoom && !mobilePages && (
@@ -970,8 +1017,9 @@ const Navbar = () => {
                 </div>
               </>
             )}
+              </div>
+            </div>
           </div>
-        </div>
         </div>
       , document.body
       )}
