@@ -58,6 +58,7 @@ const CreateOrder = () => {
     const [gstSettings, setGstSettings] = useState(null);
     const [gstSettingsError, setGstSettingsError] = useState("");
     const [gstSettingsReloadKey, setGstSettingsReloadKey] = useState(0);
+    const [includeGst, setIncludeGst] = useState(true);
 
     const [formData, setFormData] = useState({
         user_id: "", // For future use if logged in admin has a user_id
@@ -127,6 +128,7 @@ const CreateOrder = () => {
             }
             if (cancelled) return;
             setGstSettings({ gst_enabled: data.gst_enabled, gst_rate: rate });
+            setIncludeGst(data.gst_enabled);
             setFormData((previous) => {
                 const gstRate = data.gst_enabled ? rate : 0;
                 return {
@@ -321,19 +323,33 @@ const CreateOrder = () => {
         updateTotal(updatedItems);
     };
 
+    const gstAvailable = gstSettings?.gst_enabled === true;
+    const gstEnabled = gstAvailable && includeGst;
+    const gstRate = gstEnabled ? Number(formData.gst_rate) : 0;
     const updatePricing = (changes) => {
         setFormData((previous) => {
             const next = { ...previous, ...changes };
             return {
                 ...next,
-                ...calculateOrderTotals(next.items, next.discount_type, next.discount_value, next.gst_rate),
+                ...calculateOrderTotals(next.items, next.discount_type, next.discount_value, gstEnabled ? Number(next.gst_rate) : 0),
             };
         });
     };
 
+    const setOrderGstIncluded = (included) => {
+        setIncludeGst(included);
+        setFormData((previous) => ({
+            ...previous,
+            ...calculateOrderTotals(
+                previous.items,
+                previous.discount_type,
+                previous.discount_value,
+                gstAvailable && included ? Number(previous.gst_rate) : 0,
+            ),
+        }));
+    };
+
     const updateTotal = (items) => updatePricing({ items });
-    const gstEnabled = gstSettings?.gst_enabled === true;
-    const gstRate = gstEnabled ? Number(formData.gst_rate) : 0;
     const orderTotals = calculateOrderTotals(
         formData.items,
         formData.discount_type,
@@ -1123,6 +1139,38 @@ const CreateOrder = () => {
                                     <span>Subtotal</span>
                                     <span>{formatCurrency(orderTotals.subtotal, { compact: false })}</span>
                                 </div>
+                                {gstAvailable && (
+                                    <fieldset className="space-y-2">
+                                        <legend className="text-sm font-bold text-white/75">GST for this order</legend>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition ${includeGst ? "border-orange-300 bg-orange-400/15 text-white" : "border-white/15 bg-white/5 text-white/65"}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="order-gst-inclusion"
+                                                    value="include"
+                                                    checked={includeGst}
+                                                    onChange={() => setOrderGstIncluded(true)}
+                                                    className="accent-orange-400"
+                                                />
+                                                Include GST
+                                            </label>
+                                            <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition ${!includeGst ? "border-orange-300 bg-orange-400/15 text-white" : "border-white/15 bg-white/5 text-white/65"}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="order-gst-inclusion"
+                                                    value="exclude"
+                                                    checked={!includeGst}
+                                                    onChange={() => setOrderGstIncluded(false)}
+                                                    className="accent-orange-400"
+                                                />
+                                                Exclude GST
+                                            </label>
+                                        </div>
+                                        {!includeGst && (
+                                            <p className="text-xs font-semibold text-white/60">GST will not be charged or counted in GST report totals.</p>
+                                        )}
+                                    </fieldset>
+                                )}
                                 {gstEnabled && (
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between gap-3 text-sm font-bold">
