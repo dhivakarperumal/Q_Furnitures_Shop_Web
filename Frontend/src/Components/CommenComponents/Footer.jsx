@@ -12,20 +12,21 @@ import {
   ShieldCheck,
   Tag,
 } from "lucide-react";
-import { FaFacebook, FaInstagram, FaWhatsapp } from "react-icons/fa";
+import { FaFacebook, FaInstagram, FaPinterestP, FaWhatsapp, FaYoutube } from "react-icons/fa";
 import PageContainer from "./PageContainer";
 import api from "../../api";
 
 const Footer = () => {
-  const [email, setEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
   const [categories, setCategories] = useState([]);
 
   const storePhone = import.meta.env.VITE_STORE_PHONE || "+91 98765 43210";
   const storeEmail = import.meta.env.VITE_STORE_EMAIL || "support@mystore.com";
-  const storeAddress = import.meta.env.VITE_STORE_ADDRESS || "Chennai, India";
+  const storeAddress = import.meta.env.VITE_STORE_ADDRESS
+    || "No. 123, Anna Salai, Chennai - 600002, Tamil Nadu, India";
   const facebookUrl = import.meta.env.VITE_FACEBOOK_URL;
   const instagramUrl = import.meta.env.VITE_INSTAGRAM_URL;
+  const youtubeUrl = import.meta.env.VITE_YOUTUBE_URL;
+  const pinterestUrl = import.meta.env.VITE_PINTEREST_URL;
   const whatsappNumber = (import.meta.env.VITE_WHATSAPP_NUMBER || "919876543210").replace(/\D/g, "");
   const mapEmbedUrl = import.meta.env.VITE_STORE_MAP_EMBED_URL
     || "https://www.google.com/maps?q=Chennai%2C%20India&output=embed";
@@ -56,13 +57,6 @@ const Footer = () => {
     { label: "Contact Us", to: "/contactus", icon: PhoneCall },
     { label: "Privacy Policy", to: "/privacy-policy", icon: ShieldCheck },
   ];
-
-  const handleSubscribe = (event) => {
-    event.preventDefault();
-    if (!email.trim()) return;
-    setSubscribed(true);
-    setEmail("");
-  };
 
   return (
     <footer className="mt-20 bg-[#2b1a10] text-white">
@@ -135,13 +129,18 @@ const Footer = () => {
                 <Mail size={17} className="text-primary-light" />
                 {storeEmail}
               </a>
-              <p className="flex items-center gap-3">
+              <a
+                href={`https://maps.google.com/?q=${encodeURIComponent(storeAddress)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-start gap-3 transition hover:text-white"
+              >
                 <MapPin size={17} className="shrink-0 text-primary-light" />
-                {storeAddress}
-              </p>
+                <span>{storeAddress}</span>
+              </a>
             </div>
 
-            <div className="mt-5 flex items-center gap-2">
+            <div className="mt-5 flex flex-wrap items-center gap-2">
               {facebookUrl && (
                 <a href={facebookUrl} target="_blank" rel="noreferrer" aria-label="Facebook" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-primary hover:bg-primary hover:text-white">
                   <FaFacebook size={16} />
@@ -152,6 +151,16 @@ const Footer = () => {
                   <FaInstagram size={16} />
                 </a>
               )}
+              {youtubeUrl && (
+                <a href={youtubeUrl} target="_blank" rel="noreferrer" aria-label="YouTube" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-primary hover:bg-primary hover:text-white">
+                  <FaYoutube size={16} />
+                </a>
+              )}
+              {pinterestUrl && (
+                <a href={pinterestUrl} target="_blank" rel="noreferrer" aria-label="Pinterest" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-primary hover:bg-primary hover:text-white">
+                  <FaPinterestP size={16} />
+                </a>
+              )}
               <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-primary hover:bg-primary hover:text-white">
                 <FaWhatsapp size={16} />
               </a>
@@ -159,26 +168,6 @@ const Footer = () => {
                 <Mail size={16} />
               </a>
             </div>
-
-            <form onSubmit={handleSubscribe} className="mt-6 flex items-stretch">
-              <label htmlFor="footer-subscription-email" className="sr-only">Email address</label>
-              <input
-                id="footer-subscription-email"
-                type="email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  setSubscribed(false);
-                }}
-                placeholder="Enter your email"
-                required
-                className="min-w-0 flex-1 rounded-l-lg border border-white/15 bg-white/10 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/50 focus:border-amber-300"
-              />
-              <button type="submit" className="rounded-r-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-dark">
-                Join
-              </button>
-            </form>
-            {subscribed && <p className="mt-2 text-xs text-amber-300">Thanks for subscribing!</p>}
           </div>
 
           <div className="sm:col-span-2 lg:col-span-3">
