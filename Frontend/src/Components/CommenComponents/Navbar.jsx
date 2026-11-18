@@ -652,7 +652,7 @@ const Navbar = () => {
         document.body
       )}
       {mobileMenu && createPortal(
-        <div className="fixed inset-0 z-[60]">
+        <div className="fixed inset-0 z-[60] lg:hidden">
 
           {/* Overlay */}
           <div
@@ -665,7 +665,7 @@ const Navbar = () => {
             role="dialog"
             aria-modal="true"
             aria-label="Mobile navigation"
-            className="absolute bottom-0 right-0 top-0 flex h-full w-[min(94vw,380px)] flex-col border-l border-[#f0dfce] bg-[#fffaf5] shadow-2xl"
+            className="absolute inset-0 flex h-full w-full flex-col bg-[#fffaf5]"
           >
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4">
               <div className="sticky top-0 z-10 -mx-3 mb-3 flex min-h-[76px] shrink-0 items-center justify-between gap-2 border-b border-[#f0dfce] bg-[#fffaf5] px-4 py-3">
