@@ -10,6 +10,8 @@ import {
     FiEye,
     FiFileText,
     FiFilter,
+    FiGrid,
+    FiList,
     FiPackage,
     FiPlus,
     FiPrinter,
@@ -158,6 +160,7 @@ function Reports() {
     const [error, setError] = useState("");
     const [optionsError, setOptionsError] = useState("");
     const [search, setSearch] = useState("");
+    const [viewMode, setViewMode] = useState("table");
     const [sort, setSort] = useState({ key: "", direction: "asc" });
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -630,15 +633,18 @@ function Reports() {
                             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
                             <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search report..." className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-primary focus:bg-white" />
                         </label>
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                            <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1">
-                            {REPORTS.map(([id, label]) => (
-                                <button key={id} onClick={() => { setLoading(true); setError(""); setReportType(id); setHiddenColumns(["product_ids"]); }}
-                                    className={`whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold transition-all ${reportType === id ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-orange-900/20" : "bg-gray-100 text-slate-600 hover:bg-orange-50 hover:text-primary-dark"}`}>
-                                    {label}
-                                </button>
-                            ))}
-                            </div>
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
+                            <label className="w-full sm:w-52">
+                                <span className="sr-only">Select report</span>
+                                <select value={reportType} onChange={(event) => {
+                                    setLoading(true);
+                                    setError("");
+                                    setReportType(event.target.value);
+                                    setHiddenColumns(["product_ids"]);
+                                }} className="w-full cursor-pointer rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-bold text-slate-600 outline-none transition-all hover:border-primary focus:border-primary focus:bg-white">
+                                    {REPORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                                </select>
+                            </label>
                             <details className="relative shrink-0">
                                 <summary className="cursor-pointer list-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-bold text-slate-600 transition-all hover:border-primary"><FiFilter className="mr-1 inline" /> Columns</summary>
                                 <div className="absolute right-0 z-20 mt-2 max-h-64 w-56 overflow-y-auto rounded-xl border border-gray-100 bg-white p-3 shadow-xl">
@@ -651,6 +657,14 @@ function Reports() {
                                     )) : <p className="text-xs text-gray-500">Columns appear when data is available.</p>}
                                 </div>
                             </details>
+                            <div className="flex shrink-0 items-center rounded-xl border border-gray-200 bg-gray-100 p-1" role="group" aria-label="Report display mode">
+                                <button type="button" onClick={() => setViewMode("table")} title="Table view" aria-label="Table view" aria-pressed={viewMode === "table"} className={`rounded-lg p-2 transition-all ${viewMode === "table" ? "bg-white text-primary-dark shadow-sm" : "text-gray-400 hover:text-slate-600"}`}>
+                                    <FiList size={17} />
+                                </button>
+                                <button type="button" onClick={() => setViewMode("grid")} title="Card view" aria-label="Card view" aria-pressed={viewMode === "grid"} className={`rounded-lg p-2 transition-all ${viewMode === "grid" ? "bg-white text-primary-dark shadow-sm" : "text-gray-400 hover:text-slate-600"}`}>
+                                    <FiGrid size={17} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -673,48 +687,51 @@ function Reports() {
                     </div>
                 ) : (
                     <>
-                        <div className="hidden overflow-x-auto md:block">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-gradient-to-r from-secondary-dark to-secondary-light text-xs uppercase tracking-wider text-[#FCD34D]">
-                                    <tr>
-                                        {visibleColumns.map((column) => (
-                                            <th key={column} className="whitespace-nowrap px-4 py-4 first:rounded-tl-2xl">
-                                                <button onClick={() => toggleSort(column)} className="font-bold transition-colors hover:text-white">
-                                                    {displayLabel(column)}{sort.key === column ? (sort.direction === "asc" ? " ↑" : " ↓") : ""}
-                                                </button>
-                                            </th>
-                                        ))}
-                                        <th className="px-4 py-4 last:rounded-tr-2xl">Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {pageRows.map((row, index) => (
-                                        <tr key={recordKey(row, index)} className="group transition-colors hover:bg-orange-50/60">
-                                            {visibleColumns.map((column) => <td key={column} className="max-w-xs px-4 py-4 text-slate-700">{formatCell(row[column], column)}</td>)}
-                                            <td className="px-4 py-4">
-                                                <button onClick={() => setDetailRow(row)} title="View details" className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-primary-dark transition-all hover:bg-primary hover:text-white"><FiEye size={13} /></button>
-                                            </td>
+                        {viewMode === "table" ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-gradient-to-r from-secondary-dark to-secondary-light text-xs uppercase tracking-wider text-[#FCD34D]">
+                                        <tr>
+                                            {visibleColumns.map((column) => (
+                                                <th key={column} className="whitespace-nowrap px-4 py-4 first:rounded-tl-2xl">
+                                                    <button onClick={() => toggleSort(column)} className="font-bold transition-colors hover:text-white">
+                                                        {displayLabel(column)}{sort.key === column ? (sort.direction === "asc" ? " ↑" : " ↓") : ""}
+                                                    </button>
+                                                </th>
+                                            ))}
+                                            <th className="px-4 py-4 last:rounded-tr-2xl">Details</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="space-y-3 p-4 md:hidden">
-                            {pageRows.map((row, index) => (
-                                <article key={recordKey(row, index)} className="rounded-xl border border-orange-100 bg-white p-4 shadow-sm">
-                                    <div className="mb-2 flex items-center justify-between gap-2">
-                                        <strong className="truncate text-slate-800">{row.reference || row.product || row.customer || row.supplier || `${activeReport} #${index + 1}`}</strong>
-                                        <button onClick={() => setDetailRow(row)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-primary-dark"><FiEye size={13} /></button>
-                                    </div>
-                                    <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-                                        {visibleColumns.slice(0, 8).map((column) => <div key={column} className="min-w-0">
-                                            <dt className="truncate text-gray-400">{displayLabel(column)}</dt>
-                                            <dd className="truncate font-semibold text-slate-700">{formatCell(row[column], column)}</dd>
-                                        </div>)}
-                                    </dl>
-                                </article>
-                            ))}
-                        </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {pageRows.map((row, index) => (
+                                            <tr key={recordKey(row, index)} className="group transition-colors hover:bg-orange-50/60">
+                                                {visibleColumns.map((column) => <td key={column} className="max-w-xs px-4 py-4 text-slate-700">{formatCell(row[column], column)}</td>)}
+                                                <td className="px-4 py-4">
+                                                    <button onClick={() => setDetailRow(row)} title="View details" className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-primary-dark transition-all hover:bg-primary hover:text-white"><FiEye size={13} /></button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+                                {pageRows.map((row, index) => (
+                                    <article key={recordKey(row, index)} className="rounded-xl border border-orange-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+                                        <div className="mb-3 flex items-center justify-between gap-2">
+                                            <strong className="truncate text-slate-800">{row.reference || row.product || row.customer || row.supplier || `${activeReport} #${index + 1}`}</strong>
+                                            <button onClick={() => setDetailRow(row)} title="View details" aria-label="View details" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-primary-dark"><FiEye size={13} /></button>
+                                        </div>
+                                        <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                                            {visibleColumns.map((column) => <div key={column} className="min-w-0">
+                                                <dt className="truncate text-gray-400">{displayLabel(column)}</dt>
+                                                <dd className="break-words font-semibold text-slate-700">{formatCell(row[column], column)}</dd>
+                                            </div>)}
+                                        </dl>
+                                    </article>
+                                ))}
+                            </div>
+                        )}
                         <footer className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <span className="text-xs font-medium text-gray-500">Showing {Math.min((page - 1) * pageSize + 1, sortedRows.length)} to {Math.min(page * pageSize, sortedRows.length)} of {sortedRows.length} records</span>
                             <div className="flex items-center gap-2">
