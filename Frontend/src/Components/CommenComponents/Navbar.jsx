@@ -361,30 +361,44 @@ const Navbar = () => {
                 <FiChevronDown className={`transition-transform ${roomsMenu ? "rotate-180" : ""}`} />
               </button>
               {roomsMenu && (
-                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(92vw,500px)] -translate-x-1/2 overflow-hidden rounded-3xl border border-[#f1dfca] bg-white">
-                  <div className="bg-gradient-to-r from-[#fff5e9] to-[#fff0df] px-5 py-4">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c66a22]">Made for every space</p>
-                    <h3 className="mt-1 text-base font-bold text-[#351d0e]">Shop by room</h3>
+                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(90vw,540px)] -translate-x-1/2 overflow-hidden rounded-2xl border border-[#f1dfca] bg-white">
+                  {/* Header — same as Collections */}
+                  <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-[#fff5e9] to-white px-4 py-3.5">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c66a22]">Explore</p>
+                      <h3 className="mt-0.5 text-sm font-bold text-[#351d0e]">Shop by room</h3>
+                    </div>
+                    <Link
+                      to="/shop"
+                      onClick={() => setRoomsMenu(false)}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold text-[#9b4e17] transition hover:bg-orange-50"
+                    >
+                      View all <FiChevronRight size={15} />
+                    </Link>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 p-4">
-                    {roomLinks.map(({ name, slug, icon: RoomIcon, description }) => (
+
+                  {/* Room list — same layout as Collections */}
+                  <div className="grid max-h-[60vh] grid-cols-1 gap-1 overflow-y-auto p-2 sm:grid-cols-2">
+                    {roomLinks.map(({ name, slug, icon: RoomIcon, description, image }) => (
                       <Link
                         key={slug}
                         to={`/shop?room=${encodeURIComponent(slug)}`}
                         onClick={() => setRoomsMenu(false)}
-                        className={`group flex min-h-24 items-center gap-3 rounded-2xl border p-3 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${
+                        className={`group flex min-w-0 items-center gap-3 rounded-xl border border-transparent px-2.5 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${
                           isRoomActive && activeRoom === slug
-                            ? "border-orange-300 bg-orange-50"
-                            : "border-[#f3e7d9] bg-[#fffdfa] hover:border-orange-200 hover:bg-orange-50"
+                            ? "bg-orange-50 text-[#c96518]"
+                            : "text-[#351d0e] hover:border-orange-100 hover:bg-[#fffaf5]"
                         }`}
                       >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-[#c96518] transition group-hover:bg-[#f07816] group-hover:text-white">
-                          <RoomIcon size={19} />
+                        {/* Thumbnail — icon inside coloured square, same as category image box */}
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f7eee3] text-[#c96518] ring-1 ring-[#ead9c5] transition group-hover:bg-orange-100">
+                          <RoomIcon size={20} />
                         </span>
-                        <span className="min-w-0">
-                          <span className="block text-xs font-bold text-[#351d0e]">{name}</span>
-                          <span className="mt-1 block text-[10px] leading-4 text-[#8b735e]">{description}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold">{name}</span>
+                          <span className="block text-[10px] leading-4 text-[#8b735e]">{description}</span>
                         </span>
+                        <FiChevronRight size={15} className="shrink-0 text-[#b49a80] transition-transform group-hover:translate-x-0.5 group-hover:text-[#e87500]" />
                       </Link>
                     ))}
                   </div>
