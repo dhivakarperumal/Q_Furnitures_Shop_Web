@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
 import { resolveMediaUrl } from "../../utils/media";
+import { categoryHasProducts } from "../../utils/categories";
 
 function getCategoryImage(images) {
   if (Array.isArray(images)) return resolveMediaUrl(images[0]);
@@ -28,7 +29,7 @@ const HomeCategories = () => {
     if (!Array.isArray(response.data)) {
       throw new Error("The categories response did not contain a category list.");
     }
-    return response.data;
+    return response.data.filter(categoryHasProducts);
   }, []);
 
   useEffect(() => {

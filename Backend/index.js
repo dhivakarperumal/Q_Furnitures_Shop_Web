@@ -107,7 +107,7 @@ app.use("/api/favorites", createFavoriteRouter(favoriteController));
 app.use("/api/cart", createCartRouter(cartController));
 app.use("/api/coupons", createCouponRouter(couponService));
 app.use("/api/offers", createOfferRouter(offerService));
-app.use("/api/orders", createOrderRouter(orderService, cartService, razorpayService));
+app.use("/api/orders", createOrderRouter(orderService, cartService, razorpayService, storeTaxSettingsService));
 app.use("/api/dashboard", createDashboardRouter(dashboardService));
 app.use("/api/reports", createReportsRouter(reportsService));
 app.use("/api/banners", createPublicBannerRouter(bannerService));

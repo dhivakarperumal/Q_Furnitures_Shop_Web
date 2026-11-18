@@ -5,6 +5,7 @@ import {
   CreditCard,
   MapPin,
   PackageCheck,
+  Store,
   Truck,
   UserRound,
   X,
@@ -160,6 +161,7 @@ export default function OrderDetailsModal({ order, onClose }) {
   const dialogRef = useRef(null);
   const address = order.shipping_address || order;
   const items = Array.isArray(order.items) ? order.items : [];
+  const isPickup = order.fulfillment_type === "Pickup";
   const orderNumber = order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
   const status = order.status || "Order Placed";
   const addressLines = [
@@ -253,8 +255,10 @@ export default function OrderDetailsModal({ order, onClose }) {
               </dl>
             </DetailCard>
 
-            <DetailCard icon={MapPin} title="Delivery address">
-              {addressLines.length ? (
+            <DetailCard icon={isPickup ? Store : MapPin} title={isPickup ? "Pickup" : "Delivery address"}>
+              {isPickup ? (
+                <p className="text-sm text-[#8b735e]">Pickup was selected. Collection details will be shared by the store.</p>
+              ) : addressLines.length ? (
                 <address className="space-y-1 text-sm not-italic leading-5 text-[#594333]">
                   {addressLines.map((line, index) => <p key={`${index}-${line}`}>{line}</p>)}
                 </address>
@@ -335,7 +339,9 @@ export default function OrderDetailsModal({ order, onClose }) {
                   )}
                 </dl>
               ) : (
-                <p className="text-sm text-[#8b735e]">Tracking details will appear here when available.</p>
+                <p className="text-sm text-[#8b735e]">
+                  {isPickup ? "This order is for pickup." : "Tracking details will appear here when available."}
+                </p>
               )}
             </DetailCard>
 
@@ -351,7 +357,10 @@ export default function OrderDetailsModal({ order, onClose }) {
                 )}
                 {Number(order.gst_amount) > 0 && (
                   <div className="flex justify-between gap-4">
-                    <dt>GST{Number(order.gst_rate) > 0 ? ` (${Number(order.gst_rate)}%)` : ""}</dt>
+                    <dt>
+                      {order.tax_mode === "Tax Inclusive" ? "GST included" : "GST"}
+                      {Number(order.gst_rate) > 0 ? ` (${Number(order.gst_rate)}%)` : ""}
+                    </dt>
                     <dd className="font-medium">{formatAmount(order.gst_amount)}</dd>
                   </div>
                 )}

@@ -145,7 +145,7 @@ const SETTINGS_SECTIONS = [
   {
     id: "tax",
     title: "Tax & GST",
-    description: "Set the default tax rules used for order previews.",
+    description: "Set the tax rules used to calculate customer orders.",
     icon: Percent,
     fields: [
       { name: "gstEnabled", label: "Enable GST", type: "toggle" },
@@ -310,7 +310,8 @@ export default function Settings() {
     let cancelled = false;
     api.get("/settings/gst").then(({ data }) => {
       const gstRate = Number(data?.gst_rate);
-      if (typeof data?.gst_enabled !== "boolean" || !Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) {
+      if (typeof data?.gst_enabled !== "boolean" || !Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100 ||
+          !["Tax Exclusive", "Tax Inclusive"].includes(data?.tax_mode)) {
         throw new Error("The GST settings response was invalid.");
       }
       if (cancelled) return;
@@ -318,6 +319,7 @@ export default function Settings() {
         ...current,
         gstEnabled: data.gst_enabled,
         gstRate: `${gstRate}%`,
+        taxMode: data.tax_mode,
       }));
       setTaxSettingsLoaded(true);
     }).catch((error) => {
@@ -350,15 +352,18 @@ export default function Settings() {
       const { data } = await api.put("/settings/gst", {
         gst_enabled: settings.gstEnabled,
         gst_rate: gstRate,
+        tax_mode: settings.taxMode,
       });
       const savedRate = Number(data?.gst_rate);
-      if (typeof data?.gst_enabled !== "boolean" || !Number.isFinite(savedRate) || savedRate < 0 || savedRate > 100) {
+      if (typeof data?.gst_enabled !== "boolean" || !Number.isFinite(savedRate) || savedRate < 0 || savedRate > 100 ||
+          !["Tax Exclusive", "Tax Inclusive"].includes(data?.tax_mode)) {
         throw new Error("The saved GST settings response was invalid.");
       }
       setSettings((current) => ({
         ...current,
         gstEnabled: data.gst_enabled,
         gstRate: `${savedRate}%`,
+        taxMode: data.tax_mode,
       }));
       toast.success("GST settings saved.");
     } catch (error) {
@@ -388,7 +393,7 @@ export default function Settings() {
           <p className="mt-1 text-sm text-stone-500">Configure Q Furnitures store preferences and workflows.</p>
         </div>
         <span className="inline-flex items-center gap-2 self-start rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 sm:self-auto">
-          <Info size={14} /> GST settings are API-backed; other settings are previews
+          <Info size={14} /> GST status, rate, and calculation mode are saved
         </span>
       </header>
 
@@ -466,7 +471,7 @@ export default function Settings() {
           {activeSection === "tax" && taxSettingsLoaded && (
             <div className="flex flex-col gap-3 border-t border-orange-50 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-bold text-slate-700">GST status and default rate are saved to the server.</p>
+                <p className="text-sm font-bold text-slate-700">GST status, default rate, and calculation mode are saved to the server.</p>
                 {taxSettingsError && <p role="alert" className="mt-1 text-sm font-semibold text-red-600">{taxSettingsError}</p>}
               </div>
               <button type="button" onClick={saveTaxSettings} disabled={taxSettingsSaving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60">
@@ -490,7 +495,7 @@ export default function Settings() {
           <div className="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
             <ShieldCheck className="mt-0.5 shrink-0 text-emerald-600" size={15} />
             {activeSection === "tax"
-              ? "GST status and default rate are saved through the API. Tax mode and other settings remain preview-only."
+              ? "Checkout uses the saved GST status, rate, and tax calculation mode."
               : "These controls are a UI preview only. Changes stay on this page and reset when you leave or refresh."}
           </div>
         </section>

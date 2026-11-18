@@ -17,15 +17,17 @@ function checkoutItems(cartItems) {
   }));
 }
 
-function checkoutPayload(body, userId, cartItems, paymentMethod) {
+function checkoutPayload(body, userId, cartItems, paymentMethod, taxSettings) {
   return {
     ...body,
     user_id: userId,
     order_type: "Shop",
+    fulfillment_type: body.fulfillment_type == null ? "Delivery" : body.fulfillment_type,
     status: "Order Placed",
     discount_type: "percentage",
     discount_value: 0,
-    gst_rate: 3,
+    gst_rate: taxSettings.gst_rate,
+    tax_mode: taxSettings.tax_mode,
     payment_method: paymentMethod,
     items: checkoutItems(cartItems),
   };
@@ -58,7 +60,7 @@ function parseId(value) {
   return Number(value);
 }
 
-function createOrderRouter(orderService, cartService, razorpayService) {
+function createOrderRouter(orderService, cartService, razorpayService, taxSettingsService) {
   const router = express.Router();
   const requireAdminAccess = [requireAuthentication, requireAdmin];
 
@@ -76,7 +78,17 @@ function createOrderRouter(orderService, cartService, razorpayService) {
         return response.status(400).json({ message: "Your cart is empty." });
       }
 
-      const orderData = checkoutPayload(request.body, request.auth.user_id, cartItems, request.body.payment_method);
+      const taxSettings = await taxSettingsService.getSettings();
+      const orderData = checkoutPayload(
+        request.body,
+        request.auth.user_id,
+        cartItems,
+        request.body.payment_method,
+        {
+          gst_rate: taxSettings.gst_enabled ? taxSettings.gst_rate : 0,
+          tax_mode: taxSettings.tax_mode,
+        },
+      );
       normalizeOrder(orderData);
       const order = await orderService.create(orderData, { useCartPrices: true });
       return response.status(201).json(order);
@@ -98,9 +110,14 @@ function createOrderRouter(orderService, cartService, razorpayService) {
       }
 
       const cartItems = await cartService.list(request.auth.user_id);
-      const orderData = checkoutPayload(request.body, request.auth.user_id, cartItems, "Online");
+      const taxSettings = await taxSettingsService.getSettings();
+      const appliedTaxSettings = {
+        gst_rate: taxSettings.gst_enabled ? taxSettings.gst_rate : 0,
+        tax_mode: taxSettings.tax_mode,
+      };
+      const orderData = checkoutPayload(request.body, request.auth.user_id, cartItems, "Online", appliedTaxSettings);
       normalizeOrder(orderData);
-      const totals = calculateCartTotals(cartItems);
+      const totals = calculateCartTotals(cartItems, appliedTaxSettings.gst_rate, appliedTaxSettings.tax_mode);
       const amount = Math.round(totals.totalAmount * 100);
       if (amount < 100) {
         return response.status(400).json({ message: "Online payment must be at least ₹1." });
@@ -109,6 +126,9 @@ function createOrderRouter(orderService, cartService, razorpayService) {
       const gatewayOrder = await razorpayService.createOrder(amount, crypto.randomUUID().replace(/-/g, ""), {
         user_id: String(request.auth.user_id),
         cart_hash: cartHash,
+        gst_rate: String(appliedTaxSettings.gst_rate),
+        tax_mode: appliedTaxSettings.tax_mode,
+        fulfillment_type: orderData.fulfillment_type,
       });
 
       return response.status(201).json({
@@ -150,15 +170,34 @@ function createOrderRouter(orderService, cartService, razorpayService) {
       }
 
       const cartItems = await cartService.list(userId);
-      const orderData = checkoutPayload(request.body, userId, cartItems, "Online");
-      normalizeOrder(orderData);
-      const totals = calculateCartTotals(cartItems);
-      const amount = Math.round(totals.totalAmount * 100);
+      let appliedTaxSettings;
+      let fulfillmentType;
       const { payment, order: gatewayOrder } = await razorpayService.verifyPayment({
         orderId: request.body.razorpay_order_id,
         paymentId,
         signature: request.body.razorpay_signature,
-        amount,
+        getExpectedAmount: (gatewayOrder) => {
+          if (gatewayOrder.notes?.user_id !== String(userId) ||
+              gatewayOrder.notes?.cart_hash !== getCartFingerprint(cartItems)) {
+            const error = new Error("The cart changed after payment was started. Please contact support.");
+            error.status = 409;
+            throw error;
+          }
+          const gstRate = Number(gatewayOrder.notes?.gst_rate);
+          const taxMode = gatewayOrder.notes?.tax_mode;
+          const paymentFulfillmentType = gatewayOrder.notes?.fulfillment_type;
+          if (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100 ||
+              !["Tax Exclusive", "Tax Inclusive"].includes(taxMode) ||
+              !["Delivery", "Pickup"].includes(paymentFulfillmentType)) {
+            const error = new Error("The payment order has invalid tax settings. Please contact support.");
+            error.status = 409;
+            throw error;
+          }
+          appliedTaxSettings = { gst_rate: gstRate, tax_mode: taxMode };
+          fulfillmentType = paymentFulfillmentType;
+          const totals = calculateCartTotals(cartItems, gstRate, taxMode);
+          return Math.round(totals.totalAmount * 100);
+        },
       });
 
       if (gatewayOrder.notes?.user_id !== String(userId) ||
@@ -166,6 +205,14 @@ function createOrderRouter(orderService, cartService, razorpayService) {
         return response.status(409).json({ message: "The cart changed after payment was started. Please contact support." });
       }
 
+      const orderData = checkoutPayload(
+        { ...request.body, fulfillment_type: fulfillmentType },
+        userId,
+        cartItems,
+        "Online",
+        appliedTaxSettings,
+      );
+      normalizeOrder(orderData);
       const paymentMethod = ["upi", "card"].includes(String(payment.method).toLowerCase())
         ? String(payment.method).toLowerCase() === "upi" ? "UPI" : "Card"
         : "Online";

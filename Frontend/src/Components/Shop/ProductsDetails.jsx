@@ -57,7 +57,8 @@ function formatPrice(value) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(Number(value) || 0);
 }
 
@@ -78,6 +79,7 @@ function ProductDetails() {
   const [productError, setProductError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [activeImage, setActiveImage] = useState(0);
+  const [zoomPosition, setZoomPosition] = useState(null);
   const [activeVariant, setActiveVariant] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -126,6 +128,7 @@ function ProductDetails() {
 
   useEffect(() => {
     setActiveImage(0);
+    setZoomPosition(null);
     setActiveVariant(0);
     setSelectedSize("");
     setQuantity(1);
@@ -408,13 +411,28 @@ function ProductDetails() {
               </Link>
 
               <section className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
-                <div>
+                <div
+                  className={`relative ${zoomPosition ? "z-30" : ""}`}
+                  onPointerLeave={() => setZoomPosition(null)}
+                >
                   <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-[#f4ece2]">
                     {gallery.length ? (
                       <img
                         src={resolveMediaUrl(gallery[activeImage] || gallery[0])}
                         alt={product.name}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-contain"
+                        onPointerMove={(event) => {
+                          if (event.pointerType === "touch") return;
+                          const bounds = event.currentTarget.getBoundingClientRect();
+                          const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+                          const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+                          setZoomPosition({
+                            x,
+                            y,
+                            lensX: Math.max(0.2, Math.min(0.8, x)),
+                            lensY: Math.max(0.2, Math.min(0.8, y)),
+                          });
+                        }}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-[#c7b5a2]">
@@ -446,9 +464,34 @@ function ProductDetails() {
                         </button>
                       </>
                     )}
+                    {zoomPosition && gallery.length > 0 && (
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute h-2/5 w-2/5 -translate-x-1/2 -translate-y-1/2 border border-white/80 bg-white/20 shadow-[0_0_0_1px_rgba(53,29,14,0.25)]"
+                        style={{
+                          left: `${zoomPosition.lensX * 100}%`,
+                          top: `${zoomPosition.lensY * 100}%`,
+                        }}
+                      />
+                    )}
                   </div>
+                  {zoomPosition && gallery.length > 0 && (
+                    <div
+                      aria-hidden="true"
+                      className="absolute left-full top-0 z-40 ml-4 hidden aspect-[4/3] w-full overflow-hidden rounded-3xl border border-[#e8d8c7] bg-[#f4ece2] shadow-2xl lg:block"
+                      style={{
+                        backgroundImage: `url("${resolveMediaUrl(gallery[activeImage] || gallery[0])}")`,
+                        backgroundPosition: `${zoomPosition.x * 100}% ${zoomPosition.y * 100}%`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundSize: "250% 250%",
+                      }}
+                    />
+                  )}
                   {gallery.length > 1 && (
-                    <div className="mt-3 grid grid-cols-5 gap-3">
+                    <div
+                      className="mt-3 grid grid-cols-5 gap-3"
+                      onPointerEnter={() => setZoomPosition(null)}
+                    >
                       {gallery.map((image, index) => (
                         <button
                           key={`${image}-${index}`}

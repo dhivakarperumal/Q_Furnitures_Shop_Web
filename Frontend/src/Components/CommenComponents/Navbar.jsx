@@ -1,6 +1,6 @@
-import React, { useContext, useState, useRef, useEffect } from "react";
+import React, { useContext, useState, useRef, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../PrivateRouter/AuthContext";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
 import {
@@ -14,17 +14,20 @@ import {
 } from "lucide-react";
 import PageContainer from "./PageContainer";
 import api from "../../api";
-import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut } from "react-icons/fi";
+import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut, FiSun, FiSmile } from "react-icons/fi";
 import { FiChevronRight, FiTag } from "react-icons/fi";
 import CartDrawer from "./CartDrawer";
 import WishlistDrawer from "./WishlistDrawer";
 import { resolveMediaUrl } from "../../utils/media";
+import { categoryHasProducts } from "../../utils/categories";
 
-const roomLinks = [
-  { name: "Living Room", slug: "living-room", icon: FiHome, description: "Relax and unwind" },
-  { name: "Bedroom", slug: "bedroom", icon: FiMoon, description: "Restful essentials" },
-  { name: "Dining Room", slug: "dining-room", icon: FiCoffee, description: "Gather around" },
-  { name: "Home Office", slug: "home-office", icon: FiMonitor, description: "Work comfortably" },
+const ALL_ROOM_LINKS = [
+  { name: "Living Room", slug: "living-room", icon: FiHome,    description: "Relax and unwind" },
+  { name: "Bedroom",     slug: "bedroom",      icon: FiMoon,    description: "Restful essentials" },
+  { name: "Dining Room", slug: "dining-room",  icon: FiCoffee,  description: "Gather around" },
+  { name: "Home Office", slug: "home-office",  icon: FiMonitor, description: "Work comfortably" },
+  { name: "Kids Room",   slug: "kids-room",    icon: FiSmile,   description: "Fun & functional" },
+  { name: "Outdoor",     slug: "outdoor",      icon: FiSun,     description: "Open-air living" },
 ];
 
 function getCategoryImage(images) {
@@ -47,13 +50,16 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [mobileMenuTop, setMobileMenuTop] = useState(0);
   const [userMenu, setUserMenu] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [roomsMenu, setRoomsMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
+  const [roomLinks, setRoomLinks] = useState(ALL_ROOM_LINKS); // show all optimistically
   const [categoryMenu, setCategoryMenu] = useState(false);
+  const [pagesMenu, setPagesMenu] = useState(false);
   const [mobileCategory, setMobileCategory] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
@@ -61,10 +67,20 @@ const Navbar = () => {
 
   const profileInitial = String(profileName || "U").trim().charAt(0).toUpperCase() || "U";
   const profileImage = user?.profile_image ? resolveMediaUrl(user.profile_image) : "";
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const activeCategory = searchParams.get("category");
+  const activeRoom = searchParams.get("room");
+  const isCategoryActive = location.pathname === "/shop" && Boolean(activeCategory);
+  const isRoomActive = location.pathname === "/shop" && Boolean(activeRoom);
+  const isProductDetailsActive = location.pathname.startsWith("/products/");
+  const isPagesActive = ["/about", "/contactus", "/privacy-policy"].includes(location.pathname);
 
   const menuRef = useRef();
+  const navbarRef = useRef(null);
   const categoryRef = useRef();
   const roomsRef = useRef();
+  const pagesRef = useRef();
   const cartTriggerRef = useRef(null);
   const wishlistTriggerRef = useRef(null);
 
@@ -126,6 +142,10 @@ const Navbar = () => {
         setRoomsMenu(false);
       }
 
+      if (pagesRef.current && !pagesRef.current.contains(e.target)) {
+        setPagesMenu(false);
+      }
+
     };
 
     document.addEventListener("mousedown", handler);
@@ -133,13 +153,25 @@ const Navbar = () => {
 
   }, []);
 
+  useLayoutEffect(() => {
+    if (!mobileMenu) return undefined;
+
+    const updateMenuPosition = () => {
+      setMobileMenuTop(navbarRef.current?.getBoundingClientRect().bottom || 0);
+    };
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    return () => window.removeEventListener("resize", updateMenuPosition);
+  }, [mobileMenu]);
+
   // Fetch categories
   useEffect(() => {
 
     const fetchCategories = async () => {
       try {
         const res = await api.get("/categories");
-        setCategories(res.data);
+        setCategories(Array.isArray(res.data) ? res.data.filter(categoryHasProducts) : []);
       } catch (error) {
         console.error(error);
       }
@@ -147,6 +179,21 @@ const Navbar = () => {
 
     fetchCategories();
 
+  }, []);
+
+  // Fetch rooms with products only
+  useEffect(() => {
+    let cancelled = false;
+    api.get("/products/rooms")
+      .then(({ data }) => {
+        if (cancelled) return;
+        const withProducts = new Set(
+          data.filter((r) => r.productCount > 0).map((r) => r.slug)
+        );
+        setRoomLinks(ALL_ROOM_LINKS.filter((r) => withProducts.has(r.slug)));
+      })
+      .catch(() => { /* keep all rooms on error */ });
+    return () => { cancelled = true; };
   }, []);
 
   // Fetch user orders count
@@ -172,13 +219,13 @@ const Navbar = () => {
   }, [user]);
 
   const navClass = ({ isActive }) =>
-    `inline-flex items-center whitespace-nowrap rounded-full px-3 py-2.5 text-[13px] font-semibold transition-colors ${
+    `inline-flex items-center whitespace-nowrap rounded-md px-2.5 py-2 text-xs font-semibold transition-colors xl:px-3 xl:text-[13px] ${
       isActive
-        ? "bg-[#ed720a] text-white shadow-sm hover:bg-[#d65e00]"
+        ? "bg-[#ed720a] text-white shadow-sm"
         : "text-[#351d0e] hover:text-[#e87500]"
     }`;
   const mobileNavClass = ({ isActive }) =>
-    `flex items-center gap-3 rounded-full px-4 py-3 text-sm font-medium transition ${
+    `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
       isActive
         ? "bg-[#ed720a] text-white shadow-sm"
         : "text-gray-800 hover:text-orange-700"
@@ -195,9 +242,18 @@ const Navbar = () => {
 
   return (
 
-    <nav className="sticky top-0 z-50 border-b border-[#f0dfc9] bg-[#fffaf5]/95 shadow-[0_8px_24px_rgba(74,42,19,0.13)] backdrop-blur-md">
+    <nav ref={navbarRef} className="sticky top-0 z-50 bg-[#fffaf5]/95 py-2 backdrop-blur-md">
       <PageContainer>
-        <div className="flex min-h-[76px] items-center justify-between gap-2 sm:min-h-[84px] sm:gap-3">
+        <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f07816]/40 bg-white/95 px-3 shadow-[0_10px_30px_rgba(74,42,19,0.12)] sm:min-h-[76px] sm:gap-3 sm:px-4 lg:rounded-full lg:px-4 xl:flex-nowrap">
+          <button
+            type="button"
+            onClick={() => mobileMenu ? closeMobileMenu() : setMobileMenu(true)}
+            aria-label={mobileMenu ? "Close menu" : "Open menu"}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark lg:hidden"
+          >
+            {mobileMenu ? <X size={22} /> : <Menu size={22} />}
+          </button>
+
           <Link
             to="/"
             className="flex shrink-0 items-center"
@@ -210,11 +266,16 @@ const Navbar = () => {
             />
           </Link>
 
-          <span aria-hidden="true" className="hidden h-10 w-px shrink-0 bg-[#dfcbb5] xl:block" />
+          <span aria-hidden="true" className="hidden h-10 w-px shrink-0 bg-[#dfcbb5] lg:block" />
 
-          <div className="hidden flex-1 items-center justify-center gap-1.5 lg:flex xl:gap-3">
+          <div className="hidden flex-1 items-center justify-center gap-0 lg:flex lg:gap-1">
             <NavLink to="/" end className={navClass}>Home</NavLink>
-            <NavLink to="/shop" className={({ isActive }) => `${navClass({ isActive })} inline-flex items-center gap-1`}>
+            <NavLink
+              to="/shop"
+              className={({ isActive }) =>
+                `${navClass({ isActive: isProductDetailsActive || (isActive && !isCategoryActive && !isRoomActive) })} inline-flex items-center gap-1`
+              }
+            >
               Shop 
             </NavLink>
 
@@ -225,7 +286,7 @@ const Navbar = () => {
                   setCategoryMenu(!categoryMenu);
                   setRoomsMenu(false);
                 }}
-                className="inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold text-[#351d0e] transition-colors hover:text-[#e87500]"
+                className={navClass({ isActive: categoryMenu || isCategoryActive })}
                 aria-expanded={categoryMenu}
               >
                 Collections
@@ -251,13 +312,13 @@ const Navbar = () => {
                       {categories.map((cat) => {
                         const image = getCategoryImage(cat.images);
                         return (
-                          <NavLink
+                          <Link
                             key={cat.catId || cat.id || cat.name}
                             to={`/shop?category=${encodeURIComponent(cat.name)}`}
                             onClick={() => setCategoryMenu(false)}
-                            className={({ isActive }) =>
+                            className={
                               `group flex min-w-0 items-center gap-3 rounded-xl border border-transparent px-2.5 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${
-                                isActive
+                                isCategoryActive && activeCategory === cat.name
                                   ? "bg-orange-50 text-[#c96518]"
                                   : "text-[#351d0e] hover:border-orange-100 hover:bg-[#fffaf5]"
                               }`
@@ -272,7 +333,7 @@ const Navbar = () => {
                             </span>
                             <span className="min-w-0 flex-1 truncate text-sm font-semibold">{cat.name}</span>
                             <FiChevronRight size={15} className="shrink-0 text-[#b49a80] transition-transform group-hover:translate-x-0.5 group-hover:text-[#e87500]" />
-                          </NavLink>
+                          </Link>
                         );
                       })}
                     </div>
@@ -293,33 +354,51 @@ const Navbar = () => {
                   setRoomsMenu(!roomsMenu);
                   setCategoryMenu(false);
                 }}
-                className="inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-2 text-[13px] font-semibold text-[#351d0e] transition-colors hover:text-[#e87500]"
+                className={navClass({ isActive: roomsMenu || isRoomActive })}
                 aria-expanded={roomsMenu}
               >
                 Rooms
                 <FiChevronDown className={`transition-transform ${roomsMenu ? "rotate-180" : ""}`} />
               </button>
               {roomsMenu && (
-                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(88vw,390px)] -translate-x-1/2 overflow-hidden rounded-3xl border border-[#f1dfca] bg-white">
-                  <div className="bg-gradient-to-r from-[#fff5e9] to-[#fff0df] px-5 py-4">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c66a22]">Made for every space</p>
-                    <h3 className="mt-1 text-base font-bold text-[#351d0e]">Shop by room</h3>
+                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(90vw,540px)] -translate-x-1/2 overflow-hidden rounded-2xl border border-[#f1dfca] bg-white">
+                  {/* Header — same as Collections */}
+                  <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-[#fff5e9] to-white px-4 py-3.5">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c66a22]">Explore</p>
+                      <h3 className="mt-0.5 text-sm font-bold text-[#351d0e]">Shop by room</h3>
+                    </div>
+                    <Link
+                      to="/shop"
+                      onClick={() => setRoomsMenu(false)}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold text-[#9b4e17] transition hover:bg-orange-50"
+                    >
+                      View all <FiChevronRight size={15} />
+                    </Link>
                   </div>
-                  <div className="grid grid-cols-2 gap-2.5 p-4">
-                    {roomLinks.map(({ name, slug, icon: RoomIcon, description }) => (
+
+                  {/* Room list — same layout as Collections */}
+                  <div className="grid max-h-[60vh] grid-cols-1 gap-1 overflow-y-auto p-2 sm:grid-cols-2">
+                    {roomLinks.map(({ name, slug, icon: RoomIcon, description, image }) => (
                       <Link
                         key={slug}
                         to={`/shop?room=${encodeURIComponent(slug)}`}
                         onClick={() => setRoomsMenu(false)}
-                        className="group flex min-h-24 items-center gap-3 rounded-2xl border border-[#f3e7d9] bg-[#fffdfa] p-3 transition hover:border-orange-200 hover:bg-orange-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                        className={`group flex min-w-0 items-center gap-3 rounded-xl border border-transparent px-2.5 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${
+                          isRoomActive && activeRoom === slug
+                            ? "bg-orange-50 text-[#c96518]"
+                            : "text-[#351d0e] hover:border-orange-100 hover:bg-[#fffaf5]"
+                        }`}
                       >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-[#c96518] transition group-hover:bg-[#f07816] group-hover:text-white">
-                          <RoomIcon size={19} />
+                        {/* Thumbnail — icon inside coloured square, same as category image box */}
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f7eee3] text-[#c96518] ring-1 ring-[#ead9c5] transition group-hover:bg-orange-100">
+                          <RoomIcon size={20} />
                         </span>
-                        <span className="min-w-0">
-                          <span className="block text-xs font-bold text-[#351d0e]">{name}</span>
-                          <span className="mt-1 block text-[10px] leading-4 text-[#8b735e]">{description}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold">{name}</span>
+                          <span className="block text-[10px] leading-4 text-[#8b735e]">{description}</span>
                         </span>
+                        <FiChevronRight size={15} className="shrink-0 text-[#b49a80] transition-transform group-hover:translate-x-0.5 group-hover:text-[#e87500]" />
                       </Link>
                     ))}
                   </div>
@@ -327,23 +406,60 @@ const Navbar = () => {
               )}
             </div>
 
-            <NavLink to="/combo" className={({ isActive }) => `${navClass({ isActive })} relative`}>
+            <NavLink
+              to="/combo"
+              className={({ isActive }) =>
+                `relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition xl:text-[13px] ${
+                  isActive
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-[#351d0e] hover:bg-[#fff0df] hover:text-[#e87500]"
+                }`
+              }
+            >
+              <FiTag size={15} />
               Combos
-              <span className="absolute -right-3 -top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] font-extrabold uppercase leading-none text-white">
+              <span className="absolute -right-1.5 -top-1 rounded-full bg-[#351d0e] px-1.5 py-0.5 text-[8px] font-extrabold uppercase leading-none text-white">
                 Hot
               </span>
             </NavLink>
             <Link to="/about" className={navClass({ isActive: false })}>Interior Ideas</Link>
-            <NavLink to="/about" className={navClass}>About Us</NavLink>
-            <NavLink
-              to="/contactus"
-              className={navClass}
-            >
-              Contact Us
-            </NavLink>
+            <div className="relative" ref={pagesRef}>
+              <button
+                type="button"
+                onClick={() => setPagesMenu((current) => !current)}
+                className={navClass({ isActive: pagesMenu || isPagesActive })}
+                aria-expanded={pagesMenu}
+              >
+                Pages
+                <FiChevronDown className={`transition-transform ${pagesMenu ? "rotate-180" : ""}`} />
+              </button>
+              {pagesMenu && (
+                <div className="absolute left-1/2 top-full z-[70] mt-3 w-56 -translate-x-1/2 overflow-hidden rounded-2xl border border-[#f1dfca] bg-white py-2 shadow-[0_16px_35px_rgba(74,42,19,0.16)]">
+                  {[
+                    { label: "About Us", to: "/about", icon: FiFileText },
+                    { label: "Contact Us", to: "/contactus", icon: FiPhone },
+                    { label: "Privacy Policy", to: "/privacy-policy", icon: FiFileText },
+                  ].map(({ label, to, icon: Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      onClick={() => setPagesMenu(false)}
+                      className={({ isActive }) =>
+                        `mx-2 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                          isActive ? "bg-primary text-white" : "text-[#351d0e] hover:bg-orange-50 hover:text-[#d9650b]"
+                        }`
+                      }
+                    >
+                      <Icon size={16} />
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 lg:border-l lg:border-[#dfcbb5] lg:pl-3 xl:gap-3 xl:pl-5">
+          <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 lg:gap-3 lg:border-l lg:border-[#dfcbb5] lg:pl-3">
             <div className="hidden items-center gap-1 sm:flex xl:gap-2">
             <div className="relative">
               <button
@@ -351,7 +467,7 @@ const Navbar = () => {
                 onClick={() => setSearchOpen(!searchOpen)}
                 aria-label="Search furniture"
                 aria-expanded={searchOpen}
-                className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500]"
+                className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
               >
                 <Search size={21} />
               </button>
@@ -377,7 +493,7 @@ const Navbar = () => {
               type="button"
               onClick={openWishlist}
               aria-label="Open wishlist"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500]"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
             >
               <Heart size={21} />
               {wishlist.length > 0 && (
@@ -391,7 +507,7 @@ const Navbar = () => {
               type="button"
               onClick={openCart}
               aria-label="Open cart"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500]"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
             >
               <ShoppingCart size={21} />
               {cart.length > 0 && (
@@ -409,7 +525,7 @@ const Navbar = () => {
                   aria-label={`Open account menu for ${profileName}`}
                   aria-expanded={userMenu}
                   aria-haspopup="menu"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac]"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
                 >
                   {profileInitial}
                 </button>
@@ -497,7 +613,7 @@ const Navbar = () => {
                 )}
               </div>
             ) : (
-              <Link to="/login" aria-label="Sign in" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] transition hover:bg-[#f1d3ac] hover:text-[#e87500]">
+              <Link to="/login" aria-label="Sign in" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] transition hover:bg-[#f1d3ac] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white">
                 <User size={21} />
               </Link>
             )}
@@ -513,14 +629,6 @@ const Navbar = () => {
               </Link>
             )}
 
-            <button
-              type="button"
-              onClick={() => mobileMenu ? closeMobileMenu() : setMobileMenu(true)}
-              aria-label={mobileMenu ? "Close menu" : "Open menu"}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] lg:hidden"
-            >
-              {mobileMenu ? <X size={24} /> : <Menu size={24} />}
-            </button>
           </div>
         </div>
       </PageContainer>
@@ -565,8 +673,8 @@ const Navbar = () => {
         </div>,
         document.body
       )}
-      {mobileMenu && (
-        <div className="fixed inset-x-0 bottom-0 top-[76px] z-50 sm:top-[84px] lg:hidden">
+      {mobileMenu && createPortal(
+        <div className="fixed inset-x-0 bottom-0 z-[60]" style={{ top: `${mobileMenuTop}px` }}>
 
           {/* Overlay */}
           <div
@@ -575,14 +683,19 @@ const Navbar = () => {
           />
 
           {/* Drawer */}
-          <div className="absolute inset-0 h-full w-full overflow-y-auto bg-white">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation"
+            className="absolute bottom-0 right-0 top-0 flex h-full w-[min(94vw,380px)] flex-col border-l border-[#f0dfce] bg-[#fffaf5] shadow-2xl"
+          >
+            <div className="absolute inset-0 min-h-0 overflow-y-auto px-3 py-4">
 
             {/* MENU SCREEN */}
             {!mobileCategory && !mobilePages && (
               <>
-                {/* Links */}
-                <div className="flex flex-col p-5 space-y-3">
-                  <form onSubmit={handleSearch} className="mb-1 flex gap-2">
+                <div className="flex flex-col gap-2.5">
+                  <form onSubmit={handleSearch} className="relative mb-1">
                     <label htmlFor="mobile-furniture-search" className="sr-only">Search furniture</label>
                     <input
                       id="mobile-furniture-search"
@@ -590,94 +703,105 @@ const Navbar = () => {
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
                       placeholder="Search furniture"
-                      className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-orange-400"
+                      className="h-14 w-full rounded-2xl border border-[#f0e5da] bg-white pl-12 pr-4 text-sm font-medium text-[#351d0e] outline-none transition placeholder:text-[#8b735e] focus:border-primary"
                     />
-                    <button type="submit" aria-label="Search" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-600 text-white">
-                      <Search size={18} />
-                    </button>
+                    <Search size={19} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
                   </form>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        closeMobileMenu();
-                        openWishlist(event);
-                      }}
-                      className="flex items-center justify-center gap-2 rounded-lg border border-orange-100 px-3 py-3 text-sm font-semibold text-slate-700"
-                    >
-                      <Heart size={17} />
-                      Wishlist{wishlist.length > 0 ? ` (${wishlist.length})` : ""}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        closeMobileMenu();
-                        openCart(event);
-                      }}
-                      className="flex items-center justify-center gap-2 rounded-lg border border-orange-100 px-3 py-3 text-sm font-semibold text-slate-700"
-                    >
-                      <ShoppingCart size={17} />
-                      Cart{cart.length > 0 ? ` (${cart.length})` : ""}
-                    </button>
-                  </div>
 
                   <NavLink
                     to="/"
                     onClick={closeMobileMenu}
-                    className={mobileNavClass}
+                    className={({ isActive }) =>
+                      `flex min-h-[60px] items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        isActive ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                      }`
+                    }
                   >
-                    <FiHome size={16} />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiHome size={18} /></span>
                     Home
                   </NavLink>
 
                   <NavLink
                     to="/shop"
                     onClick={closeMobileMenu}
-                    className={mobileNavClass}
+                    className={({ isActive }) =>
+                      `flex min-h-[60px] items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        isProductDetailsActive || (isActive && !isCategoryActive && !isRoomActive)
+                          ? "border-primary/20 bg-[#fff0df] text-[#c2560b]"
+                          : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                      }`
+                    }
                   >
-                    <FiShoppingBag size={16} />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiShoppingBag size={18} /></span>
                     Shop
                   </NavLink>
 
                   <button
                     onClick={() => setMobileCategory(true)}
-                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
+                    className={`flex min-h-[60px] items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                      isCategoryActive
+                        ? "border-primary/20 bg-[#fff0df] text-[#c2560b]"
+                        : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                    }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <FiGrid size={16} />
-                      Categories
-                    </div>
-
-                    <FiChevronRight size={16} />
+                    <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiGrid size={18} /></span>Categories</span>
+                    <FiChevronRight size={17} className="text-primary" />
                   </button>
+
+                  <NavLink
+                    to="/combo"
+                    onClick={closeMobileMenu}
+                    className={({ isActive }) =>
+                      `flex min-h-[60px] items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        isActive ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                      }`
+                    }
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiTag size={18} /></span>
+                    Combo Offers
+                  </NavLink>
+
+                  <Link
+                    to="/about"
+                    onClick={closeMobileMenu}
+                    className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-[#f0e5da] bg-white px-4 py-3 text-sm font-semibold text-[#351d0e] transition hover:border-primary/40"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={18} /></span>
+                    Interior Ideas
+                  </Link>
 
                   <button
                     onClick={() => setMobilePages(true)}
-                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
+                    className={`flex min-h-[60px] items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                      isPagesActive
+                        ? "border-primary/20 bg-[#fff0df] text-[#c2560b]"
+                        : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                    }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <FiFileText size={16} />
-                      Pages
-                    </div>
-
-                    <FiChevronRight size={16} />
+                    <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={18} /></span>Pages</span>
+                    <FiChevronRight size={17} className="text-primary" />
                   </button>
 
-                  <Link
-                    to={user ? "/account" : "/login"}
-                    onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
-                  >
-                    {user ? (
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700">
-                        {profileInitial}
-                      </span>
-                    ) : (
-                      <User size={16} />
-                    )}
-                    {user ? "My Account" : "Sign In"}
-                  </Link>
+                  <div className="pt-2">
+                    <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-[#8b735e]">Shop by room</h2>
+                    <div className="grid grid-cols-2 gap-2">
+                      {roomLinks.map(({ name, slug, icon: RoomIcon }) => (
+                        <NavLink
+                          key={slug}
+                          to={`/shop?room=${encodeURIComponent(slug)}`}
+                          onClick={closeMobileMenu}
+                          className={
+                            `flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                              isRoomActive && activeRoom === slug ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                            }`
+                          }
+                        >
+                          <RoomIcon size={16} className="shrink-0 text-primary" />
+                          <span className="truncate">{name}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
 
                 </div>
               </>
@@ -717,9 +841,9 @@ const Navbar = () => {
                         key={cat.catId || cat.id || cat.name}
                         to={`/shop?category=${encodeURIComponent(cat.name)}`}
                         onClick={closeMobileMenu}
-                        className={({ isActive }) =>
+                        className={
                           `group flex items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
-                            isActive
+                            isCategoryActive && activeCategory === cat.name
                               ? "border-[#ed720a] bg-[#ed720a] text-white shadow-sm"
                               : "border-orange-100 bg-white text-[#351d0e] hover:border-orange-200 hover:bg-orange-50"
                           }`
@@ -776,13 +900,13 @@ const Navbar = () => {
                     About Us
                   </NavLink>
 
-                    <NavLink
-                    to="/termsandconditions"
+                  <NavLink
+                    to="/privacy-policy"
                     onClick={closeMobileMenu}
                     className={mobileNavClass}
                   >
                     <FiFileText size={16} />
-                    Terms And Conditions
+                    Privacy Policy
                   </NavLink>
 
                     
@@ -800,6 +924,8 @@ const Navbar = () => {
             )}
           </div>
         </div>
+        </div>
+      , document.body
       )}
       <CartDrawer isOpen={cartOpen} onClose={closeCart} />
       <WishlistDrawer isOpen={wishlistOpen} onClose={closeWishlist} />

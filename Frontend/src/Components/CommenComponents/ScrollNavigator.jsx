@@ -1,6 +1,6 @@
 // src/components/ScrollNavigator.jsx
 import React, { useEffect, useState } from "react";
-import { ChevronUp, Phone } from "lucide-react";
+import { ChevronUp } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import ChatBot from "./ChatBot";
 
@@ -41,14 +41,6 @@ const ScrollNavigator = () => {
           title="WhatsApp"
         >
           <FaWhatsapp size={25} aria-hidden="true" />
-        </a>
-        <a
-          href="tel:+919876543210"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-md transition hover:scale-105 hover:bg-primary-light"
-          aria-label="Call us"
-          title="Call us"
-        >
-          <Phone size={22} aria-hidden="true" />
         </a>
         {/* Floating ChatBot Toggle Button */}
         <button

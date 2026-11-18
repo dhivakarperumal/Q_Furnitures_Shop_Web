@@ -852,6 +852,7 @@ async function initializeDatabase(pool) {
       customer_email VARCHAR(191) NULL,
       customer_phone VARCHAR(32) NOT NULL,
       order_type VARCHAR(32) NOT NULL DEFAULT 'Shop',
+      fulfillment_type VARCHAR(16) NOT NULL DEFAULT 'Delivery',
       payment_method VARCHAR(32) NOT NULL,
       payment_status VARCHAR(32) NOT NULL DEFAULT 'Pending',
       status VARCHAR(32) NOT NULL DEFAULT 'Order Placed',
@@ -860,6 +861,7 @@ async function initializeDatabase(pool) {
       discount_value DECIMAL(12,2) NOT NULL DEFAULT 0,
       discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
       gst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+      tax_mode VARCHAR(20) NOT NULL DEFAULT 'Tax Exclusive',
       gst_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
       total_amount DECIMAL(12,2) NOT NULL,
       tracking_number VARCHAR(191) NULL,
@@ -1019,11 +1021,13 @@ async function initializeDatabase(pool) {
   const existingOrderColumns = new Set(orderColumns.map((column) => column.COLUMN_NAME));
   const orderMigrations = [
     ["order_id", "ALTER TABLE orders ADD COLUMN order_id VARCHAR(32) NULL"],
+    ["fulfillment_type", "ALTER TABLE orders ADD COLUMN fulfillment_type VARCHAR(16) NOT NULL DEFAULT 'Delivery'"],
     ["subtotal", "ALTER TABLE orders ADD COLUMN subtotal DECIMAL(12,2) NOT NULL DEFAULT 0"],
     ["discount_type", "ALTER TABLE orders ADD COLUMN discount_type VARCHAR(16) NOT NULL DEFAULT 'percentage'"],
     ["discount_value", "ALTER TABLE orders ADD COLUMN discount_value DECIMAL(12,2) NOT NULL DEFAULT 0"],
     ["discount_amount", "ALTER TABLE orders ADD COLUMN discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0"],
     ["gst_rate", "ALTER TABLE orders ADD COLUMN gst_rate DECIMAL(5,2) NOT NULL DEFAULT 0"],
+    ["tax_mode", "ALTER TABLE orders ADD COLUMN tax_mode VARCHAR(20) NOT NULL DEFAULT 'Tax Exclusive'"],
     ["gst_amount", "ALTER TABLE orders ADD COLUMN gst_amount DECIMAL(12,2) NOT NULL DEFAULT 0"],
     ["razorpay_order_id", "ALTER TABLE orders ADD COLUMN razorpay_order_id VARCHAR(64) NULL"],
     ["razorpay_payment_id", "ALTER TABLE orders ADD COLUMN razorpay_payment_id VARCHAR(64) NULL"],
@@ -1097,9 +1101,20 @@ async function initializeDatabase(pool) {
       id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
       gst_enabled TINYINT(1) NOT NULL DEFAULT 1,
       gst_rate DECIMAL(5,2) NOT NULL DEFAULT 18.00,
+      tax_mode VARCHAR(20) NOT NULL DEFAULT 'Tax Exclusive',
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  const [storeTaxSettingColumns] = await pool.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'store_tax_settings'`,
+  );
+  if (!storeTaxSettingColumns.some((column) => column.COLUMN_NAME === "tax_mode")) {
+    await pool.query(
+      "ALTER TABLE store_tax_settings ADD COLUMN tax_mode VARCHAR(20) NOT NULL DEFAULT 'Tax Exclusive'",
+    );
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS product_import_logs (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -1350,7 +1365,7 @@ async function initializeDatabase(pool) {
     FROM products
   `);
   await pool.query("INSERT IGNORE INTO stock_settings (id, allow_negative_stock) VALUES (1, 0)");
-  await pool.query("INSERT IGNORE INTO store_tax_settings (id, gst_enabled, gst_rate) VALUES (1, 1, 18.00)");
+  await pool.query("INSERT IGNORE INTO store_tax_settings (id, gst_enabled, gst_rate, tax_mode) VALUES (1, 1, 18.00, 'Tax Exclusive')");
   await pool.query(`
     INSERT IGNORE INTO stock_transactions
       (transaction_ref, transaction_type, reference_type, reference_id, reference_number, remarks)

@@ -9,6 +9,15 @@ function badRequest(message) {
 
 function createStoreTaxSettingsRouter(settingsService) {
   const router = express.Router();
+
+  router.get("/gst/public", async (request, response, next) => {
+    try {
+      return response.json(await settingsService.getSettings());
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   router.use(requireAuthentication, requireAdmin);
 
   router.get("/gst", async (request, response, next) => {
@@ -36,10 +45,15 @@ function createStoreTaxSettingsRouter(settingsService) {
         throw badRequest("gst_rate must be between 0 and 100.");
       }
       const rate = Math.round((parsedRate + Number.EPSILON) * 100) / 100;
+      const taxMode = request.body?.tax_mode;
+      if (!["Tax Exclusive", "Tax Inclusive"].includes(taxMode)) {
+        throw badRequest("tax_mode must be Tax Exclusive or Tax Inclusive.");
+      }
 
       return response.json(await settingsService.updateSettings({
         gstEnabled: enabled,
         gstRate: rate,
+        taxMode,
       }));
     } catch (error) {
       if (error.status === 400) return response.status(400).json({ message: error.message });
