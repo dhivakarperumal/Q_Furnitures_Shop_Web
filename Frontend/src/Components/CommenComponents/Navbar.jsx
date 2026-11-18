@@ -315,7 +315,10 @@ const Navbar = () => {
                           <Link
                             key={cat.catId || cat.id || cat.name}
                             to={`/shop?category=${encodeURIComponent(cat.name)}`}
-                            onClick={() => setCategoryMenu(false)}
+                            onClick={() => {
+                              setCategoryMenu(false);
+                              window.scrollTo({ top: 0, behavior: "instant" });
+                            }}
                             className={
                               `group flex min-w-0 items-center gap-3 rounded-xl border border-transparent px-2.5 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${
                                 isCategoryActive && activeCategory === cat.name
@@ -840,7 +843,10 @@ const Navbar = () => {
                       <NavLink
                         key={cat.catId || cat.id || cat.name}
                         to={`/shop?category=${encodeURIComponent(cat.name)}`}
-                        onClick={closeMobileMenu}
+                        onClick={() => {
+                          closeMobileMenu();
+                          window.scrollTo({ top: 0, behavior: "instant" });
+                        }}
                         className={
                           `group flex items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
                             isCategoryActive && activeCategory === cat.name
