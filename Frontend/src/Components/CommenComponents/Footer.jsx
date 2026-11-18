@@ -25,6 +25,8 @@ const Footer = () => {
   const facebookUrl = import.meta.env.VITE_FACEBOOK_URL;
   const instagramUrl = import.meta.env.VITE_INSTAGRAM_URL;
   const whatsappNumber = (import.meta.env.VITE_WHATSAPP_NUMBER || "919876543210").replace(/\D/g, "");
+  const mapEmbedUrl = import.meta.env.VITE_STORE_MAP_EMBED_URL
+    || "https://www.google.com/maps?q=Chennai%2C%20India&output=embed";
 
   useEffect(() => {
     let isMounted = true;
@@ -62,8 +64,8 @@ const Footer = () => {
     <footer className="mt-20 bg-[#2b1a10] text-white">
       <div className="h-1.5 bg-gradient-to-r from-primary-dark via-primary to-amber-400" />
       <PageContainer>
-        <div className="grid grid-cols-1 gap-x-10 gap-y-10 py-12 sm:grid-cols-2 lg:grid-cols-12">
-          <div className="sm:col-span-2 lg:col-span-4">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-10 py-12 sm:grid-cols-2 lg:grid-cols-12">
+          <div className="sm:col-span-2 lg:col-span-3">
             <Link to="/" className="mb-5 inline-flex items-center rounded-xl bg-white px-4 py-2">
               <img
                 src="/images/logo.png"
@@ -117,7 +119,7 @@ const Footer = () => {
             </ul>
           </div>
 
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-2">
             <h2 className="mb-5 text-sm font-bold uppercase tracking-[0.16em] text-amber-300">Stay in Touch</h2>
             <div className="space-y-3 text-sm text-white/75">
               <a href={`tel:${storePhone.replace(/[^+\d]/g, "")}`} className="flex items-center gap-3 transition hover:text-white">
@@ -172,6 +174,20 @@ const Footer = () => {
               </button>
             </form>
             {subscribed && <p className="mt-2 text-xs text-amber-300">Thanks for subscribing!</p>}
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-3">
+            <h2 className="mb-5 text-sm font-bold uppercase tracking-[0.16em] text-amber-300">Our Location</h2>
+            <div className="overflow-hidden rounded-xl border border-white/15 bg-white/5 p-1.5">
+              <iframe
+                src={mapEmbedUrl}
+                title="Q Furnitures store location"
+                className="h-52 w-full rounded-lg border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            </div>
           </div>
         </div>
 
