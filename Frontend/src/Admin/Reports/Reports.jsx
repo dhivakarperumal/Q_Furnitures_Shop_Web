@@ -630,7 +630,7 @@ function Reports() {
                     </div>
 
                     <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
-                        <label className="relative w-full shrink-0 lg:w-44">
+                        <label className="relative w-full shrink-0 lg:w-84">
                             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
                             <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search report..." className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-primary focus:bg-white" />
                         </label>
@@ -695,6 +695,7 @@ function Reports() {
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-gradient-to-r from-secondary-dark to-secondary-light text-xs uppercase tracking-wider text-[#FCD34D]">
                                         <tr>
+                                            <th className="whitespace-nowrap px-4 py-4 rounded-tl-2xl">S No</th>
                                             {visibleColumns.map((column) => (
                                                 <th key={column} className="whitespace-nowrap px-4 py-4 first:rounded-tl-2xl">
                                                     <button onClick={() => toggleSort(column)} className="font-bold transition-colors hover:text-white">
@@ -708,6 +709,7 @@ function Reports() {
                                     <tbody className="divide-y divide-gray-50">
                                         {pageRows.map((row, index) => (
                                             <tr key={recordKey(row, index)} className="group transition-colors hover:bg-orange-50/60">
+                                                <td className="px-4 py-4 font-semibold text-slate-500">{(page - 1) * pageSize + index + 1}</td>
                                                 {visibleColumns.map((column) => <td key={column} className="max-w-xs px-4 py-4 text-slate-700">{formatCell(row[column], column)}</td>)}
                                                 <td className="px-4 py-4">
                                                     <button onClick={() => setDetailRow(row)} title="View details" className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-primary-dark transition-all hover:bg-primary hover:text-white"><FiEye size={13} /></button>
