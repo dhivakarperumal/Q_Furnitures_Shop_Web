@@ -3,25 +3,30 @@ import {
   Camera,
   Check,
   CheckCircle2,
-  CreditCard,
+  CalendarDays,
+  LayoutGrid,
   Building2,
   Eye,
   EyeOff,
   Home,
   KeyRound,
+  Layers,
   LoaderCircle,
   LogOut,
   MapPin,
   PackageCheck,
   Pencil,
   Plus,
+  RefreshCw,
   ShoppingBag,
+  Truck,
   Trash2,
   UserRound,
   Upload,
   X,
+  XCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../api";
 import { AuthContext } from "../PrivateRouter/AuthContext";
@@ -44,7 +49,13 @@ const tabs = [
 
 const accountHeroImage = resolveMediaUrl("/uploads/banners/1a4fd15f-b369-42f2-9d40-47fcb5d305a2.png");
 const MAX_BIRTH_DATE = new Date().toISOString().slice(0, 10);
-const ORDER_FILTERS = ["All Orders", "Processing", "Shipped", "Delivered", "Cancelled"];
+const ORDER_FILTERS = [
+  { label: "All Orders", icon: LayoutGrid },
+  { label: "Processing", icon: RefreshCw },
+  { label: "Shipped", icon: Truck },
+  { label: "Delivered", icon: CheckCircle2 },
+  { label: "Cancelled", icon: XCircle },
+];
 const PASSWORD_REQUIREMENTS = [
   { label: "At least 8 characters", test: (value) => value.length >= 8 },
   { label: "One uppercase letter", test: (value) => /[A-Z]/.test(value) },
@@ -69,13 +80,6 @@ function formatAmount(value) {
   }).format(Number.isFinite(amount) ? amount : 0);
 }
 
-function formatDate(value) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "Date unavailable"
-    : date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-}
-
 function statusClass(status) {
   if (status === "Delivered") return "bg-emerald-50 text-emerald-700";
   if (status === "Cancelled") return "bg-red-50 text-red-700";
@@ -94,9 +98,11 @@ function orderFilterGroup(status) {
 
 function Account() {
   const { user, updateUser, logout } = useContext(AuthContext);
+  const [searchParams, setSearchParams] = useSearchParams();
   const photoInputRef = useRef(null);
   const addressModalRef = useRef(null);
-  const [activeTab, setActiveTab] = useState("profile");
+  const requestedTab = searchParams.get("tab");
+  const activeTab = tabs.some(({ id }) => id === requestedTab) ? requestedTab : "profile";
   const [profile, setProfile] = useState({
     name: user?.name || user?.username || "",
     email: user?.email || "",
@@ -155,6 +161,12 @@ function Account() {
   const userId = user?.id;
   const userProfileImage = user?.profile_image;
   const closeOrderDetails = useCallback(() => setSelectedOrder(null), []);
+  const selectTab = (tab) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (tab === "profile") nextParams.delete("tab");
+    else nextParams.set("tab", tab);
+    setSearchParams(nextParams);
+  };
 
   useEffect(() => {
     if (!addressFormOpen) return undefined;
@@ -272,6 +284,19 @@ function Account() {
   const visibleOrders = useMemo(() => orders.filter(
     (order) => selectedOrderFilter === "All Orders" || orderFilterGroup(order.status) === selectedOrderFilter,
   ), [orders, selectedOrderFilter]);
+  const orderCounts = useMemo(() => {
+    const counts = {
+      "All Orders": orders.length,
+      Processing: 0,
+      Shipped: 0,
+      Delivered: 0,
+      Cancelled: 0,
+    };
+    orders.forEach((order) => {
+      counts[orderFilterGroup(order.status)] += 1;
+    });
+    return counts;
+  }, [orders]);
 
   async function saveProfile(event) {
     event.preventDefault();
@@ -486,7 +511,7 @@ function Account() {
                 <span className="mt-0.5 block truncate text-xs text-[#725d4b]">{profile.email || user?.email}</span>
               </span>
             </div>
-            <nav aria-label="Account sections" role="tablist" className="mt-4 flex gap-1.5 overflow-x-auto lg:flex-col">
+            <nav aria-label="Account sections" role="tablist" className="mt-4 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-1">
               {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -495,17 +520,17 @@ function Account() {
                   role="tab"
                   aria-selected={activeTab === id}
                   aria-controls={`account-panel-${id}`}
-                  onClick={() => setActiveTab(id)}
-                  className={`inline-flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition sm:text-sm lg:w-full ${
+                  onClick={() => selectTab(id)}
+                  className={`inline-flex min-h-11 w-full min-w-0 items-center gap-2 rounded-xl px-2.5 py-2.5 text-left text-[11px] font-bold transition sm:gap-3 sm:px-3 sm:text-sm ${
                     activeTab === id
                       ? "bg-[#fff0df] text-[#351d0e] shadow-sm ring-1 ring-inset ring-[#f6d2b2]"
                       : "text-[#5b4839] hover:bg-[#fffaf5]"
                   }`}
                 >
                   <Icon size={18} className="shrink-0 text-[#a34720]" />
-                  {label}
+                  <span className="min-w-0 break-words">{label}</span>
                   {id === "orders" && !ordersLoading && !ordersError && (
-                    <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[10px] text-[#8b735e]">{orders.length}</span>
+                    <span className="ml-auto shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] text-[#8b735e]">{orders.length}</span>
                   )}
                 </button>
               ))}
@@ -737,25 +762,28 @@ function Account() {
                   <div>
                     <h2 className="text-xl font-bold">Your Orders</h2>
                     <p className="text-sm text-[#806d5d]">Check the status and summary of your recent orders.</p>
+                    <span aria-hidden="true" className="mt-2 block h-[3px] w-24 rounded-full bg-[#f07816]" />
                   </div>
                 </div>
-                <div role="tablist" aria-label="Filter orders" className="mb-5 flex gap-2 overflow-x-auto border-b border-[#eee4d8] pb-2">
-                  {ORDER_FILTERS.map((filter) => (
+                <div role="tablist" aria-label="Filter orders" className="mb-5 flex flex-wrap items-center gap-2 border-b border-[#eee4d8] pb-2 sm:flex-nowrap sm:overflow-x-auto">
+                  {ORDER_FILTERS.map(({ label, icon: Icon }) => (
                     <button
-                      key={filter}
+                      key={label}
                       type="button"
                       role="tab"
-                      aria-selected={selectedOrderFilter === filter}
-                      onClick={() => setSelectedOrderFilter(filter)}
-                      className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition sm:text-sm ${
-                        selectedOrderFilter === filter
-                          ? "bg-[#fff0df] text-[#a34720]"
-                          : "text-[#806d5d] hover:bg-[#fcf7f1]"
+                      aria-selected={selectedOrderFilter === label}
+                      onClick={() => setSelectedOrderFilter(label)}
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-xl border px-1.5 py-2 text-[10px] font-bold transition xl:px-2.5 xl:py-2.5 xl:text-xs ${
+                        selectedOrderFilter === label
+                          ? "border-[#f07816] bg-[#f07816] text-white shadow-sm"
+                          : "border-[#f1e7dd] bg-[#fff7ef] text-[#351d0e] shadow-[0_2px_5px_rgba(53,29,14,0.06)] hover:border-[#edc9a9] hover:bg-[#fff0df]"
                       }`}
                     >
-                      {filter}
+                      <Icon size={14} className="shrink-0" />
+                      <span>{label} ({orderCounts[label]})</span>
                     </button>
                   ))}
+                  <span aria-hidden="true" className="hidden h-px min-w-4 flex-1 bg-[#f07816] sm:block" />
                 </div>
                 {ordersLoading ? (
                   <div className="flex items-center gap-2 py-8 text-sm text-[#806d5d]">
@@ -782,60 +810,68 @@ function Account() {
                     <p className="mt-1 text-sm text-[#806d5d]">Choose another filter to see more of your orders.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                     {visibleOrders.map((order) => {
                       const firstItem = Array.isArray(order.items) ? order.items[0] : null;
                       const status = order.status || "Order Placed";
+                      const orderNumber = order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
                       return (
-                      <article key={order.order_id || order.id} className="rounded-xl border border-[#eee4d8] p-4 transition hover:border-[#edc9a9]">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <h3 className="font-bold">{order.order_id || `ORD${String(order.id).padStart(4, "0")}`}</h3>
-                            <p className="mt-1 text-xs text-[#806d5d]">
-                              Placed {formatDate(order.created_at)} · {Array.isArray(order.items) ? order.items.length : 0} item(s)
-                            </p>
-                          </div>
-                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass(status)}`}>
-                            {status}
-                          </span>
-                        </div>
-                        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-[#f1e7dd] pt-4">
-                          <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#fff7ef]">
+                        <article
+                          key={orderNumber}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setSelectedOrder(order)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setSelectedOrder(order);
+                            }
+                          }}
+                          aria-label={`View details for order ${orderNumber}`}
+                          className="grid min-h-[185px] min-w-0 cursor-pointer grid-cols-[88px_minmax(0,1fr)] gap-3 rounded-[20px] border border-[#eee6dd] bg-white p-3 shadow-[0_8px_22px_rgba(53,29,14,0.06)] transition hover:-translate-y-0.5 hover:border-[#edc9a9] hover:shadow-[0_12px_28px_rgba(53,29,14,0.09)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:min-h-[150px] sm:grid-cols-[110px_minmax(0,1fr)_145px] sm:gap-4 sm:p-4"
+                        >
+                          <div className="flex h-[88px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eee7df] bg-[#fbf8f4] p-2 shadow-sm sm:h-full sm:min-h-[118px]">
                             {firstItem?.image ? (
                               <img
                                 src={resolveMediaUrl(firstItem.image)}
                                 alt={firstItem.product_name || firstItem.name || "Ordered furniture"}
-                                className="h-full w-full object-contain p-1"
+                                className="h-full w-full object-contain"
                               />
-                            ) : <PackageCheck size={25} className="text-[#a34720]" />}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-bold">
+                            ) : (
+                              <PackageCheck size={25} className="text-[#a34720]" />
+                            )}
+                          </div>
+                          <div className="flex min-w-0 flex-col justify-center">
+                            <span className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-xl bg-[#fff0df] px-2.5 py-2 text-xs font-extrabold text-[#a34720]">
+                              <CalendarDays size={14} className="shrink-0" />
+                              <span className="truncate">{orderNumber}</span>
+                            </span>
+                            <h3 className="mt-3 line-clamp-2 text-[15px] font-extrabold leading-snug text-[#351d0e] sm:text-[17px]">
                               {firstItem?.product_name || firstItem?.name || "Furniture order"}
                               {Number(firstItem?.quantity) > 1 ? ` × ${firstItem.quantity}` : ""}
-                            </p>
+                            </h3>
                             {Array.isArray(order.items) && order.items.length > 1 && (
-                              <p className="mt-1 text-xs text-[#806d5d]">+ {order.items.length - 1} more item(s)</p>
+                              <p className="mt-2 inline-flex max-w-full items-center gap-1.5 text-xs font-semibold leading-tight text-[#806d5d]">
+                                <Layers size={14} className="shrink-0" />
+                                <span className="min-w-0 truncate">+ {order.items.length - 1} more item(s)</span>
+                              </p>
                             )}
-                            <p className="mt-1 inline-flex items-center gap-1 text-xs text-[#806d5d]">
-                              <CreditCard size={13} /> {order.payment_method || "Payment not specified"}
-                            </p>
                           </div>
-                          <div className="ml-auto text-right">
-                            <p className="text-[11px] text-[#806d5d]">Order total</p>
-                            <p className="mt-1 font-extrabold">{formatAmount(order.total_amount)}</p>
+                          <div className="col-span-2 flex items-center border-t border-[#eee4d8] pt-3 sm:col-span-1 sm:border-l sm:border-t-0 sm:border-[#eee4d8] sm:px-3 sm:pt-0">
+                            <div className="min-w-0">
+                              <span className={`inline-flex max-w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-extrabold ${statusClass(status)}`}>
+                                <PackageCheck size={15} className="shrink-0" />
+                                <span className="truncate">{status}</span>
+                              </span>
+                              <div className="mt-3">
+                                <p className="text-xs leading-tight text-[#806d5d]">Total Amount</p>
+                                <p className="mt-1 text-base font-extrabold leading-tight text-[#351d0e] sm:text-lg">
+                                  {formatAmount(order.total_amount)}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="mt-3 flex justify-end border-t border-[#f1e7dd] pt-3">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedOrder(order)}
-                            className="text-xs font-bold text-[#a34720] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
-                          >
-                            View Details
-                          </button>
-                        </div>
-                      </article>
+                        </article>
                       );
                     })}
                   </div>

@@ -109,6 +109,7 @@ const Footer = () => {
                   <li key={category.catId || category.id || name}>
                     <Link
                       to={`/shop?category=${encodeURIComponent(name)}`}
+                      onClick={() => window.scrollTo({ top: 0, behavior: "instant" })}
                       className="group flex items-center gap-2 text-white/75 transition hover:text-white"
                     >
                       <ChevronRight size={14} className="shrink-0 text-primary-light" />

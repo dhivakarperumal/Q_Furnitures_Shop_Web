@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef, useEffect, useLayoutEffect } from "react";
+import React, { useContext, useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../PrivateRouter/AuthContext";
@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import PageContainer from "./PageContainer";
 import api from "../../api";
-import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut, FiSun, FiSmile } from "react-icons/fi";
-import { FiChevronRight, FiTag } from "react-icons/fi";
+import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiInfo, FiShield, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut, FiSun, FiSmile } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiTag } from "react-icons/fi";
 import CartDrawer from "./CartDrawer";
 import WishlistDrawer from "./WishlistDrawer";
 import { resolveMediaUrl } from "../../utils/media";
@@ -28,6 +28,12 @@ const ALL_ROOM_LINKS = [
   { name: "Home Office", slug: "home-office",  icon: FiMonitor, description: "Work comfortably" },
   { name: "Kids Room",   slug: "kids-room",    icon: FiSmile,   description: "Fun & functional" },
   { name: "Outdoor",     slug: "outdoor",      icon: FiSun,     description: "Open-air living" },
+];
+
+const MOBILE_PAGE_LINKS = [
+  { label: "About Us", to: "/about", icon: FiInfo },
+  { label: "Privacy Policy", to: "/privacy-policy", icon: FiShield },
+  { label: "Contact Us", to: "/contactus", icon: FiPhone },
 ];
 
 function getCategoryImage(images) {
@@ -50,7 +56,6 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [mobileMenuTop, setMobileMenuTop] = useState(0);
   const [userMenu, setUserMenu] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [roomsMenu, setRoomsMenu] = useState(false);
@@ -61,6 +66,7 @@ const Navbar = () => {
   const [categoryMenu, setCategoryMenu] = useState(false);
   const [pagesMenu, setPagesMenu] = useState(false);
   const [mobileCategory, setMobileCategory] = useState(false);
+  const [mobileRoom, setMobileRoom] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [orderCount, setOrderCount] = useState(0);
@@ -77,7 +83,6 @@ const Navbar = () => {
   const isPagesActive = ["/about", "/contactus", "/privacy-policy"].includes(location.pathname);
 
   const menuRef = useRef();
-  const navbarRef = useRef(null);
   const categoryRef = useRef();
   const roomsRef = useRef();
   const pagesRef = useRef();
@@ -94,6 +99,7 @@ const Navbar = () => {
   const closeMobileMenu = () => {
     setMobileMenu(false);
     setMobileCategory(false);
+    setMobileRoom(false);
     setMobilePages(false);
   };
 
@@ -152,18 +158,6 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handler);
 
   }, []);
-
-  useLayoutEffect(() => {
-    if (!mobileMenu) return undefined;
-
-    const updateMenuPosition = () => {
-      setMobileMenuTop(navbarRef.current?.getBoundingClientRect().bottom || 0);
-    };
-
-    updateMenuPosition();
-    window.addEventListener("resize", updateMenuPosition);
-    return () => window.removeEventListener("resize", updateMenuPosition);
-  }, [mobileMenu]);
 
   // Fetch categories
   useEffect(() => {
@@ -224,13 +218,6 @@ const Navbar = () => {
         ? "bg-[#ed720a] text-white shadow-sm"
         : "text-[#351d0e] hover:text-[#e87500]"
     }`;
-  const mobileNavClass = ({ isActive }) =>
-    `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
-      isActive
-        ? "bg-[#ed720a] text-white shadow-sm"
-        : "text-gray-800 hover:text-orange-700"
-    }`;
-
   const handleSearch = (event) => {
     event.preventDefault();
     const query = searchQuery.trim();
@@ -242,16 +229,16 @@ const Navbar = () => {
 
   return (
 
-    <nav ref={navbarRef} className="sticky top-0 z-50 bg-[#fffaf5]/95 py-2 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 bg-[#fffaf5]/95 py-2 backdrop-blur-md">
       <PageContainer>
         <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f07816]/40 bg-white/95 px-3 shadow-[0_10px_30px_rgba(74,42,19,0.12)] sm:min-h-[76px] sm:gap-3 sm:px-4 lg:rounded-full lg:px-4 xl:flex-nowrap">
           <button
             type="button"
             onClick={() => mobileMenu ? closeMobileMenu() : setMobileMenu(true)}
             aria-label={mobileMenu ? "Close menu" : "Open menu"}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark lg:hidden"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark sm:h-9 sm:w-9 lg:hidden"
           >
-            {mobileMenu ? <X size={22} /> : <Menu size={22} />}
+            {mobileMenu ? <X size={18} /> : <Menu size={18} />}
           </button>
 
           <Link
@@ -262,7 +249,7 @@ const Navbar = () => {
             <img
               src="/images/logo.png"
               alt="Q Living Furniture"
-              className="h-auto max-h-11 w-32 object-contain sm:max-h-12 sm:w-40 xl:w-44"
+              className="h-auto max-h-11 w-20 object-contain sm:max-h-12 sm:w-40 xl:w-44"
             />
           </Link>
 
@@ -315,7 +302,10 @@ const Navbar = () => {
                           <Link
                             key={cat.catId || cat.id || cat.name}
                             to={`/shop?category=${encodeURIComponent(cat.name)}`}
-                            onClick={() => setCategoryMenu(false)}
+                            onClick={() => {
+                              setCategoryMenu(false);
+                              window.scrollTo({ top: 0, behavior: "instant" });
+                            }}
                             className={
                               `group flex min-w-0 items-center gap-3 rounded-xl border border-transparent px-2.5 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] ${
                                 isCategoryActive && activeCategory === cat.name
@@ -357,7 +347,7 @@ const Navbar = () => {
                 className={navClass({ isActive: roomsMenu || isRoomActive })}
                 aria-expanded={roomsMenu}
               >
-                Rooms
+                Shop by room
                 <FiChevronDown className={`transition-transform ${roomsMenu ? "rotate-180" : ""}`} />
               </button>
               {roomsMenu && (
@@ -459,9 +449,8 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 lg:gap-3 lg:border-l lg:border-[#dfcbb5] lg:pl-3">
-            <div className="hidden items-center gap-1 sm:flex xl:gap-2">
-            <div className="relative">
+          <div className="flex shrink-0 items-center gap-0.5 text-[#351d0e] sm:gap-2 lg:gap-3 lg:border-l lg:border-[#dfcbb5] lg:pl-3">
+            <div className="relative hidden sm:block">
               <button
                 type="button"
                 onClick={() => setSearchOpen(!searchOpen)}
@@ -493,9 +482,9 @@ const Navbar = () => {
               type="button"
               onClick={openWishlist}
               aria-label="Open wishlist"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
+              className="relative flex h-8 w-8 items-center justify-center rounded-xl transition hover:bg-[#fff0df] hover:text-[#e87500] sm:h-10 sm:w-10 sm:rounded-full lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
             >
-              <Heart size={21} />
+              <Heart size={21} className="max-sm:size-4" />
               {wishlist.length > 0 && (
                 <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
                   {wishlist.length > 9 ? "9+" : wishlist.length}
@@ -507,9 +496,9 @@ const Navbar = () => {
               type="button"
               onClick={openCart}
               aria-label="Open cart"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
+              className="relative flex h-8 w-8 items-center justify-center rounded-xl transition hover:bg-[#fff0df] hover:text-[#e87500] sm:h-10 sm:w-10 sm:rounded-full lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
             >
-              <ShoppingCart size={21} />
+              <ShoppingCart size={21} className="max-sm:size-4" />
               {cart.length > 0 && (
                 <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
                   {cart.length > 9 ? "9+" : cart.length}
@@ -525,7 +514,7 @@ const Navbar = () => {
                   aria-label={`Open account menu for ${profileName}`}
                   aria-expanded={userMenu}
                   aria-haspopup="menu"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7e4ca] text-xs font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] sm:h-10 sm:w-10 sm:rounded-xl sm:border sm:border-[#e87500]/45 sm:bg-white sm:text-sm lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
                 >
                   {profileInitial}
                 </button>
@@ -562,7 +551,7 @@ const Navbar = () => {
                         </span>
                       </Link>
                       <Link
-                        to="/ordersmain"
+                        to="/account?tab=orders"
                         onClick={() => setUserMenu(false)}
                         className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-orange-50"
                       >
@@ -613,22 +602,10 @@ const Navbar = () => {
                 )}
               </div>
             ) : (
-              <Link to="/login" aria-label="Sign in" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] transition hover:bg-[#f1d3ac] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white">
-                <User size={21} />
+              <Link to="/login" aria-label="Sign in" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7e4ca] transition hover:bg-[#f1d3ac] hover:text-[#e87500] sm:h-10 sm:w-10 lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white">
+                <User size={21} className="max-sm:size-[18px]" />
               </Link>
             )}
-            </div>
-
-            {user && (
-              <Link
-                to="/account"
-                aria-label="My account"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] sm:hidden"
-              >
-                {profileInitial}
-              </Link>
-            )}
-
           </div>
         </div>
       </PageContainer>
@@ -674,7 +651,7 @@ const Navbar = () => {
         document.body
       )}
       {mobileMenu && createPortal(
-        <div className="fixed inset-x-0 bottom-0 z-[60]" style={{ top: `${mobileMenuTop}px` }}>
+        <div className="fixed inset-0 z-[60] lg:hidden">
 
           {/* Overlay */}
           <div
@@ -687,12 +664,73 @@ const Navbar = () => {
             role="dialog"
             aria-modal="true"
             aria-label="Mobile navigation"
-            className="absolute bottom-0 right-0 top-0 flex h-full w-[min(94vw,380px)] flex-col border-l border-[#f0dfce] bg-[#fffaf5] shadow-2xl"
+            className="absolute inset-0 flex h-full w-full flex-col bg-[#fffaf5]"
           >
-            <div className="absolute inset-0 min-h-0 overflow-y-auto px-3 py-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4">
+              <div className="sticky top-0 z-10 -mx-3 mb-3 flex min-h-[76px] shrink-0 items-center justify-between gap-2 border-b border-[#f0dfce] bg-[#fffaf5] px-4 py-3">
+                <button
+                  type="button"
+                  onClick={closeMobileMenu}
+                  aria-label="Close menu"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark"
+                >
+                  <X size={18} />
+                </button>
+                <Link
+                  to="/"
+                  onClick={closeMobileMenu}
+                  aria-label="Q Living Furniture home"
+                  className="flex min-w-0 flex-1 justify-center"
+                >
+                  <img src="/images/logo.png" alt="Q Living Furniture" className="max-h-10 w-32 object-contain" />
+                </Link>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      closeMobileMenu();
+                      openWishlist(event);
+                    }}
+                    aria-label="Open wishlist"
+                    className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#351d0e] transition hover:bg-[#fff0df] hover:text-primary"
+                  >
+                    <Heart size={19} />
+                    {wishlist.length > 0 && (
+                      <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
+                        {wishlist.length > 9 ? "9+" : wishlist.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      closeMobileMenu();
+                      openCart(event);
+                    }}
+                    aria-label="Open cart"
+                    className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#351d0e] transition hover:bg-[#fff0df] hover:text-primary"
+                  >
+                    <ShoppingCart size={19} />
+                    {cart.length > 0 && (
+                      <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
+                        {cart.length > 9 ? "9+" : cart.length}
+                      </span>
+                    )}
+                  </button>
+                  <Link
+                    to={user ? "/account" : "/login"}
+                    onClick={closeMobileMenu}
+                    aria-label={user ? "Open account" : "Sign in"}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f7e4ca] text-xs font-bold text-[#351d0e] transition hover:bg-[#f1d3ac]"
+                  >
+                    {user ? profileInitial : <User size={18} />}
+                  </Link>
+                </div>
+              </div>
+              <div className="px-3">
 
             {/* MENU SCREEN */}
-            {!mobileCategory && !mobilePages && (
+            {!mobileCategory && !mobileRoom && !mobilePages && (
               <>
                 <div className="flex flex-col gap-2.5">
                   <form onSubmit={handleSearch} className="relative mb-1">
@@ -705,7 +743,7 @@ const Navbar = () => {
                       placeholder="Search furniture"
                       className="h-14 w-full rounded-2xl border border-[#f0e5da] bg-white pl-12 pr-4 text-sm font-medium text-[#351d0e] outline-none transition placeholder:text-[#8b735e] focus:border-primary"
                     />
-                    <Search size={19} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
+                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
                   </form>
 
                   <NavLink
@@ -717,7 +755,7 @@ const Navbar = () => {
                       }`
                     }
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiHome size={18} /></span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiHome size={16} /></span>
                     Home
                   </NavLink>
 
@@ -732,7 +770,7 @@ const Navbar = () => {
                       }`
                     }
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiShoppingBag size={18} /></span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiShoppingBag size={16} /></span>
                     Shop
                   </NavLink>
 
@@ -744,8 +782,20 @@ const Navbar = () => {
                         : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
                     }`}
                   >
-                    <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiGrid size={18} /></span>Categories</span>
-                    <FiChevronRight size={17} className="text-primary" />
+                    <span className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiGrid size={16} /></span>Categories</span>
+                    <FiChevronRight size={15} className="text-primary" />
+                  </button>
+
+                  <button
+                    onClick={() => setMobileRoom(true)}
+                    className={`flex min-h-[60px] items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                      isRoomActive
+                        ? "border-primary/20 bg-[#fff0df] text-[#c2560b]"
+                        : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiHome size={16} /></span>Shop by room</span>
+                    <FiChevronRight size={15} className="text-primary" />
                   </button>
 
                   <NavLink
@@ -757,7 +807,7 @@ const Navbar = () => {
                       }`
                     }
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiTag size={18} /></span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiTag size={16} /></span>
                     Combo Offers
                   </NavLink>
 
@@ -766,7 +816,7 @@ const Navbar = () => {
                     onClick={closeMobileMenu}
                     className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-[#f0e5da] bg-white px-4 py-3 text-sm font-semibold text-[#351d0e] transition hover:border-primary/40"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={18} /></span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={16} /></span>
                     Interior Ideas
                   </Link>
 
@@ -778,30 +828,9 @@ const Navbar = () => {
                         : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
                     }`}
                   >
-                    <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={18} /></span>Pages</span>
-                    <FiChevronRight size={17} className="text-primary" />
+                    <span className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={16} /></span>Pages</span>
+                    <FiChevronRight size={15} className="text-primary" />
                   </button>
-
-                  <div className="pt-2">
-                    <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-[#8b735e]">Shop by room</h2>
-                    <div className="grid grid-cols-2 gap-2">
-                      {roomLinks.map(({ name, slug, icon: RoomIcon }) => (
-                        <NavLink
-                          key={slug}
-                          to={`/shop?room=${encodeURIComponent(slug)}`}
-                          onClick={closeMobileMenu}
-                          className={
-                            `flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
-                              isRoomActive && activeRoom === slug ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
-                            }`
-                          }
-                        >
-                          <RoomIcon size={16} className="shrink-0 text-primary" />
-                          <span className="truncate">{name}</span>
-                        </NavLink>
-                      ))}
-                    </div>
-                  </div>
 
                 </div>
               </>
@@ -810,29 +839,22 @@ const Navbar = () => {
             {/* CATEGORY SCREEN */}
             {mobileCategory && (
               <>
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
-
-                  {/* Back button */}
+                <div className="mb-5 flex items-center gap-3 border-b border-[#f0dfce] pb-4 pt-2">
                   <button
+                    type="button"
                     onClick={() => setMobileCategory(false)}
-                    className="text-xl"
+                    aria-label="Back to mobile menu"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#f0dfce] bg-white text-[#8b5a35] transition hover:bg-[#fff0df]"
                   >
-                    ←
+                    <FiChevronLeft size={20} />
                   </button>
-
-                  <h2 className="text-sm font-semibold">Categories</h2>
-
-                  <X
-                    size={24}
-                    className="cursor-pointer"
-                    onClick={closeMobileMenu}
-                  />
-
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c66a22]">Explore</p>
+                    <h2 className="mt-0.5 text-lg font-bold text-[#351d0e]">Collections</h2>
+                  </div>
                 </div>
 
-                {/* Category List */}
-                <div className="flex flex-col p-5 space-y-3">
+                <div className="flex flex-col space-y-3 pb-5">
 
                   {categories.map((cat) => {
                     const image = getCategoryImage(cat.images);
@@ -840,7 +862,10 @@ const Navbar = () => {
                       <NavLink
                         key={cat.catId || cat.id || cat.name}
                         to={`/shop?category=${encodeURIComponent(cat.name)}`}
-                        onClick={closeMobileMenu}
+                        onClick={() => {
+                          closeMobileMenu();
+                          window.scrollTo({ top: 0, behavior: "instant" });
+                        }}
                         className={
                           `group flex items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
                             isCategoryActive && activeCategory === cat.name
@@ -854,12 +879,12 @@ const Navbar = () => {
                             {image ? (
                               <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
                             ) : (
-                              <FiTag size={18} />
+                              <FiTag size={16} />
                             )}
                           </span>
                           <span className="truncate">{cat.name}</span>
                         </div>
-                        <FiChevronRight size={16} className="shrink-0 opacity-60 transition-transform group-hover:translate-x-0.5" />
+                        <FiChevronRight size={14} className="shrink-0 opacity-60 transition-transform group-hover:translate-x-0.5" />
                       </NavLink>
                     );
                   })}
@@ -867,63 +892,111 @@ const Navbar = () => {
                 </div>
               </>
             )}
-            {/* PAGES SCREEN */}
-            {mobilePages && (
+
+            {/* SHOP BY ROOM SCREEN */}
+            {mobileRoom && (
               <>
-                <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
-
+                <div className="mb-5 flex items-center gap-3 border-b border-[#f0dfce] pb-4 pt-2">
                   <button
-                    onClick={() => setMobilePages(false)}
-                    className="text-xl"
+                    type="button"
+                    onClick={() => setMobileRoom(false)}
+                    aria-label="Back to mobile menu"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#f0dfce] bg-white text-[#8b5a35] transition hover:bg-[#fff0df]"
                   >
-                    ←
+                    <FiChevronLeft size={20} />
                   </button>
-
-                  <h2 className="text-lg font-semibold">Pages</h2>
-
-                  <X
-                    size={24}
-                    className="cursor-pointer"
-                    onClick={closeMobileMenu}
-                  />
-
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c66a22]">Explore</p>
+                    <h2 className="mt-0.5 text-lg font-bold text-[#351d0e]">Shop by room</h2>
+                  </div>
                 </div>
 
-                <div className="flex flex-col p-5 space-y-3">
-
-                  <NavLink
-                    to="/about"
-                    onClick={closeMobileMenu}
-                    className={mobileNavClass}
-                  >
-                    <FiFileText size={16} />
-                    About Us
-                  </NavLink>
-
-                  <NavLink
-                    to="/privacy-policy"
-                    onClick={closeMobileMenu}
-                    className={mobileNavClass}
-                  >
-                    <FiFileText size={16} />
-                    Privacy Policy
-                  </NavLink>
-
-                    
-                  <NavLink
-                    to="/contactus"
-                    onClick={closeMobileMenu}
-                    className={mobileNavClass}
-                  >
-                    <FiPhone size={16} />
-                    Contact Us
-                  </NavLink>
-
+                <div className="flex flex-col space-y-3 pb-5">
+                  {roomLinks.map(({ name, slug, icon: RoomIcon, description }) => (
+                    <NavLink
+                      key={slug}
+                      to={`/shop?room=${encodeURIComponent(slug)}`}
+                      onClick={() => {
+                        closeMobileMenu();
+                        window.scrollTo({ top: 0, behavior: "instant" });
+                      }}
+                      className={
+                        `group flex items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
+                          isRoomActive && activeRoom === slug
+                            ? "border-[#ed720a] bg-[#ed720a] text-white shadow-sm"
+                            : "border-orange-100 bg-white text-[#351d0e] hover:border-orange-200 hover:bg-orange-50"
+                        }`
+                      }
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                          isRoomActive && activeRoom === slug ? "bg-white/15 text-white" : "bg-[#f7eee3] text-[#c96518]"
+                        }`}>
+                          <RoomIcon size={20} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate">{name}</span>
+                          <span className={`block text-[11px] font-normal ${
+                            isRoomActive && activeRoom === slug ? "text-white/75" : "text-[#8b735e]"
+                          }`}>
+                            {description}
+                          </span>
+                        </span>
+                      </div>
+                      <FiChevronRight size={14} className="shrink-0 opacity-60 transition-transform group-hover:translate-x-0.5" />
+                    </NavLink>
+                  ))}
                 </div>
               </>
             )}
+
+            {/* PAGES SCREEN */}
+            {mobilePages && (
+              <>
+                <div className="mb-5 flex items-center gap-3 border-b border-[#f0dfce] pb-4 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setMobilePages(false)}
+                    aria-label="Back to mobile menu"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#f0dfce] bg-white text-[#8b5a35] transition hover:bg-[#fff0df]"
+                  >
+                    <FiChevronLeft size={20} />
+                  </button>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c66a22]">Explore</p>
+                    <h2 className="mt-0.5 text-lg font-bold text-[#351d0e]">Pages</h2>
+                  </div>
+                </div>
+
+                <div className="flex flex-col space-y-3 pb-5">
+                  {MOBILE_PAGE_LINKS.map(({ label, to, icon: PageIcon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      onClick={closeMobileMenu}
+                      className={({ isActive }) =>
+                        `group flex min-h-[68px] items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
+                          isActive
+                            ? "border-[#ed720a] bg-orange-50 text-[#c96518]"
+                            : "border-orange-100 bg-white text-[#351d0e] hover:border-orange-200 hover:bg-orange-50"
+                        }`
+                      }
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#f7eee3] text-[#c96518]">
+                          <PageIcon size={19} />
+                        </span>
+                        <span className="truncate">{label}</span>
+                      </span>
+                      <FiChevronRight size={14} className="shrink-0 text-[#9b8876] transition-transform group-hover:translate-x-0.5" />
+                    </NavLink>
+                  ))}
+                </div>
+              </>
+            )}
+              </div>
+            </div>
           </div>
-        </div>
         </div>
       , document.body
       )}
