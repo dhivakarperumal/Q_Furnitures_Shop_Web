@@ -23,7 +23,6 @@ import { StoreContext } from "../../PrivateRouter/StoreContext";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
 
-const GST_RATE = 3;
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 const checkoutAmountFormatter = new Intl.NumberFormat("en-IN", {
   minimumFractionDigits: 2,
@@ -63,6 +62,10 @@ const Checkout = () => {
   const [addressSearch, setAddressSearch] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [createdOrderId, setCreatedOrderId] = useState("");
+  const [taxSettings, setTaxSettings] = useState(null);
+  const [taxSettingsLoading, setTaxSettingsLoading] = useState(true);
+  const [taxSettingsError, setTaxSettingsError] = useState("");
+  const [taxSettingsLoadKey, setTaxSettingsLoadKey] = useState(0);
   const [form, setForm] = useState({
     customer_name: user?.name || user?.username || "",
     customer_email: user?.email || "",
@@ -75,6 +78,33 @@ const Checkout = () => {
     zip_code: "",
     payment_method: "Cash",
   });
+
+  useEffect(() => {
+    let active = true;
+    api.get("/settings/gst/public").then(({ data }) => {
+      const gstRate = Number(data?.gst_rate);
+      if (typeof data?.gst_enabled !== "boolean" || !Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100 ||
+          !["Tax Exclusive", "Tax Inclusive"].includes(data?.tax_mode)) {
+        throw new Error("The GST settings response was invalid.");
+      }
+      if (active) {
+        setTaxSettings({
+          gst_enabled: data.gst_enabled,
+          gst_rate: gstRate,
+          tax_mode: data.tax_mode,
+        });
+        setTaxSettingsError("");
+      }
+    }).catch((error) => {
+      if (active) {
+        setTaxSettings(null);
+        setTaxSettingsError(error.response?.data?.message || error.message || "Unable to load current GST settings.");
+      }
+    }).finally(() => {
+      if (active) setTaxSettingsLoading(false);
+    });
+    return () => { active = false; };
+  }, [taxSettingsLoadKey]);
 
   useEffect(() => {
     let active = true;
@@ -171,10 +201,12 @@ const Checkout = () => {
     );
   }, [addressSearch, savedAddresses]);
 
-  const subtotal = cart.reduce(
-    (total, item) => total + Number(item.price || 0) * Number(item.quantity || 0),
-    0,
-  );
+  const subtotal = cart.reduce((total, item) => {
+    const lineTotal = Math.round(
+      (Number(item.price || 0) * Number(item.quantity || 0) + Number.EPSILON) * 100,
+    ) / 100;
+    return Math.round((total + lineTotal + Number.EPSILON) * 100) / 100;
+  }, 0);
   const hasComboItems = cart.some((item) => item.item_type === "combo" || item.combo_id != null);
   const hasProductItems = cart.some((item) => item.item_type !== "combo" && item.combo_id == null);
   const orderComposition = hasComboItems && hasProductItems
@@ -184,8 +216,16 @@ const Checkout = () => {
       : hasProductItems
         ? "Single"
         : "Select items";
-  const gstAmount = Math.round((subtotal * GST_RATE + Number.EPSILON) * 100) / 100;
-  const total = subtotal + gstAmount;
+  const appliedGstRate = taxSettings?.gst_enabled ? taxSettings.gst_rate : 0;
+  const gstAmount = taxSettings
+    ? Math.round((subtotal * appliedGstRate /
+      (taxSettings.tax_mode === "Tax Inclusive" ? 100 + appliedGstRate : 100) + Number.EPSILON) * 100) / 100
+    : null;
+  const total = taxSettings
+    ? taxSettings.tax_mode === "Tax Inclusive"
+      ? subtotal
+      : Math.round((subtotal + gstAmount + Number.EPSILON) * 100) / 100
+    : null;
 
   const updateForm = (event) => {
     setSelectedAddressId(null);
@@ -303,6 +343,10 @@ const Checkout = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (submitting || cart.length === 0) return;
+    if (!taxSettings) {
+      toast.error("Current GST settings are unavailable. Please retry before placing your order.");
+      return;
+    }
 
     setSubmitting(true);
     let paymentModalOpened = false;
@@ -596,15 +640,22 @@ const Checkout = () => {
                     <div className="mt-3 space-y-2 border-t border-[#eee4d8] pt-3 text-sm">
                       <div className="flex justify-between text-[#725d4b]"><span>Subtotal</span><span className="font-semibold text-[#351d0e]">{formatCheckoutAmount(subtotal)}</span></div>
                       <div className="flex justify-between text-[#725d4b]">
-                        <span className="flex items-center gap-1.5">GST ({GST_RATE}%) <Info size={14} className="text-[#8b735e]" /></span>
-                        <span>{formatCheckoutAmount(gstAmount)}</span>
+                        <span className="flex items-center gap-1.5">
+                          {taxSettings
+                            ? !taxSettings.gst_enabled
+                              ? "GST (disabled)"
+                              : `${taxSettings.tax_mode === "Tax Inclusive" ? "GST included" : "GST"} (${taxSettings.gst_rate}%)`
+                            : "GST settings"}
+                          <Info size={14} className="text-[#8b735e]" />
+                        </span>
+                        <span>{taxSettings ? formatCheckoutAmount(gstAmount) : taxSettingsLoading ? "Loading..." : "Unavailable"}</span>
                       </div>
                       <div className="flex justify-between text-[#725d4b]">
                         <span>Delivery charges</span>
                         <span className="rounded-full bg-[#eaf5ed] px-2 py-0.5 text-[10px] font-bold uppercase text-[#278044]">Free</span>
                       </div>
                       <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-[#f7efe5] to-[#f3e6d8] px-3 py-2.5 font-bold text-[#351d0e]">
-                        <span>Total amount</span><span className="text-lg">{formatCheckoutAmount(total)}</span>
+                        <span>Total amount</span><span className="text-lg">{taxSettings ? formatCheckoutAmount(total) : "Unavailable"}</span>
                       </div>
                     </div>
                   </div>
@@ -624,15 +675,33 @@ const Checkout = () => {
                     <ShieldCheck size={15} className="shrink-0 text-[#278044]" />
                     Online payments support UPI, cards, and netbanking.
                   </p>
+                  {taxSettingsError && (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                      <p role="alert">Could not load current GST settings: {taxSettingsError}</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTaxSettingsLoading(true);
+                          setTaxSettingsError("");
+                          setTaxSettingsLoadKey((key) => key + 1);
+                        }}
+                        className="rounded-md bg-white px-3 py-1.5 font-bold text-red-700 shadow-sm hover:bg-red-100"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  )}
                   <button
                     type="submit"
-                    disabled={submitting || !cart.length}
+                    disabled={submitting || !cart.length || !taxSettings}
                     className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#351d0e] px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#a34720] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <LockKeyhole size={16} />
-                    {submitting ? "Processing..." : form.payment_method === "Cash"
-                      ? `Place order · ${formatCheckoutAmount(total)}`
-                      : `Pay securely · ${formatCheckoutAmount(total)}`}
+                    {submitting ? "Processing..." : !taxSettings
+                      ? taxSettingsLoading ? "Loading tax settings..." : "Tax settings unavailable"
+                      : form.payment_method === "Cash"
+                        ? `Place order · ${formatCheckoutAmount(total)}`
+                        : `Pay securely · ${formatCheckoutAmount(total)}`}
                   </button>
                   <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs text-[#8b735e]"><LockKeyhole size={12} /> Your payment details are securely processed.</p>
                 </section>

@@ -47,22 +47,27 @@ function readDateTime(value, field) {
   return date.toISOString().slice(0, 19).replace("T", " ");
 }
 
-function calculateOrderAmounts(subtotal, discountType, discountValue, gstRate) {
+function calculateOrderAmounts(subtotal, discountType, discountValue, gstRate, taxMode = "Tax Exclusive") {
   const discountAmount = discountType === "percentage"
     ? roundCurrency(subtotal * discountValue / 100)
     : discountValue;
   if (discountAmount > subtotal) {
     throw requestError(400, "Fixed discount cannot exceed the order subtotal.");
   }
-  const gstAmount = roundCurrency(subtotal * gstRate / 100);
+  const discountedSubtotal = roundCurrency(subtotal - discountAmount);
+  const gstAmount = taxMode === "Tax Inclusive"
+    ? roundCurrency(discountedSubtotal * gstRate / (100 + gstRate))
+    : roundCurrency(subtotal * gstRate / 100);
   return {
     discountAmount,
     gstAmount,
-    totalAmount: roundCurrency(subtotal + gstAmount - discountAmount),
+    totalAmount: taxMode === "Tax Inclusive"
+      ? discountedSubtotal
+      : roundCurrency(subtotal + gstAmount - discountAmount),
   };
 }
 
-function calculateCartTotals(items, gstRate = 3) {
+function calculateCartTotals(items, gstRate = 3, taxMode = "Tax Exclusive") {
   if (!Array.isArray(items) || items.length === 0 || items.length > 100) {
     throw requestError(400, "Add between 1 and 100 cart items.");
   }
@@ -79,7 +84,7 @@ function calculateCartTotals(items, gstRate = 3) {
 
   return {
     subtotal,
-    ...calculateOrderAmounts(subtotal, "percentage", 0, gstRate),
+    ...calculateOrderAmounts(subtotal, "percentage", 0, gstRate, taxMode),
   };
 }
 
@@ -106,6 +111,10 @@ function normalizeOrder(body) {
     max: discountType === "percentage" ? 100 : 9999999999.99,
   });
   const gstRate = readAmount(body.gst_rate, "GST rate", { fallback: 3, max: 100 });
+  const taxMode = readText(body.tax_mode, "Tax mode", { fallback: "Tax Exclusive", max: 20 });
+  if (!["Tax Exclusive", "Tax Inclusive"].includes(taxMode)) {
+    throw requestError(400, "Tax mode must be Tax Exclusive or Tax Inclusive.");
+  }
 
   const status = readText(body.status, "Order status", { fallback: "Order Placed" });
   if (!ORDER_STATUSES.has(status)) {
@@ -192,6 +201,7 @@ function normalizeOrder(body) {
     discountType,
     discountValue,
     gstRate,
+    taxMode,
     status,
     items,
   };
@@ -589,14 +599,15 @@ function createOrderService(pool) {
           order.discountType,
           order.discountValue,
           order.gstRate,
+          order.taxMode,
         );
 
         const [result] = await connection.execute(
           `INSERT INTO orders
            (user_id, customer_name, customer_email, customer_phone, order_type, payment_method,
             payment_status, status, subtotal, discount_type, discount_value, discount_amount,
-            gst_rate, gst_amount, total_amount, razorpay_order_id, razorpay_payment_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             gst_rate, tax_mode, gst_amount, total_amount, razorpay_order_id, razorpay_payment_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             order.userId,
             order.customerName,
@@ -611,6 +622,7 @@ function createOrderService(pool) {
             order.discountValue,
             discountAmount,
             order.gstRate,
+            order.taxMode,
             gstAmount,
             totalAmount,
             options.razorpayOrderId || null,
@@ -679,6 +691,7 @@ function createOrderService(pool) {
           discount_value: order.discountValue,
           discount_amount: discountAmount,
           gst_rate: order.gstRate,
+          tax_mode: order.taxMode,
           gst_amount: gstAmount,
           total_amount: totalAmount,
           razorpay_order_id: options.razorpayOrderId || null,

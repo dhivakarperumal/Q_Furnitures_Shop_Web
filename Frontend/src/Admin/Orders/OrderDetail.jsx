@@ -543,8 +543,10 @@ const OrderDetail = () => {
                                     <span>₹{formatCurrency(order.subtotal ?? order.total_amount)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-bold text-slate-500">
-                                    <span>GST ({formatCurrency(order.gst_rate)}% before discount)</span>
-                                    <span>+₹{formatCurrency(order.gst_amount)}</span>
+                                    <span>{order.tax_mode === "Tax Inclusive"
+                                        ? `GST included (${formatCurrency(order.gst_rate)}%)`
+                                        : `GST (${formatCurrency(order.gst_rate)}% before discount)`}</span>
+                                    <span>{order.tax_mode === "Tax Inclusive" ? "" : "+"}₹{formatCurrency(order.gst_amount)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-bold text-slate-500">
                                     <span>{getDiscountLabel(order)}</span>

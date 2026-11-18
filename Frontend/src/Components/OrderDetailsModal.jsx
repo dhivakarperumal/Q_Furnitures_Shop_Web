@@ -351,7 +351,10 @@ export default function OrderDetailsModal({ order, onClose }) {
                 )}
                 {Number(order.gst_amount) > 0 && (
                   <div className="flex justify-between gap-4">
-                    <dt>GST{Number(order.gst_rate) > 0 ? ` (${Number(order.gst_rate)}%)` : ""}</dt>
+                    <dt>
+                      {order.tax_mode === "Tax Inclusive" ? "GST included" : "GST"}
+                      {Number(order.gst_rate) > 0 ? ` (${Number(order.gst_rate)}%)` : ""}
+                    </dt>
                     <dd className="font-medium">{formatAmount(order.gst_amount)}</dd>
                   </div>
                 )}
