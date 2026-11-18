@@ -78,14 +78,16 @@ function formatDate(value) {
 function statusClass(status) {
   if (status === "Delivered") return "bg-emerald-50 text-emerald-700";
   if (status === "Cancelled") return "bg-red-50 text-red-700";
-  if (status === "Shipping" || status === "Shipped") return "bg-blue-50 text-blue-700";
-  return "bg-amber-50 text-amber-800";
+  if (status === "Out for Delivery") return "bg-cyan-50 text-cyan-700";
+  if (status === "Shipping" || status === "Shipped") return "bg-amber-50 text-amber-700";
+  if (status === "Packing") return "bg-indigo-50 text-indigo-700";
+  if (status === "Order Placed") return "bg-blue-50 text-blue-700";
+  return "bg-gray-50 text-gray-700";
 }
 
-function orderFilterStatus(status) {
-  if (status === "Delivered" || status === "Cancelled" || status === "Shipping" || status === "Shipped") {
-    return status === "Shipping" ? "Shipped" : status;
-  }
+function orderFilterGroup(status) {
+  if (status === "Delivered" || status === "Cancelled") return status;
+  if (status === "Shipping" || status === "Shipped" || status === "Out for Delivery") return "Shipped";
   return "Processing";
 }
 
@@ -267,7 +269,7 @@ function Account() {
   }, [user?.id, reloadAddresses]);
 
   const visibleOrders = useMemo(() => orders.filter(
-    (order) => selectedOrderFilter === "All Orders" || orderFilterStatus(order.status) === selectedOrderFilter,
+    (order) => selectedOrderFilter === "All Orders" || orderFilterGroup(order.status) === selectedOrderFilter,
   ), [orders, selectedOrderFilter]);
 
   async function saveProfile(event) {
@@ -782,7 +784,7 @@ function Account() {
                   <div className="space-y-3">
                     {visibleOrders.map((order) => {
                       const firstItem = Array.isArray(order.items) ? order.items[0] : null;
-                      const status = orderFilterStatus(order.status);
+                      const status = order.status || "Order Placed";
                       return (
                       <article key={order.order_id || order.id} className="rounded-xl border border-[#eee4d8] p-4 transition hover:border-[#edc9a9]">
                         <div className="flex flex-wrap items-center justify-between gap-3">

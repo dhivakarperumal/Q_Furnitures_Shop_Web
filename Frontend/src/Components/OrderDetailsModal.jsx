@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import {
   CalendarDays,
+  Check,
   CreditCard,
   MapPin,
   PackageCheck,
@@ -9,6 +10,14 @@ import {
   X,
 } from "lucide-react";
 import { resolveMediaUrl } from "../utils/media";
+
+const ORDER_PROGRESS = ["Order Placed", "Packing", "Shipping", "Out for Delivery", "Delivered"];
+const STATUS_ALIASES = {
+  "New Order": "Order Placed",
+  New: "Order Placed",
+  Processing: "Packing",
+  Shipped: "Shipping",
+};
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -31,8 +40,11 @@ function formatDate(value) {
 function getStatusClass(status) {
   if (status === "Delivered") return "bg-emerald-50 text-emerald-700";
   if (status === "Cancelled") return "bg-red-50 text-red-700";
-  if (status === "Shipping" || status === "Shipped") return "bg-blue-50 text-blue-700";
-  return "bg-amber-50 text-amber-800";
+  if (status === "Out for Delivery") return "bg-cyan-50 text-cyan-700";
+  if (status === "Shipping" || status === "Shipped") return "bg-amber-50 text-amber-700";
+  if (status === "Packing") return "bg-indigo-50 text-indigo-700";
+  if (status === "Order Placed") return "bg-blue-50 text-blue-700";
+  return "bg-gray-50 text-gray-700";
 }
 
 function DetailCard({ icon: Icon, title, children }) {
@@ -45,6 +57,101 @@ function DetailCard({ icon: Icon, title, children }) {
         {title}
       </h3>
       <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+function OrderTracking({ order, status }) {
+  const progressStatus = STATUS_ALIASES[status] || status;
+  const currentIndex = ORDER_PROGRESS.indexOf(progressStatus);
+
+  if (status === "Cancelled") {
+    return (
+      <section className="rounded-2xl border border-red-200 bg-red-50 p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700">
+            <X size={18} aria-hidden="true" />
+          </span>
+          <div>
+            <h3 className="text-sm font-bold text-red-900">Order cancelled</h3>
+            <p className="mt-1 text-xs text-red-800">
+              Cancelled on {formatDate(order.cancelled_at || order.updated_at)}
+            </p>
+            {order.cancellation_reason && (
+              <p className="mt-2 text-sm leading-5 text-red-900">{order.cancellation_reason}</p>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (currentIndex < 0) {
+    return (
+      <section className="rounded-2xl border border-[#eee4d8] bg-white p-4 sm:p-5">
+        <h3 className="text-sm font-bold text-[#351d0e]">Order tracking</h3>
+        <p className="mt-2 text-sm text-[#725d4b]">Current status: <span className="font-bold">{status}</span></p>
+      </section>
+    );
+  }
+
+  const progressWidth = `${(currentIndex / (ORDER_PROGRESS.length - 1)) * 100}%`;
+  const isComplete = (index) => index < currentIndex || currentIndex === ORDER_PROGRESS.length - 1;
+  const stepCircleClass = (index) => {
+    if (isComplete(index)) return "border-[#278044] bg-[#278044] text-white";
+    if (index === currentIndex) return "border-[#f07816] bg-[#f07816] text-white ring-4 ring-[#fff0df]";
+    return "border-[#e5d8ca] bg-white text-[#9b8876]";
+  };
+
+  return (
+    <section className="rounded-2xl border border-[#eee4d8] bg-white p-4 sm:p-5">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-bold text-[#351d0e]">Order tracking</h3>
+        <span className="rounded-full bg-[#fff0df] px-3 py-1 text-xs font-bold text-[#a34720]">
+          Current: {status}
+        </span>
+      </div>
+
+      <ol className="space-y-3 sm:hidden">
+        {ORDER_PROGRESS.map((step, index) => (
+          <li key={step} aria-current={index === currentIndex ? "step" : undefined} className="relative flex items-center gap-3">
+            {index < ORDER_PROGRESS.length - 1 && (
+              <span
+                aria-hidden="true"
+                className={`absolute left-[11px] top-6 h-[calc(100%+0.75rem)] w-0.5 ${
+                  isComplete(index) ? "bg-[#278044]" : "bg-[#e5d8ca]"
+                }`}
+              />
+            )}
+            <span className={`relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${stepCircleClass(index)}`}>
+              {isComplete(index) ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : index + 1}
+            </span>
+            <span className={`text-xs ${index === currentIndex ? "font-bold text-[#a34720]" : isComplete(index) ? "font-semibold text-[#351d0e]" : "text-[#8b735e]"}`}>
+              {step}
+              {index === currentIndex && <span className="ml-2 text-[10px] font-medium text-[#8b735e]">Current</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      <div className="relative hidden sm:block">
+        <div aria-hidden="true" className="absolute left-[10%] right-[10%] top-3 h-0.5 bg-[#e5d8ca]">
+          <span className="block h-full bg-[#278044] transition-[width]" style={{ width: progressWidth }} />
+        </div>
+        <ol className="relative grid grid-cols-5">
+          {ORDER_PROGRESS.map((step, index) => (
+            <li key={step} aria-current={index === currentIndex ? "step" : undefined} className="flex flex-col items-center gap-2 text-center">
+              <span className={`flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-bold ${stepCircleClass(index)}`}>
+                {isComplete(index) ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : index + 1}
+              </span>
+              <span className={`text-[10px] leading-4 ${index === currentIndex ? "font-bold text-[#a34720]" : isComplete(index) ? "font-semibold text-[#351d0e]" : "text-[#8b735e]"}`}>
+                {step}
+                {index === currentIndex && <span className="block font-medium text-[#8b735e]">Current</span>}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }
@@ -125,6 +232,8 @@ export default function OrderDetailsModal({ order, onClose }) {
               {order.payment_status ? ` · ${order.payment_status}` : ""}
             </span>
           </div>
+
+          <OrderTracking order={order} status={status} />
 
           <div className="grid gap-4 md:grid-cols-2">
             <DetailCard icon={UserRound} title="Customer details">
@@ -209,7 +318,7 @@ export default function OrderDetailsModal({ order, onClose }) {
           </DetailCard>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <DetailCard icon={Truck} title="Delivery tracking">
+            <DetailCard icon={Truck} title="Shipment details">
               {order.courier_name || order.tracking_number ? (
                 <dl className="space-y-2 text-sm">
                   {order.courier_name && (
