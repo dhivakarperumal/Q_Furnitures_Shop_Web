@@ -10,8 +10,16 @@ import { FaFacebook, FaInstagram } from "react-icons/fa";
 import PageContainer from "./PageContainer";
 import api from "../../api";
 
+const fallbackOffers = [
+  { id: "home", icon: Tag, text: "Make your home feel like yours with Q Furnitures" },
+  { id: "rooms", icon: Truck, text: "Furniture for every room and every routine" },
+  { id: "explore", icon: ShoppingBag, text: "Explore home and office furniture" },
+];
+
 const Header = () => {
   const [headerOffers, setHeaderOffers] = useState([]);
+  const [activeOfferIndex, setActiveOfferIndex] = useState(0);
+  const offerCount = headerOffers.length || fallbackOffers.length;
 
   useEffect(() => {
     let active = true;
@@ -26,6 +34,25 @@ const Header = () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    setActiveOfferIndex(0);
+    if (offerCount < 2) return undefined;
+
+    const interval = setInterval(() => {
+      setActiveOfferIndex((currentIndex) => (currentIndex + 1) % offerCount);
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [offerCount]);
+
+  const activeOffer = headerOffers.length
+    ? {
+        id: headerOffers[activeOfferIndex % headerOffers.length]?.id,
+        icon: Tag,
+        text: `${headerOffers[activeOfferIndex % headerOffers.length]?.title} — ${Number(headerOffers[activeOfferIndex % headerOffers.length]?.offer_percentage)}% OFF`,
+      }
+    : fallbackOffers[activeOfferIndex % fallbackOffers.length];
 
   return (
     <div className="hidden bg-gradient-to-r from-primary via-secondary to-primary-dark text-sm text-white md:block">
@@ -48,31 +75,12 @@ const Header = () => {
 
           {/* Center - Marquee Offers */}
           <div className="flex-1 overflow-hidden px-10 text-center">
-            <marquee className="w-full">
-              <div className="flex items-center justify-center gap-12 font-medium">
-                {headerOffers.length > 0 ? headerOffers.map((offer) => (
-                  <span key={offer.id} className="flex items-center gap-2 whitespace-nowrap">
-                    <Tag size={16} />
-                    {offer.title} — {Number(offer.offer_percentage)}% OFF
-                  </span>
-                )) : (
-                  <>
-                    <span className="flex items-center gap-2">
-                      <Tag size={16} />
-                      Make your home feel like yours with Q Furnitures
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <Truck size={16} />
-                      Furniture for every room and every routine
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <ShoppingBag size={16} />
-                      Explore home and office furniture
-                    </span>
-                  </>
-                )}
-              </div>
-            </marquee>
+            <div className="flex min-h-6 items-center justify-center font-medium" aria-live="polite">
+              <span key={activeOffer.id} className="flex items-center gap-2 whitespace-nowrap">
+                <activeOffer.icon size={16} />
+                {activeOffer.text}
+              </span>
+            </div>
           </div>
 
           {/* Right - Social Icons */}
