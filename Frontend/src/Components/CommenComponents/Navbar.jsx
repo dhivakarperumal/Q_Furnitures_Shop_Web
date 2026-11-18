@@ -70,6 +70,7 @@ const Navbar = () => {
   const activeRoom = searchParams.get("room");
   const isCategoryActive = location.pathname === "/shop" && Boolean(activeCategory);
   const isRoomActive = location.pathname === "/shop" && Boolean(activeRoom);
+  const isProductDetailsActive = location.pathname.startsWith("/products/");
   const isPagesActive = ["/about", "/contactus", "/privacy-policy"].includes(location.pathname);
 
   const menuRef = useRef();
@@ -254,7 +255,7 @@ const Navbar = () => {
             <NavLink
               to="/shop"
               className={({ isActive }) =>
-                `${navClass({ isActive: isActive && !isCategoryActive && !isRoomActive })} inline-flex items-center gap-1`
+                `${navClass({ isActive: isProductDetailsActive || (isActive && !isCategoryActive && !isRoomActive) })} inline-flex items-center gap-1`
               }
             >
               Shop 
@@ -693,7 +694,7 @@ const Navbar = () => {
                     onClick={closeMobileMenu}
                     className={({ isActive }) =>
                       `flex min-h-[60px] items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                        isActive && !isCategoryActive && !isRoomActive
+                        isProductDetailsActive || (isActive && !isCategoryActive && !isRoomActive)
                           ? "border-primary/20 bg-[#fff0df] text-[#c2560b]"
                           : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
                       }`
