@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import PageContainer from "./PageContainer";
 import api from "../../api";
-import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut } from "react-icons/fi";
+import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut, FiSun, FiSmile } from "react-icons/fi";
 import { FiChevronRight, FiTag } from "react-icons/fi";
 import CartDrawer from "./CartDrawer";
 import WishlistDrawer from "./WishlistDrawer";
@@ -22,10 +22,12 @@ import { resolveMediaUrl } from "../../utils/media";
 import { categoryHasProducts } from "../../utils/categories";
 
 const ALL_ROOM_LINKS = [
-  { name: "Living Room",  slug: "living-room",  icon: FiHome,    description: "Relax and unwind" },
-  { name: "Bedroom",      slug: "bedroom",       icon: FiMoon,    description: "Restful essentials" },
-  { name: "Dining Room",  slug: "dining-room",   icon: FiCoffee,  description: "Gather around" },
-  { name: "Home Office",  slug: "home-office",   icon: FiMonitor, description: "Work comfortably" },
+  { name: "Living Room", slug: "living-room", icon: FiHome,    description: "Relax and unwind" },
+  { name: "Bedroom",     slug: "bedroom",      icon: FiMoon,    description: "Restful essentials" },
+  { name: "Dining Room", slug: "dining-room",  icon: FiCoffee,  description: "Gather around" },
+  { name: "Home Office", slug: "home-office",  icon: FiMonitor, description: "Work comfortably" },
+  { name: "Kids Room",   slug: "kids-room",    icon: FiSmile,   description: "Fun & functional" },
+  { name: "Outdoor",     slug: "outdoor",      icon: FiSun,     description: "Open-air living" },
 ];
 
 function getCategoryImage(images) {
