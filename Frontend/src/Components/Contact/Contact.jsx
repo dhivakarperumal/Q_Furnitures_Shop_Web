@@ -4,7 +4,6 @@ import {
   ChevronDown,
   Clock3,
   Headphones,
-  LayoutGrid,
   Mail,
   MapPin,
   MessageCircle,
@@ -205,70 +204,151 @@ export default function Contact() {
 
           {/* ── INTERIOR CONSULTATION ───────────────────────── */}
           <section
-            className="my-8 overflow-hidden rounded-2xl border border-[#f2e6da] bg-white shadow-sm lg:flex lg:items-stretch"
+            className="relative my-8 overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgba(237,112,16,0.08),0_1px_4px_rgba(53,29,14,0.05)] lg:flex lg:min-h-[300px] lg:items-stretch"
             aria-label="Free interior design consultation"
           >
-            {/* Left image */}
-            <div className="relative hidden w-[36%] shrink-0 lg:block">
+            {/* Left — full-bleed consultant photo */}
+            <div className="relative h-52 w-full shrink-0 lg:h-auto lg:w-[42%]">
               <img
                 src={storeImage}
                 alt="Interior design consultant"
-                className="h-full w-full object-cover object-center"
+                className="h-full w-full object-cover object-top"
+              />
+              {/* slight right-edge fade to blend into light-orange content */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-y-0 right-0 hidden w-10 bg-gradient-to-r from-transparent to-[#fff8f2] lg:block"
               />
             </div>
 
-            {/* Right content */}
-            <div className="p-6 sm:p-8 lg:p-10">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff3e3] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#ed7010]">
-                <LayoutGrid size={11} /> Interior Consultation
-              </span>
-              <h2 className="mt-3 text-2xl font-extrabold text-[#351d0e] sm:text-3xl">
-                Free Interior Design Consultation
-              </h2>
-              <p className="mt-2 max-w-md text-xs leading-5 text-[#594333]">
-                Get expert guidance to design a functional, stylish and comfortable space that suits your lifestyle.
-              </p>
+            {/* Right — content */}
+            <div className="relative flex flex-1 flex-col justify-center bg-[#fff8f2] px-6 py-8 sm:px-8 lg:px-10 lg:py-10">
 
-              {/* 3-step process */}
-              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-0">
-                {/* Step 1 */}
-                <div className="flex flex-1 flex-col items-center text-center sm:px-4">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fff3e3] text-[#ed7010]">
-                    <LayoutGrid size={24} />
+              {/* Orange corner-bracket decoration (top-right) */}
+              <span
+                aria-hidden="true"
+                className="absolute right-0 top-0 h-10 w-10 overflow-hidden"
+              >
+                <span className="absolute right-0 top-0 h-10 w-[3px] rounded-bl-sm bg-[#ed7010]" />
+                <span className="absolute right-0 top-0 h-[3px] w-10 rounded-bl-sm bg-[#ed7010]" />
+              </span>
+
+              {/* Inner 2-col grid: left = text, right = stat cards */}
+              <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-start">
+
+                {/* ── Left column: badge + heading + paragraph ── */}
+                <div>
+                  {/* Badge */}
+                  <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#fde8cc] px-3 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#ed7010]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#ed7010]" />
+                    Interior Consultation
                   </span>
-                  <p className="mt-2 text-xs font-extrabold text-[#351d0e]">Choose a Room</p>
-                  <p className="mt-0.5 text-[10px] leading-4 text-[#806d5d]">Living, Bedroom, Dining and more</p>
+
+                  {/* Heading */}
+                  <h2 className="mt-3 text-[1.6rem] font-extrabold leading-tight text-[#1a0f00] sm:text-3xl lg:text-[2rem]">
+                    Free Interior Design
+                    <br />
+                    Consultation
+                  </h2>
+
+                  {/* Sub-text */}
+                  <p className="mt-2 text-[11px] leading-5 text-[#594333]">
+                    Get expert guidance to design a functional, stylish and comfortable space that truly suits your lifestyle and personality. Whether you're furnishing a new home, refreshing a single room, or planning a full makeover — our experienced design consultants are here to help you every step of the way, completely free of charge.
+                  </p>
                 </div>
 
-                {/* Arrow */}
-                <div className="hidden items-center justify-center pt-6 sm:flex">
-                  <ArrowRight size={18} className="text-[#ed7010]" />
+                {/* ── Right column: stat highlights ── */}
+                <div className="grid grid-cols-2 gap-2.5 lg:w-[210px] lg:shrink-0">
+                  {/* Stat 1 */}
+                  <div className="flex flex-col items-center rounded-xl bg-white px-3 py-4 text-center shadow-[0_1px_6px_rgba(237,112,16,0.10)]">
+                    <span className="text-xl font-extrabold text-[#ed7010]">500<span className="text-base">+</span></span>
+                    <span className="mt-1 text-[9px] font-semibold leading-3 text-[#594333]">Rooms<br />Designed</span>
+                  </div>
+                  {/* Stat 2 */}
+                  <div className="flex flex-col items-center rounded-xl bg-white px-3 py-4 text-center shadow-[0_1px_6px_rgba(237,112,16,0.10)]">
+                    <span className="text-xl font-extrabold text-[#ed7010]">100<span className="text-base">%</span></span>
+                    <span className="mt-1 text-[9px] font-semibold leading-3 text-[#594333]">Free<br />Consultation</span>
+                  </div>
+                  {/* Stat 3 */}
+                  <div className="flex flex-col items-center rounded-xl bg-white px-3 py-4 text-center shadow-[0_1px_6px_rgba(237,112,16,0.10)]">
+                    <span className="text-xl font-extrabold text-[#ed7010]">15<span className="text-base">+</span></span>
+                    <span className="mt-1 text-[9px] font-semibold leading-3 text-[#594333]">Expert<br />Designers</span>
+                  </div>
+                  {/* Stat 4 */}
+                  <div className="flex flex-col items-center rounded-xl bg-white px-3 py-4 text-center shadow-[0_1px_6px_rgba(237,112,16,0.10)]">
+                    <span className="text-xl font-extrabold text-[#ed7010]">24<span className="text-sm">h</span></span>
+                    <span className="mt-1 text-[9px] font-semibold leading-3 text-[#594333]">Quick<br />Response</span>
+                  </div>
+                </div>
+
+              </div>{/* end inner 2-col grid */}
+
+              {/* 3-step row */}
+              <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-0">
+
+                {/* Step 1 */}
+                <div className="flex flex-1 flex-col items-center text-center">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-[#ed7010] shadow-sm">
+                    {/* room/grid icon */}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="7" rx="1"/>
+                      <rect x="14" y="3" width="7" height="7" rx="1"/>
+                      <rect x="3" y="14" width="7" height="7" rx="1"/>
+                      <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                  </span>
+                  <p className="mt-2 text-[11px] font-extrabold text-[#1a0f00]">Choose a Room</p>
+                  <p className="mt-0.5 text-[10px] leading-4 text-[#9a8070]">Living, Bedroom,<br />Dining and more</p>
+                </div>
+
+                {/* Chevron separator */}
+                <div className="hidden shrink-0 items-center justify-center pt-5 sm:flex sm:px-1">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ed7010" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
                 </div>
 
                 {/* Step 2 */}
-                <div className="flex flex-1 flex-col items-center text-center sm:px-4">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fff3e3] text-[#ed7010]">
-                    <MessageCircle size={24} />
+                <div className="flex flex-1 flex-col items-center text-center">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-[#ed7010] shadow-sm">
+                    {/* style/palette icon */}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.69 0 1.25-.56 1.25-1.25 0-.33-.12-.63-.33-.86a1.248 1.248 0 01-.32-.84c0-.69.56-1.25 1.25-1.25H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/>
+                      <circle cx="6.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="9.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="14.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="17.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+                    </svg>
                   </span>
-                  <p className="mt-2 text-xs font-extrabold text-[#351d0e]">Share Your Style</p>
-                  <p className="mt-0.5 text-[10px] leading-4 text-[#806d5d]">Tell us your taste, space &amp; budget</p>
+                  <p className="mt-2 text-[11px] font-extrabold text-[#1a0f00]">Share Your Style</p>
+                  <p className="mt-0.5 text-[10px] leading-4 text-[#9a8070]">Tell us your taste,<br />space &amp; budget</p>
                 </div>
 
-                {/* Arrow */}
-                <div className="hidden items-center justify-center pt-6 sm:flex">
-                  <ArrowRight size={18} className="text-[#ed7010]" />
+                {/* Chevron separator */}
+                <div className="hidden shrink-0 items-center justify-center pt-5 sm:flex sm:px-1">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ed7010" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
                 </div>
 
                 {/* Step 3 */}
-                <div className="flex flex-1 flex-col items-center text-center sm:px-4">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fff3e3] text-[#ed7010]">
-                    <CalendarDays size={24} />
+                <div className="flex flex-1 flex-col items-center text-center">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-[#ed7010] shadow-sm">
+                    {/* plan/document icon */}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="8" y1="13" x2="16" y2="13"/>
+                      <line x1="8" y1="17" x2="13" y2="17"/>
+                    </svg>
                   </span>
-                  <p className="mt-2 text-xs font-extrabold text-[#351d0e]">Get Your Plan</p>
-                  <p className="mt-0.5 text-[10px] leading-4 text-[#806d5d]">Receive a personalized design suggestion</p>
+                  <p className="mt-2 text-[11px] font-extrabold text-[#1a0f00]">Get Your Plan</p>
+                  <p className="mt-0.5 text-[10px] leading-4 text-[#9a8070]">Receive a personalized<br />design suggestion</p>
                 </div>
-              </div>
-            </div>
+
+              </div>{/* end 3-step row */}
+
+            </div>{/* end right content */}
           </section>
 
           {/* ── CONTACT FORM + CONTACT CARDS ────────────────── */}
