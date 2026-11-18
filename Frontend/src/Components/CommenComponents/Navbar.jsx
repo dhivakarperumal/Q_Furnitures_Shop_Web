@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import PageContainer from "./PageContainer";
 import api from "../../api";
-import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut, FiSun, FiSmile } from "react-icons/fi";
+import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiInfo, FiShield, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut, FiSun, FiSmile } from "react-icons/fi";
 import { FiChevronLeft, FiChevronRight, FiTag } from "react-icons/fi";
 import CartDrawer from "./CartDrawer";
 import WishlistDrawer from "./WishlistDrawer";
@@ -28,6 +28,12 @@ const ALL_ROOM_LINKS = [
   { name: "Home Office", slug: "home-office",  icon: FiMonitor, description: "Work comfortably" },
   { name: "Kids Room",   slug: "kids-room",    icon: FiSmile,   description: "Fun & functional" },
   { name: "Outdoor",     slug: "outdoor",      icon: FiSun,     description: "Open-air living" },
+];
+
+const MOBILE_PAGE_LINKS = [
+  { label: "About Us", to: "/about", icon: FiInfo },
+  { label: "Privacy Policy", to: "/privacy-policy", icon: FiShield },
+  { label: "Contact Us", to: "/contactus", icon: FiPhone },
 ];
 
 function getCategoryImage(images) {
@@ -212,13 +218,6 @@ const Navbar = () => {
         ? "bg-[#ed720a] text-white shadow-sm"
         : "text-[#351d0e] hover:text-[#e87500]"
     }`;
-  const mobileNavClass = ({ isActive }) =>
-    `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
-      isActive
-        ? "bg-[#ed720a] text-white shadow-sm"
-        : "text-gray-800 hover:text-orange-700"
-    }`;
-
   const handleSearch = (event) => {
     event.preventDefault();
     const query = searchQuery.trim();
@@ -970,35 +969,28 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex flex-col space-y-3 pb-5">
-
-                  <NavLink
-                    to="/about"
-                    onClick={closeMobileMenu}
-                    className={mobileNavClass}
-                  >
-                    <FiFileText size={14} />
-                    About Us
-                  </NavLink>
-
-                  <NavLink
-                    to="/privacy-policy"
-                    onClick={closeMobileMenu}
-                    className={mobileNavClass}
-                  >
-                    <FiFileText size={14} />
-                    Privacy Policy
-                  </NavLink>
-
-                    
-                  <NavLink
-                    to="/contactus"
-                    onClick={closeMobileMenu}
-                    className={mobileNavClass}
-                  >
-                    <FiPhone size={14} />
-                    Contact Us
-                  </NavLink>
-
+                  {MOBILE_PAGE_LINKS.map(({ label, to, icon: PageIcon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      onClick={closeMobileMenu}
+                      className={({ isActive }) =>
+                        `group flex min-h-[68px] items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
+                          isActive
+                            ? "border-[#ed720a] bg-orange-50 text-[#c96518]"
+                            : "border-orange-100 bg-white text-[#351d0e] hover:border-orange-200 hover:bg-orange-50"
+                        }`
+                      }
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#f7eee3] text-[#c96518]">
+                          <PageIcon size={19} />
+                        </span>
+                        <span className="truncate">{label}</span>
+                      </span>
+                      <FiChevronRight size={14} className="shrink-0 text-[#9b8876] transition-transform group-hover:translate-x-0.5" />
+                    </NavLink>
+                  ))}
                 </div>
               </>
             )}
