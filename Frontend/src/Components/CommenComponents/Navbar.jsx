@@ -217,12 +217,12 @@ const Navbar = () => {
 
     <nav ref={navbarRef} className="sticky top-0 z-50 bg-[#fffaf5]/95 py-2 backdrop-blur-md">
       <PageContainer>
-        <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f07816]/40 bg-white/95 px-3 shadow-[0_10px_30px_rgba(74,42,19,0.12)] sm:min-h-[76px] sm:gap-3 sm:px-4 lg:rounded-full lg:px-4">
+        <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f07816]/40 bg-white/95 px-3 shadow-[0_10px_30px_rgba(74,42,19,0.12)] sm:min-h-[76px] sm:gap-3 sm:px-4 lg:rounded-full lg:px-4 xl:flex-nowrap">
           <button
             type="button"
             onClick={() => mobileMenu ? closeMobileMenu() : setMobileMenu(true)}
             aria-label={mobileMenu ? "Close menu" : "Open menu"}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark lg:h-11 lg:w-11"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark lg:hidden"
           >
             {mobileMenu ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -239,9 +239,9 @@ const Navbar = () => {
             />
           </Link>
 
-          <span aria-hidden="true" className="hidden h-10 w-px shrink-0 bg-[#dfcbb5] xl:block" />
+          <span aria-hidden="true" className="hidden h-10 w-px shrink-0 bg-[#dfcbb5] lg:block" />
 
-          <div className="order-last flex w-full flex-wrap items-center justify-center gap-x-1 gap-y-0 border-t border-[#f3e7d9] py-1 xl:order-none xl:w-auto xl:flex-1 xl:flex-nowrap xl:justify-center xl:border-t-0 xl:py-0 xl:gap-1">
+          <div className="hidden flex-1 items-center justify-center gap-0 lg:flex lg:gap-1">
             <NavLink to="/" end className={navClass}>Home</NavLink>
             <NavLink to="/shop" className={({ isActive }) => `${navClass({ isActive })} inline-flex items-center gap-1`}>
               Shop 
@@ -407,7 +407,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 xl:gap-3 xl:border-l xl:border-[#dfcbb5] xl:pl-3">
+          <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 lg:gap-3 lg:border-l lg:border-[#dfcbb5] lg:pl-3">
             <div className="hidden items-center gap-1 sm:flex xl:gap-2">
             <div className="relative">
               <button
@@ -707,6 +707,44 @@ const Navbar = () => {
 
                     <FiChevronRight size={16} />
                   </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {roomLinks.map(({ name, slug, icon: RoomIcon }) => (
+                      <NavLink
+                        key={slug}
+                        to={`/shop?room=${encodeURIComponent(slug)}`}
+                        onClick={closeMobileMenu}
+                        className={({ isActive }) =>
+                          `flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-medium transition ${
+                            isActive
+                              ? "border-[#ed720a] bg-[#ed720a] text-white"
+                              : "border-orange-100 text-gray-800 hover:bg-orange-50 hover:text-orange-700"
+                          }`
+                        }
+                      >
+                        <RoomIcon size={15} className="shrink-0" />
+                        <span className="truncate">{name}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+
+                  <NavLink
+                    to="/combo"
+                    onClick={closeMobileMenu}
+                    className={mobileNavClass}
+                  >
+                    <FiTag size={16} />
+                    Combos
+                  </NavLink>
+
+                  <Link
+                    to="/about"
+                    onClick={closeMobileMenu}
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
+                  >
+                    <FiFileText size={16} />
+                    Interior Ideas
+                  </Link>
 
                   <button
                     onClick={() => setMobilePages(true)}
