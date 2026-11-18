@@ -15,6 +15,7 @@ import {
 import { FaFacebook, FaInstagram, FaPinterestP, FaWhatsapp, FaYoutube } from "react-icons/fa";
 import PageContainer from "./PageContainer";
 import api from "../../api";
+import { categoryHasProducts } from "../../utils/categories";
 
 const Footer = () => {
   const [categories, setCategories] = useState([]);
@@ -37,7 +38,11 @@ const Footer = () => {
     const fetchCategories = async () => {
       try {
         const response = await api.get("/categories");
-        if (isMounted) setCategories(Array.isArray(response.data) ? response.data : []);
+        if (isMounted) {
+          setCategories(
+            Array.isArray(response.data) ? response.data.filter(categoryHasProducts) : [],
+          );
+        }
       } catch (error) {
         console.error("Error loading footer categories:", error);
       }

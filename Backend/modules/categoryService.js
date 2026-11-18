@@ -31,7 +31,14 @@ function createCategoryService(pool) {
   return {
     async list() {
       const [rows] = await pool.execute(
-        `SELECT ${CATEGORY_COLUMNS} FROM categories ORDER BY created_at DESC, id DESC`,
+        `SELECT ${CATEGORY_COLUMNS}, COALESCE(product_counts.productCount, 0) AS productCount
+         FROM categories
+         LEFT JOIN (
+           SELECT category, COUNT(*) AS productCount
+           FROM products
+           GROUP BY category
+         ) product_counts ON product_counts.category = categories.name
+         ORDER BY created_at DESC, id DESC`,
       );
       return rows.map(toCategory);
     },

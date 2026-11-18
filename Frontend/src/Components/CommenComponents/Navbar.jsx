@@ -19,6 +19,7 @@ import { FiChevronRight, FiTag } from "react-icons/fi";
 import CartDrawer from "./CartDrawer";
 import WishlistDrawer from "./WishlistDrawer";
 import { resolveMediaUrl } from "../../utils/media";
+import { categoryHasProducts } from "../../utils/categories";
 
 const roomLinks = [
   { name: "Living Room", slug: "living-room", icon: FiHome, description: "Relax and unwind" },
@@ -166,7 +167,7 @@ const Navbar = () => {
     const fetchCategories = async () => {
       try {
         const res = await api.get("/categories");
-        setCategories(res.data);
+        setCategories(Array.isArray(res.data) ? res.data.filter(categoryHasProducts) : []);
       } catch (error) {
         console.error(error);
       }

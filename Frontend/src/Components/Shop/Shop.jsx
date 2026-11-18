@@ -17,6 +17,7 @@ import { resolveMediaUrl } from "../../utils/media";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
 import ProductCard, { ProductListCard } from "./ProductCard";
+import { categoryHasProducts } from "../../utils/categories";
 
 const MAX_PRICE = 600000;
 const SORT_OPTIONS = [
@@ -138,7 +139,7 @@ const Shop = () => {
       .then(({ data }) => {
         if (!Array.isArray(data)) throw new Error("The categories response did not contain a category list.");
         if (active) {
-          setCategories(data.filter((item) => item?.name));
+          setCategories(data.filter((item) => item?.name && categoryHasProducts(item)));
           setCategoryError("");
         }
       })
