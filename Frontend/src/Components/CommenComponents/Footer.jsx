@@ -72,7 +72,7 @@ const Footer = () => {
               <img
                 src="/images/logo.png"
                 alt="Q Furnitures"
-                className="h-12 w-auto max-w-[150px] object-contain"
+                className="h-9 w-auto max-w-[150px] object-contain"
               />
             </Link>
             <p className="max-w-sm text-justify text-sm leading-7 text-white/70">
