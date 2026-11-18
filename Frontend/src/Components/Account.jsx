@@ -810,9 +810,19 @@ function Account() {
                       return (
                         <article
                           key={orderNumber}
-                          className="grid min-h-[210px] min-w-0 grid-cols-[88px_minmax(0,1fr)] gap-3 rounded-[20px] border border-[#eee6dd] bg-white p-3 shadow-[0_8px_22px_rgba(53,29,14,0.06)] transition hover:-translate-y-0.5 hover:border-[#edc9a9] hover:shadow-[0_12px_28px_rgba(53,29,14,0.09)] sm:min-h-[180px] sm:grid-cols-[110px_minmax(0,1fr)_145px] sm:gap-4 sm:p-4"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setSelectedOrder(order)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setSelectedOrder(order);
+                            }
+                          }}
+                          aria-label={`View details for order ${orderNumber}`}
+                          className="grid min-h-[185px] min-w-0 cursor-pointer grid-cols-[88px_minmax(0,1fr)] gap-3 rounded-[20px] border border-[#eee6dd] bg-white p-3 shadow-[0_8px_22px_rgba(53,29,14,0.06)] transition hover:-translate-y-0.5 hover:border-[#edc9a9] hover:shadow-[0_12px_28px_rgba(53,29,14,0.09)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:min-h-[150px] sm:grid-cols-[110px_minmax(0,1fr)_145px] sm:gap-4 sm:p-4"
                         >
-                          <div className="flex h-[88px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eee7df] bg-[#fbf8f4] p-2 shadow-sm sm:h-full sm:min-h-[148px]">
+                          <div className="flex h-[88px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eee7df] bg-[#fbf8f4] p-2 shadow-sm sm:h-full sm:min-h-[118px]">
                             {firstItem?.image ? (
                               <img
                                 src={resolveMediaUrl(firstItem.image)}
