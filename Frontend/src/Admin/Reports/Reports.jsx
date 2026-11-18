@@ -510,7 +510,7 @@ function Reports() {
             )}
 
             <section className="flex flex-wrap items-end gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                <label className="min-w-[180px] flex-1 text-xs font-bold text-secondary-light">Report period
+                <label className="w-full text-xs font-bold text-secondary-light sm:w-64">Report period
                     <select value={filters.period} onChange={(event) => updateFilter("period", event.target.value)} className="mt-1 block w-full cursor-pointer rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium text-slate-600 outline-none transition-all hover:border-primary focus:border-primary focus:bg-white">
                         {PERIODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
