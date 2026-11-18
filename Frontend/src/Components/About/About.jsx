@@ -83,34 +83,37 @@ const journey = [
   },
 ];
 
+const storyStats = [
+  { value: "10,000+", label: "Happy Homes", icon: Armchair },
+  { value: "500+", label: "Furniture Designs", icon: BadgeCheck },
+  { value: "5+", label: "Years of Trust", icon: Store },
+  { value: "25,000+", label: "Satisfied Customers", icon: HeartHandshake },
+];
+
 const About = () => (
   <>
   <PageHeader title="About Us"  />
   <main className="overflow-hidden bg-[#fffaf4] text-[#351d0e]">
-    <section className="py-7 sm:py-9">
-      <PageContainer>
-        <div className="flex flex-wrap items-center justify-between gap-5">
-          <div className="max-w-2xl">
-            <p className="text-xs font-bold tracking-wide text-[#d9650b] sm:text-sm">About Q Living Furniture</p>
-            <h2 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
-              Furniture for <span className="text-[#ef7412]">Better Living</span>
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[#594333] sm:text-base">
-              Stylish, functional, and comfortable furniture to help every space feel like home.
-            </p>
-          </div>
-          <a
-            href="#our-story"
-            className="inline-flex items-center gap-2 rounded-full bg-[#ef7412] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#ef7412]/20 transition hover:-translate-y-0.5 hover:bg-[#d9650b]"
-          >
-            Our Story <ArrowRight size={16} />
-          </a>
-        </div>
-      </PageContainer>
-    </section>
 
     <section id="our-story" className="relative py-14 sm:py-18 lg:py-20">
       <PageContainer>
+        <div className="mb-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+          {storyStats.map(({ value, label, icon: Icon }) => (
+            <article
+              key={label}
+              className="flex min-h-[92px] items-center gap-3 rounded-2xl border border-[#f1e6da] bg-white px-4 py-4 shadow-[0_8px_24px_rgba(53,29,14,0.04)] sm:min-h-[104px] sm:px-5"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0df] text-[#ef7412] sm:h-12 sm:w-12">
+                <Icon size={23} strokeWidth={1.8} />
+              </span>
+              <div>
+                <p className="text-lg font-extrabold leading-tight text-[#351d0e] sm:text-xl">{value}</p>
+                <p className="mt-1 text-[11px] leading-4 text-[#806d5d] sm:text-xs">{label}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
         <div className="grid items-center gap-9 lg:grid-cols-[1fr_0.95fr] lg:gap-16">
           <div className="relative">
             <div className="absolute -left-7 -top-5 h-24 w-24 rounded-full bg-[#ffe5c7]" />
