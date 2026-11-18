@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   PhoneCall,
   ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import { FaFacebook, FaInstagram, FaWhatsapp } from "react-icons/fa";
 import PageContainer from "./PageContainer";
@@ -51,6 +52,7 @@ const Footer = () => {
     { label: "About Us", to: "/about", icon: Info },
     { label: "Shop Furniture", to: "/shop", icon: ShoppingBag },
     { label: "Contact Us", to: "/contactus", icon: PhoneCall },
+    { label: "Privacy Policy", to: "/privacy-policy", icon: ShieldCheck },
   ];
 
   const handleSubscribe = (event) => {

@@ -54,6 +54,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
   const [categoryMenu, setCategoryMenu] = useState(false);
+  const [pagesMenu, setPagesMenu] = useState(false);
   const [mobileCategory, setMobileCategory] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
@@ -65,6 +66,7 @@ const Navbar = () => {
   const menuRef = useRef();
   const categoryRef = useRef();
   const roomsRef = useRef();
+  const pagesRef = useRef();
   const cartTriggerRef = useRef(null);
   const wishlistTriggerRef = useRef(null);
 
@@ -124,6 +126,10 @@ const Navbar = () => {
 
       if (roomsRef.current && !roomsRef.current.contains(e.target)) {
         setRoomsMenu(false);
+      }
+
+      if (pagesRef.current && !pagesRef.current.contains(e.target)) {
+        setPagesMenu(false);
       }
 
     };
@@ -334,13 +340,40 @@ const Navbar = () => {
               </span>
             </NavLink>
             <Link to="/about" className={navClass({ isActive: false })}>Interior Ideas</Link>
-            <NavLink to="/about" className={navClass}>About Us</NavLink>
-            <NavLink
-              to="/contactus"
-              className={navClass}
-            >
-              Contact Us
-            </NavLink>
+            <div className="relative" ref={pagesRef}>
+              <button
+                type="button"
+                onClick={() => setPagesMenu((current) => !current)}
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2.5 text-[13px] font-semibold text-[#351d0e] transition-colors hover:text-[#e87500]"
+                aria-expanded={pagesMenu}
+              >
+                Pages
+                <FiChevronDown className={`transition-transform ${pagesMenu ? "rotate-180" : ""}`} />
+              </button>
+              {pagesMenu && (
+                <div className="absolute left-1/2 top-full z-[70] mt-3 w-56 -translate-x-1/2 overflow-hidden rounded-2xl border border-[#f1dfca] bg-white py-2 shadow-[0_16px_35px_rgba(74,42,19,0.16)]">
+                  {[
+                    { label: "About Us", to: "/about", icon: FiFileText },
+                    { label: "Contact Us", to: "/contactus", icon: FiPhone },
+                    { label: "Privacy Policy", to: "/privacy-policy", icon: FiFileText },
+                  ].map(({ label, to, icon: Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      onClick={() => setPagesMenu(false)}
+                      className={({ isActive }) =>
+                        `mx-2 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                          isActive ? "bg-primary text-white" : "text-[#351d0e] hover:bg-orange-50 hover:text-[#d9650b]"
+                        }`
+                      }
+                    >
+                      <Icon size={16} />
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 lg:border-l lg:border-[#dfcbb5] lg:pl-3 xl:gap-3 xl:pl-5">
@@ -776,13 +809,13 @@ const Navbar = () => {
                     About Us
                   </NavLink>
 
-                    <NavLink
-                    to="/termsandconditions"
+                  <NavLink
+                    to="/privacy-policy"
                     onClick={closeMobileMenu}
                     className={mobileNavClass}
                   >
                     <FiFileText size={16} />
-                    Terms And Conditions
+                    Privacy Policy
                   </NavLink>
 
                     
