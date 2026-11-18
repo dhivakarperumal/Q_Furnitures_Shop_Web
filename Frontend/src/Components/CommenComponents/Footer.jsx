@@ -143,25 +143,25 @@ const Footer = () => {
             <div className="mt-5 flex flex-wrap items-center gap-2">
               {facebookUrl && (
                 <a href={facebookUrl} target="_blank" rel="noreferrer" aria-label="Facebook" className="grid h-9 w-9 place-items-center rounded-full bg-[#1877F2] text-white shadow-sm transition hover:scale-105">
-                  <FaFacebook size={16} />
+                  <FaFacebook size={20} />
                 </a>
               )}
               <a href={instagramUrl} target="_blank" rel="noreferrer" aria-label="Instagram" className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-tr from-[#FEDA75] via-[#D62976] to-[#4F5BD5] text-white shadow-sm transition hover:scale-105">
-                <FaInstagram size={16} />
+                <FaInstagram size={20} />
               </a>
               <a href={youtubeUrl} target="_blank" rel="noreferrer" aria-label="YouTube" className="grid h-9 w-9 place-items-center rounded-full bg-[#FF0000] text-white shadow-sm transition hover:scale-105">
-                <FaYoutube size={16} />
+                <FaYoutube size={20} />
               </a>
               {pinterestUrl && (
                 <a href={pinterestUrl} target="_blank" rel="noreferrer" aria-label="Pinterest" className="grid h-9 w-9 place-items-center rounded-full bg-[#E60023] text-white shadow-sm transition hover:scale-105">
-                  <FaPinterestP size={16} />
+                  <FaPinterestP size={20} />
                 </a>
               )}
               <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="grid h-9 w-9 place-items-center rounded-full bg-[#25D366] text-white shadow-sm transition hover:scale-105">
-                <FaWhatsapp size={16} />
+                <FaWhatsapp size={20} />
               </a>
               <a href={`mailto:${storeEmail}`} aria-label="Email" className="grid h-9 w-9 place-items-center rounded-full bg-[#EA4335] text-white shadow-sm transition hover:scale-105">
-                <Mail size={16} />
+                <Mail size={20} />
               </a>
             </div>
           </div>
