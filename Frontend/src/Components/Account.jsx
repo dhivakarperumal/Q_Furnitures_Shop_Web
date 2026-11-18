@@ -755,6 +755,7 @@ function Account() {
                   <div>
                     <h2 className="text-xl font-bold">Your Orders</h2>
                     <p className="text-sm text-[#806d5d]">Check the status and summary of your recent orders.</p>
+                    <span aria-hidden="true" className="mt-2 block h-[3px] w-24 rounded-full bg-[#f07816]" />
                   </div>
                 </div>
                 <div role="tablist" aria-label="Filter orders" className="mb-5 flex flex-wrap items-center gap-2 border-b border-[#eee4d8] pb-2 sm:flex-nowrap sm:overflow-x-auto">
@@ -810,56 +811,56 @@ function Account() {
                       return (
                         <article
                           key={orderNumber}
-                          className="flex h-full min-w-0 flex-col gap-3 rounded-2xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white p-3 shadow-[0_5px_16px_rgba(53,29,14,0.05)] transition hover:-translate-y-0.5 hover:border-[#edc9a9] hover:border-l-[#f07816] sm:p-4"
+                          className="grid min-h-[210px] min-w-0 grid-cols-[88px_minmax(0,1fr)] gap-3 rounded-[20px] border border-[#eee6dd] bg-white p-3 shadow-[0_8px_22px_rgba(53,29,14,0.06)] transition hover:-translate-y-0.5 hover:border-[#edc9a9] hover:shadow-[0_12px_28px_rgba(53,29,14,0.09)] sm:min-h-[180px] sm:grid-cols-[110px_minmax(0,1fr)_145px] sm:gap-4 sm:p-4"
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-lg bg-[#fff0df] px-2.5 py-1 text-xs font-extrabold text-[#a34720]">
+                          <div className="flex h-[88px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eee7df] bg-[#fbf8f4] p-2 shadow-sm sm:h-full sm:min-h-[148px]">
+                            {firstItem?.image ? (
+                              <img
+                                src={resolveMediaUrl(firstItem.image)}
+                                alt={firstItem.product_name || firstItem.name || "Ordered furniture"}
+                                className="h-full w-full object-contain"
+                              />
+                            ) : (
+                              <PackageCheck size={25} className="text-[#a34720]" />
+                            )}
+                          </div>
+                          <div className="flex min-w-0 flex-col justify-center">
+                            <span className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-xl bg-[#fff0df] px-2.5 py-2 text-xs font-extrabold text-[#a34720]">
                               <CalendarDays size={14} className="shrink-0" />
                               <span className="truncate">{orderNumber}</span>
                             </span>
+                            <h3 className="mt-3 line-clamp-2 text-[15px] font-extrabold leading-snug text-[#351d0e] sm:text-[17px]">
+                              {firstItem?.product_name || firstItem?.name || "Furniture order"}
+                              {Number(firstItem?.quantity) > 1 ? ` × ${firstItem.quantity}` : ""}
+                            </h3>
+                            {Array.isArray(order.items) && order.items.length > 1 && (
+                              <p className="mt-2 inline-flex max-w-full items-center gap-1.5 text-xs font-semibold leading-tight text-[#806d5d]">
+                                <Layers size={14} className="shrink-0" />
+                                <span className="min-w-0 truncate">+ {order.items.length - 1} more item(s)</span>
+                              </p>
+                            )}
+                          </div>
+                          <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_52px] items-center gap-3 border-t border-[#eee4d8] pt-3 sm:col-span-1 sm:grid-cols-1 sm:border-l sm:border-t-0 sm:border-[#eee4d8] sm:px-3 sm:pt-0">
+                            <div className="min-w-0">
+                              <span className={`inline-flex max-w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-extrabold ${statusClass(status)}`}>
+                                <PackageCheck size={15} className="shrink-0" />
+                                <span className="truncate">{status}</span>
+                              </span>
+                              <div className="mt-3">
+                                <p className="text-xs leading-tight text-[#806d5d]">Total Amount</p>
+                                <p className="mt-1 text-base font-extrabold leading-tight text-[#351d0e] sm:text-lg">
+                                  {formatAmount(order.total_amount)}
+                                </p>
+                              </div>
+                            </div>
                             <button
                               type="button"
                               onClick={() => setSelectedOrder(order)}
                               aria-label={`View details for order ${orderNumber}`}
-                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                              className="flex h-12 w-12 items-center justify-center justify-self-end rounded-full border-2 border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:row-start-1 sm:self-start"
                             >
-                              <ArrowRight size={19} />
+                              <ArrowRight size={23} />
                             </button>
-                          </div>
-                          <div className="flex min-h-[64px] min-w-0 flex-1 items-center gap-3 sm:min-h-[72px]">
-                            <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#f1e7dd] bg-[#fffaf5] p-1 shadow-sm sm:h-16 sm:w-16">
-                              {firstItem?.image ? (
-                                <img
-                                  src={resolveMediaUrl(firstItem.image)}
-                                  alt={firstItem.product_name || firstItem.name || "Ordered furniture"}
-                                  className="h-full w-full object-contain p-1"
-                                />
-                              ) : <PackageCheck size={25} className="text-[#a34720]" />}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <h3 className="line-clamp-2 text-sm font-extrabold leading-snug text-[#351d0e]">
-                                {firstItem?.product_name || firstItem?.name || "Furniture order"}
-                                {Number(firstItem?.quantity) > 1 ? ` × ${firstItem.quantity}` : ""}
-                              </h3>
-                              {Array.isArray(order.items) && order.items.length > 1 && (
-                                <p className="mt-1 inline-flex max-w-full items-center gap-1 text-xs leading-tight text-[#806d5d]">
-                                  <Layers size={13} className="shrink-0" />
-                                  <span className="min-w-0 truncate">+ {order.items.length - 1} more item(s)</span>
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex min-w-0 items-center justify-between gap-2 border-t border-[#eee4d8] pt-3">
-                            <span className={`inline-flex min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${statusClass(status)}`}>
-                              <PackageCheck size={14} className="shrink-0" />
-                              <span className="truncate">{status}</span>
-                            </span>
-                            <div className="shrink-0 text-right">
-                              <p className="text-[10px] leading-tight text-[#806d5d]">Total Amount</p>
-                              <p className="text-base font-extrabold leading-tight text-[#351d0e] sm:text-lg">
-                                {formatAmount(order.total_amount)}
-                              </p>
-                            </div>
                           </div>
                         </article>
                       );
