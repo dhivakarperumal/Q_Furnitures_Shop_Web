@@ -810,7 +810,7 @@ function Account() {
                       return (
                       <article
                         key={orderNumber}
-                        className="grid grid-cols-[56px_minmax(0,1fr)_36px] items-center gap-x-3 gap-y-2 overflow-hidden rounded-xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white px-2 py-1 shadow-[0_5px_16px_rgba(53,29,14,0.05)] transition hover:border-[#edc9a9] hover:border-l-[#f07816] sm:grid-cols-[56px_minmax(0,1fr)_minmax(155px,0.65fr)_40px] sm:gap-x-3 sm:gap-y-0 sm:py-1 lg:grid-cols-[64px_minmax(0,1fr)_minmax(175px,0.65fr)_44px] lg:gap-x-4 lg:px-3 lg:py-1.5"
+                        className="grid grid-cols-[56px_minmax(0,1fr)_36px] items-center gap-x-3 gap-y-2 overflow-hidden rounded-xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white px-2 py-1 shadow-[0_5px_16px_rgba(53,29,14,0.05)] transition hover:border-[#edc9a9] hover:border-l-[#f07816] sm:grid-cols-[56px_minmax(0,1fr)_minmax(155px,auto)_40px] sm:gap-x-3 sm:gap-y-0 sm:py-1 lg:grid-cols-[64px_minmax(0,1fr)_minmax(175px,auto)_44px] lg:gap-x-4 lg:px-3 lg:py-1.5"
                       >
                         <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#f1e7dd] bg-[#fffaf5] p-1 shadow-sm lg:h-16 lg:w-16">
                           {firstItem?.image ? (
