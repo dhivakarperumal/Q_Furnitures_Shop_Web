@@ -4,6 +4,7 @@ import {
   Check,
   CheckCircle2,
   CreditCard,
+  Banknote,
   Headphones,
   Info,
   LoaderCircle,
@@ -16,6 +17,7 @@ import {
   ShoppingBag,
   Store,
   Truck,
+  UserRound,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../../api";
@@ -414,8 +416,8 @@ const Checkout = () => {
     }
   };
 
-  const fieldClass = "mt-1.5 w-full rounded-lg border border-[#e5d8ca] bg-white px-3.5 py-3 text-sm text-[#351d0e] outline-none transition focus:border-[#a34720] focus:ring-2 focus:ring-[#a34720]/10";
-  const labelClass = "block text-sm font-semibold text-[#4c3525]";
+  const fieldClass = "mt-1.5 w-full rounded-lg border border-[#e5d8ca] bg-white px-3 py-2.5 text-sm text-[#351d0e] outline-none transition focus:border-[#ef7412] focus:ring-2 focus:ring-[#ef7412]/10";
+  const labelClass = "block text-xs font-semibold text-[#4c3525]";
 
   if (createdOrderId) {
     return (
@@ -446,9 +448,12 @@ const Checkout = () => {
 
   return (
     <>
-      <PageHeader title="Checkout" />
-      <main className="min-h-[60vh] bg-gradient-to-br from-[#f7efe5] via-white to-[#fcfaf7] py-5 sm:py-8">
-        <PageContainer>
+      <main className="relative min-h-[65vh] overflow-hidden bg-[#fbf6f1] py-6 sm:py-8">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-24 bottom-8 h-64 w-64 rounded-full bg-[#f4d8bd]/35 blur-3xl" />
+          <div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-[#ffdfc5]/40 blur-3xl" />
+        </div>
+        <div className="relative z-10 mx-auto w-full max-w-[1060px] px-[6%] sm:px-[5%] lg:px-[3%]">
           {loadingCart ? (
             <div className="mt-6 rounded-xl border border-[#e5d8ca] bg-white p-8 text-center text-sm text-[#8b735e]">Loading your cart...</div>
           ) : cart.length === 0 ? (
@@ -461,36 +466,42 @@ const Checkout = () => {
             </section>
           ) : (
             <>
-              <header className="mb-5 overflow-hidden rounded-2xl border border-[#e5d8ca] bg-gradient-to-r from-[#f7efe5] via-white to-[#fcfaf7] p-4 shadow-sm sm:px-6 sm:py-5">
-                <ol aria-label="Checkout progress" className="flex w-full items-center justify-between gap-1 sm:gap-3">
-                <li className="flex flex-col items-center gap-1 text-[11px] font-semibold text-[#278044] sm:text-xs">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#278044] shadow-sm ring-1 ring-[#e5d8ca]"><ShoppingBag size={15} /></span>
-                  <span className="flex items-center gap-1">Cart <CheckCircle2 size={12} /></span>
-                </li>
-                <li aria-hidden="true" className="mb-5 h-px flex-1 bg-[#a34720]/40 sm:w-7 sm:flex-none" />
-                <li aria-current="step" className="flex flex-col items-center gap-1 text-[11px] font-bold text-[#a34720] sm:text-xs">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#351d0e] text-white shadow-sm">
-                    {form.fulfillment_type === "Pickup" ? <Store size={15} /> : <MapPin size={15} />}
-                  </span>
-                  {form.fulfillment_type}
-                </li>
-                <li aria-hidden="true" className="mb-5 h-px flex-1 bg-[#e5d8ca] sm:w-7 sm:flex-none" />
-                <li className="flex flex-col items-center gap-1 text-[11px] text-[#8b735e] sm:text-xs">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e5d8ca] bg-white"><CreditCard size={15} /></span>
-                  Payment
-                </li>
-                <li aria-hidden="true" className="mb-5 h-px flex-1 bg-[#e5d8ca] sm:w-7 sm:flex-none" />
-                <li className="flex flex-col items-center gap-1 text-[11px] text-[#8b735e] sm:text-xs">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e5d8ca] bg-white"><Check size={15} /></span>
-                  Complete
-                </li>
+              <header className="mb-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="border-l-[3px] border-[#ef7412] pl-4">
+                  <h1 className="font-serif text-3xl font-bold leading-tight text-[#351d0e] sm:text-4xl">Complete Your Order</h1>
+                  <p className="mt-1 text-sm text-[#725d4b]">Review your details, choose a payment method and place your order.</p>
+                </div>
+                <ol aria-label="Checkout progress" className="flex w-full max-w-[500px] items-center justify-between gap-2 self-end sm:gap-4 lg:w-auto lg:flex-1">
+                  <li className="flex shrink-0 flex-col items-center gap-1 text-[11px] font-semibold text-[#a34720] sm:text-xs">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ef7412] text-white shadow-sm"><ShoppingBag size={16} /></span>
+                    Cart
+                  </li>
+                  <li aria-hidden="true" className="h-px flex-1 bg-[#ef7412]" />
+                  <li aria-current="step" className="flex shrink-0 flex-col items-center gap-1 text-[11px] font-bold text-[#351d0e] sm:text-xs">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ef7412] text-white shadow-sm">
+                      {form.fulfillment_type === "Pickup" ? <Store size={17} /> : <MapPin size={17} />}
+                    </span>
+                    {form.fulfillment_type}
+                  </li>
+                  <li aria-hidden="true" className="h-px flex-1 bg-[#d9c9b9]" />
+                  <li className="flex shrink-0 flex-col items-center gap-1 text-[11px] text-[#8b735e] sm:text-xs">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d9c9b9] bg-white"><CreditCard size={16} /></span>
+                    Payment
+                  </li>
+                  <li aria-hidden="true" className="h-px flex-1 bg-[#d9c9b9]" />
+                  <li className="flex shrink-0 flex-col items-center gap-1 text-[11px] text-[#8b735e] sm:text-xs">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d9c9b9] bg-white"><Check size={16} /></span>
+                    Complete
+                  </li>
                 </ol>
               </header>
 
-            <form onSubmit={handleSubmit} className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
-              <section className="overflow-hidden rounded-2xl border border-[#e5d8ca] bg-white shadow-sm">
-                <fieldset className="border-b border-[#eee4d8] px-4 py-4 sm:px-7">
-                  <legend className="text-sm font-bold text-[#351d0e]">How would you like to receive your order?</legend>
+            <form onSubmit={handleSubmit} className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.62fr)_minmax(330px,0.95fr)]">
+              <section className="overflow-hidden rounded-2xl border border-[#eadccd] bg-white/95 shadow-[0_8px_28px_rgba(74,38,19,0.07)]">
+                <fieldset className="border-b border-[#eee4d8] px-4 py-4 sm:px-6">
+                  <legend className="flex items-center gap-2 text-sm font-bold text-[#351d0e]">
+                    <MapPin size={17} className="text-[#ef7412]" /> Delivery Option
+                  </legend>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     {[
                       { value: "Delivery", label: "Delivery", description: "Deliver to my address", Icon: Truck },
@@ -500,8 +511,8 @@ const Checkout = () => {
                         key={value}
                         className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${
                           form.fulfillment_type === value
-                            ? "border-[#a34720] bg-[#a34720]/5 ring-2 ring-[#a34720]/10"
-                            : "border-[#e5d8ca] hover:border-[#a34720]/50"
+                            ? "border-[#ef7412] bg-[#fff7ef] shadow-sm"
+                            : "border-[#e5d8ca] bg-white hover:border-[#ef7412]/60"
                         } ${submitting ? "cursor-not-allowed opacity-60" : ""}`}
                       >
                         <input
@@ -511,55 +522,51 @@ const Checkout = () => {
                           checked={form.fulfillment_type === value}
                           onChange={updateForm}
                           disabled={submitting}
-                          className="accent-[#a34720]"
+                          className="sr-only"
                         />
-                        <Icon size={19} className="shrink-0 text-[#a34720]" />
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff0df] text-[#ef7412]">
+                          <Icon size={20} />
+                        </span>
                         <span>
                           <span className="block text-sm font-bold text-[#351d0e]">{label}</span>
                           <span className="mt-0.5 block text-xs text-[#8b735e]">{description}</span>
+                        </span>
+                        <span className={`ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                          form.fulfillment_type === value
+                            ? "border-[#ef7412] bg-[#ef7412] text-white"
+                            : "border-[#d9c9b9] bg-white text-transparent"
+                        }`}>
+                          <Check size={12} />
                         </span>
                       </label>
                     ))}
                   </div>
                 </fieldset>
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eee4d8] bg-gradient-to-r from-[#f7efe5] to-white px-5 py-4 sm:px-7">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#351d0e] text-white">
-                      {form.fulfillment_type === "Pickup" ? <Store size={20} /> : <Truck size={20} />}
-                    </span>
-                    <div>
-                      <h2 className="text-lg font-semibold text-[#351d0e]">
-                        {form.fulfillment_type === "Pickup" ? "Pickup contact details" : "Delivery address"}
-                      </h2>
-                      <p className="text-xs text-[#8b735e] sm:text-sm">
-                        {form.fulfillment_type === "Pickup"
-                          ? "Share your contact details so we can coordinate your pickup."
-                          : "Where should we deliver your furniture?"}
-                      </p>
-                    </div>
-                  </div>
-                  {form.fulfillment_type === "Delivery" && (
-                    <button
-                      type="button"
-                      onClick={useCurrentLocation}
-                      disabled={locating || submitting}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#a34720] px-3 py-2.5 text-sm font-semibold text-[#a34720] transition hover:bg-[#a34720]/5 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {locating ? <LoaderCircle className="animate-spin" size={16} /> : <LocateFixed size={16} />}
-                      <span>{locating ? "Finding..." : "Use current location"}</span>
-                    </button>
-                  )}
-                </div>
-                <div className="p-4 sm:p-6 lg:p-7">
-                  {form.fulfillment_type === "Delivery" && (
-                    <section className="mb-5">
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                {form.fulfillment_type === "Delivery" && (
+                  <section className="border-b border-[#eee4d8] px-4 py-4 sm:px-6">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <h3 className="flex items-center gap-2 text-sm font-bold text-[#351d0e]">
-                        <MapPin size={16} className="text-[#a34720]" /> Saved addresses
+                        <MapPin size={17} className="text-[#ef7412]" /> Select Address
                       </h3>
-                      {savedAddresses.length > 0 && (
-                        <span className="text-xs text-[#8b735e]">{savedAddresses.length} saved</span>
-                      )}
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => {
+                          setSelectedAddressId(null);
+                          setForm((current) => ({
+                            ...current,
+                            street_address: "",
+                            city: "",
+                            district: "",
+                            state: "",
+                            zip_code: "",
+                            country: "India",
+                          }));
+                        }}
+                        className="text-xs font-bold text-[#ef7412] transition hover:text-[#a34720] disabled:opacity-50"
+                      >
+                        + Add New Address
+                      </button>
                     </div>
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8b735e]" size={16} />
@@ -567,78 +574,89 @@ const Checkout = () => {
                         type="search"
                         value={addressSearch}
                         onChange={(event) => setAddressSearch(event.target.value)}
-                        placeholder="Search your previous delivery addresses..."
+                        placeholder="Search saved address..."
                         aria-label="Search saved delivery addresses"
-                        className={`${fieldClass} mt-0 pl-9`}
+                        className={`${fieldClass} mt-0 py-2.5 pl-9`}
                       />
                     </div>
                     {isLoadingAddresses ? (
-                      <p className="mt-3 text-sm text-[#8b735e]">Loading saved addresses...</p>
+                      <p className="mt-2 text-xs text-[#8b735e]">Loading saved addresses...</p>
                     ) : savedAddresses.length === 0 ? (
-                      <p className="mt-3 text-sm text-[#8b735e]">No previous delivery addresses yet. Enter a new address below.</p>
-                    ) : !addressSearch.trim() ? (
-                      <p className="mt-3 text-sm text-[#8b735e]">Search by name, phone, street, city, or PIN code to find a saved address.</p>
-                    ) : filteredAddresses.length === 0 ? (
-                      <p className="mt-3 text-sm text-[#8b735e]">No saved addresses match your search.</p>
-                    ) : (
-                      <div className="mt-3 grid max-h-56 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                      <p className="mt-2 text-xs text-[#8b735e]">No saved addresses yet. Add your delivery address below.</p>
+                    ) : addressSearch.trim() && filteredAddresses.length === 0 ? (
+                      <p className="mt-2 text-xs text-[#8b735e]">No saved addresses match your search.</p>
+                    ) : addressSearch.trim() ? (
+                      <div className="mt-2 grid max-h-36 gap-2 overflow-y-auto sm:grid-cols-2">
                         {filteredAddresses.map((address) => (
                           <button
                             key={address.id}
                             type="button"
                             onClick={() => selectSavedAddress(address)}
                             aria-pressed={selectedAddressId === address.id}
-                            className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition ${
+                            className={`flex w-full items-start gap-2 rounded-lg border p-2.5 text-left transition ${
                               selectedAddressId === address.id
-                                ? "border-[#a34720] bg-[#a34720]/5 ring-2 ring-[#a34720]/10"
-                                : "border-[#e5d8ca] bg-white hover:border-[#a34720]/50 hover:bg-[#fcfaf7]"
+                                ? "border-[#ef7412] bg-[#fff7ef]"
+                                : "border-[#e5d8ca] hover:border-[#ef7412]/60"
                             }`}
                           >
-                            <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                              selectedAddressId === address.id
-                                ? "border-[#a34720] bg-[#a34720] text-white"
-                                : "border-[#d9c4aa] text-transparent"
-                            }`}>
-                              <Check size={12} />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="flex flex-wrap items-center gap-2">
-                                <span className="text-sm font-bold text-[#351d0e]">{address.customer_name || "Delivery address"}</span>
-                                {selectedAddressId === address.id && (
-                                  <span className="rounded-full bg-[#f7efe5] px-2 py-0.5 text-[10px] font-bold text-[#a34720]">Selected</span>
-                                )}
-                              </span>
-                              {address.customer_phone && <span className="mt-1 block text-xs text-[#8b735e]">{address.customer_phone}</span>}
-                              <span className="mt-1 block text-xs leading-snug text-[#8b735e]">
-                                {[address.street_address, address.city, address.district, address.state, address.zip_code]
-                                  .filter(Boolean)
-                                  .join(", ")}
+                            <span className="mt-0.5 text-[#ef7412]"><MapPin size={15} /></span>
+                            <span className="min-w-0 text-xs">
+                              <span className="block font-bold text-[#351d0e]">{address.customer_name || "Saved address"}</span>
+                              <span className="mt-0.5 block text-[#8b735e]">
+                                {[address.street_address, address.city, address.state, address.zip_code].filter(Boolean).join(", ")}
                               </span>
                             </span>
+                            {selectedAddressId === address.id && <Check size={15} className="ml-auto shrink-0 text-[#ef7412]" />}
                           </button>
                         ))}
                       </div>
+                    ) : (
+                      <p className="mt-2 text-xs text-[#8b735e]">
+                        {savedAddresses.length} saved address{savedAddresses.length === 1 ? "" : "es"} available — search to select one.
+                      </p>
                     )}
-                    </section>
-                  )}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className={`${labelClass} sm:col-span-2`}>
-                      Full name *
+                  </section>
+                )}
+
+                <div className="p-4 sm:p-5 sm:px-6">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-bold text-[#351d0e]">
+                    <UserRound size={17} className="text-[#ef7412]" /> Customer Details
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <label className={labelClass}>
+                      Full Name *
                       <input className={fieldClass} name="customer_name" value={form.customer_name} onChange={updateForm} autoComplete="name" required maxLength={191} />
                     </label>
                     <label className={labelClass}>
-                      Phone number *
+                      Phone Number *
                       <input className={fieldClass} name="customer_phone" value={form.customer_phone} onChange={updateForm} type="tel" autoComplete="tel" required maxLength={32} />
                     </label>
                     <label className={labelClass}>
-                      Email address
+                      Email Address
                       <input className={fieldClass} name="customer_email" value={form.customer_email} onChange={updateForm} type="email" autoComplete="email" maxLength={191} />
                     </label>
-                    {form.fulfillment_type === "Delivery" && (
-                      <>
-                        <label className={`${labelClass} sm:col-span-2`}>
-                          Street address *
-                          <textarea className={fieldClass} name="street_address" value={form.street_address} onChange={updateForm} autoComplete="street-address" rows={3} required maxLength={255} />
+                  </div>
+
+                  {form.fulfillment_type === "Delivery" && (
+                    <section className="mt-5 border-t border-[#eee4d8] pt-4">
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="flex items-center gap-2 text-sm font-bold text-[#351d0e]">
+                          <MapPin size={17} className="text-[#ef7412]" /> Delivery Address
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={useCurrentLocation}
+                          disabled={locating || submitting}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[#ef7412]/50 px-3 py-1.5 text-xs font-bold text-[#ef7412] transition hover:bg-[#fff7ef] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {locating ? <LoaderCircle className="animate-spin" size={14} /> : <LocateFixed size={14} />}
+                          {locating ? "Finding..." : "Use Current Location"}
+                        </button>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <label className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
+                          Street Address *
+                          <textarea className={fieldClass} name="street_address" value={form.street_address} onChange={updateForm} autoComplete="street-address" rows={2} required maxLength={255} />
                         </label>
                         <label className={labelClass}>
                           City *
@@ -653,58 +671,95 @@ const Checkout = () => {
                           <input className={fieldClass} name="state" value={form.state} onChange={updateForm} autoComplete="address-level1" required maxLength={191} />
                         </label>
                         <label className={labelClass}>
-                          PIN code *
+                          PIN Code *
                           <input className={fieldClass} name="zip_code" value={form.zip_code} onChange={updateForm} autoComplete="postal-code" required maxLength={32} />
                         </label>
-                        <label className={labelClass}>
+                        <label className={`${labelClass} sm:col-span-2 lg:col-span-2`}>
                           Country *
                           <input className={fieldClass} name="country" value={form.country} onChange={updateForm} autoComplete="country-name" required maxLength={191} />
                         </label>
-                      </>
-                    )}
-                  </div>
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="mt-5 border-t border-[#eee4d8] pt-4">
+                    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#351d0e]">
+                      <CreditCard size={17} className="text-[#ef7412]" /> Payment Method
+                    </h3>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${
+                        form.payment_method === "Cash" ? "border-[#ef7412] bg-[#fff7ef]" : "border-[#e5d8ca] hover:border-[#ef7412]/60"
+                      } ${submitting ? "cursor-not-allowed opacity-60" : ""}`}>
+                        <input type="radio" name="payment_method" value="Cash" checked={form.payment_method === "Cash"} onChange={updateForm} disabled={submitting} className="sr-only" />
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#fff0df] text-[#ef7412]"><Banknote size={20} /></span>
+                        <span>
+                          <span className="block text-sm font-bold text-[#351d0e]">Cash on Delivery</span>
+                          <span className="mt-0.5 block text-xs text-[#8b735e]">Pay when your order arrives</span>
+                        </span>
+                        {form.payment_method === "Cash" && <Check size={17} className="ml-auto shrink-0 text-[#ef7412]" />}
+                      </label>
+                      <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${
+                        form.payment_method === "Razorpay" ? "border-[#ef7412] bg-[#fff7ef]" : "border-[#e5d8ca] hover:border-[#ef7412]/60"
+                      } ${submitting ? "cursor-not-allowed opacity-60" : ""}`}>
+                        <input type="radio" name="payment_method" value="Razorpay" checked={form.payment_method === "Razorpay"} onChange={updateForm} disabled={submitting} className="sr-only" />
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#fff0df] text-[#ef7412]"><CreditCard size={20} /></span>
+                        <span>
+                          <span className="block text-sm font-bold text-[#351d0e]">Pay Online</span>
+                          <span className="mt-0.5 block text-xs text-[#8b735e]">UPI, cards and netbanking</span>
+                        </span>
+                        {form.payment_method === "Razorpay" && <Check size={17} className="ml-auto shrink-0 text-[#ef7412]" />}
+                      </label>
+                    </div>
+                  </section>
                 </div>
               </section>
 
-              <aside className="space-y-4 lg:sticky lg:top-5">
-                <section className="overflow-hidden rounded-2xl border border-[#e5d8ca] bg-white shadow-sm">
-                  <div className="flex items-center gap-3 border-b border-[#eee4d8] bg-gradient-to-r from-[#f7efe5] to-white px-4 py-3.5 sm:px-5">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#351d0e] text-white"><ShoppingBag size={19} /></span>
+              <aside className="lg:sticky lg:top-5">
+                <section className="overflow-hidden rounded-2xl border border-[#eadccd] bg-white/95 shadow-[0_8px_28px_rgba(74,38,19,0.07)]">
+                  <div className="flex items-center justify-between gap-3 border-b border-[#eee4d8] px-4 py-4 sm:px-5">
+                    <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff0df] text-[#ef7412]"><ShoppingBag size={19} /></span>
                     <div>
-                      <h2 className="text-base font-semibold text-[#351d0e] sm:text-lg">Order summary</h2>
+                      <h2 className="font-serif text-lg font-bold text-[#351d0e] sm:text-xl">Order Summary</h2>
                       <p className="text-xs text-[#8b735e]">
                         Order type: <span className="font-bold text-[#a34720]">{orderComposition}</span>
                       </p>
                     </div>
+                    </div>
+                    <span className="text-xs font-semibold text-[#725d4b]">{cart.length} {cart.length === 1 ? "item" : "items"}</span>
                   </div>
                   <div className="p-4 sm:p-5">
-                    <ul className="max-h-64 space-y-3 overflow-y-auto">
+                    <ul className="max-h-[360px] space-y-3 overflow-y-auto pr-1">
                       {cart.map((item) => (
-                        <li key={item.id} className="flex items-start justify-between gap-3 border-b border-[#f0e8df] pb-3 last:border-0">
-                          <div className="flex min-w-0 gap-3">
-                            <img src={item.image || "/images/logo.png"} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-[#f0e8df] bg-[#f7efe5] p-1 object-contain" />
+                        <li key={item.id} className="flex items-center justify-between gap-3 border-b border-[#f0e8df] pb-3 last:border-0">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <img src={item.image || "/images/logo.png"} alt="" className="h-16 w-16 shrink-0 rounded-lg bg-[#f7efe5] p-1 object-contain" />
                             <div className="min-w-0">
-                              <p className="line-clamp-2 text-sm font-semibold text-[#351d0e]">{item.name}</p>
-                              <p className="mt-1 text-xs text-[#8b735e]">
-                                Qty {item.quantity}
-                                {item.colorName ? ` · ${item.colorName}` : ""}
-                                {item.size ? ` · ${item.size}` : ""}
+                              <p className="line-clamp-1 text-sm font-bold text-[#351d0e]">{item.name}</p>
+                              <p className="mt-1 text-[11px] text-[#8b735e]">
+                                {item.colorName || item.size
+                                  ? [item.colorName, item.size].filter(Boolean).join(" · ")
+                                  : item.item_type === "combo" ? "Furniture combo" : "Furniture"}
+                                {" · "}Qty {item.quantity}
                               </p>
                               {item.item_type === "combo" && item.combo_items?.length > 0 && (
-                                <p className="mt-1 text-xs text-[#8b735e]">
+                                <p className="mt-0.5 text-[10px] text-[#8b735e]">
                                   Includes {item.combo_items.length} {item.combo_items.length === 1 ? "product" : "products"}
                                 </p>
                               )}
                             </div>
                           </div>
-                          <span className="shrink-0 text-sm font-semibold text-[#351d0e]">
+                          <span className="shrink-0 text-sm font-extrabold text-[#351d0e]">
                             {formatCheckoutAmount(Number(item.price || 0) * Number(item.quantity || 0))}
                           </span>
                         </li>
                       ))}
                     </ul>
-                    <div className="mt-3 space-y-2 border-t border-[#eee4d8] pt-3 text-sm">
-                      <div className="flex justify-between text-[#725d4b]"><span>Subtotal</span><span className="font-semibold text-[#351d0e]">{formatCheckoutAmount(subtotal)}</span></div>
+                    <div className="mt-3 space-y-2 border-t border-[#eee4d8] pt-3 text-xs sm:text-sm">
+                      <div className="flex justify-between text-[#725d4b]">
+                        <span>Subtotal ({cart.length} {cart.length === 1 ? "item" : "items"})</span>
+                        <span className="font-semibold text-[#351d0e]">{formatCheckoutAmount(subtotal)}</span>
+                      </div>
                       <div className="flex justify-between text-[#725d4b]">
                         <span className="flex items-center gap-1.5">
                           {taxSettings
@@ -717,77 +772,75 @@ const Checkout = () => {
                         <span>{taxSettings ? formatCheckoutAmount(gstAmount) : taxSettingsLoading ? "Loading..." : "Unavailable"}</span>
                       </div>
                       <div className="flex justify-between text-[#725d4b]">
-                        <span>{form.fulfillment_type === "Pickup" ? "Pickup charges" : "Delivery charges"}</span>
+                        <span>{form.fulfillment_type === "Pickup" ? "Pickup Charges" : "Delivery Charges"}</span>
                         <span className="rounded-full bg-[#eaf5ed] px-2 py-0.5 text-[10px] font-bold uppercase text-[#278044]">
                           {form.fulfillment_type === "Pickup" ? "None" : "Free"}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-[#f7efe5] to-[#f3e6d8] px-3 py-2.5 font-bold text-[#351d0e]">
-                        <span>Total amount</span><span className="text-lg">{taxSettings ? formatCheckoutAmount(total) : "Unavailable"}</span>
+                      <div className="flex items-center justify-between rounded-xl bg-[#fff0df] px-3.5 py-3 font-bold text-[#351d0e]">
+                        <span className="font-serif text-base sm:text-lg">Total Amount</span>
+                        <span className="text-lg font-extrabold text-[#ef7412] sm:text-xl">{taxSettings ? formatCheckoutAmount(total) : "Unavailable"}</span>
                       </div>
                     </div>
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-[#e5d8ca] bg-white p-4 shadow-sm sm:p-5">
-                  <h3 className="text-sm font-bold text-[#351d0e]">Payment method</h3>
-                  <label className="mt-3 flex items-center gap-2 rounded-lg border border-[#a34720] bg-white p-3 text-sm font-semibold text-[#a34720]">
-                    <input type="radio" name="payment_method" value="Cash" checked={form.payment_method === "Cash"} onChange={updateForm} />
-                    Cash on delivery
-                  </label>
-                  <label className="mt-2 flex items-center gap-2 rounded-lg border border-[#a34720] bg-white p-3 text-sm font-semibold text-[#a34720]">
-                    <input type="radio" name="payment_method" value="Razorpay" checked={form.payment_method === "Razorpay"} onChange={updateForm} />
-                    Pay online with Razorpay
-                  </label>
-                  <p className="mt-3 flex items-center gap-2 text-xs text-[#8b735e]">
-                    <ShieldCheck size={15} className="shrink-0 text-[#278044]" />
-                    Online payments support UPI, cards, and netbanking.
-                  </p>
-                  {taxSettingsError && (
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-                      <p role="alert">Could not load current GST settings: {taxSettingsError}</p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTaxSettingsLoading(true);
-                          setTaxSettingsError("");
-                          setTaxSettingsLoadKey((key) => key + 1);
-                        }}
-                        className="rounded-md bg-white px-3 py-1.5 font-bold text-red-700 shadow-sm hover:bg-red-100"
-                      >
-                        Retry
-                      </button>
-                    </div>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={submitting || !cart.length || !taxSettings}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#351d0e] px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#a34720] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <LockKeyhole size={16} />
-                    {submitting ? "Processing..." : !taxSettings
-                      ? taxSettingsLoading ? "Loading tax settings..." : "Tax settings unavailable"
-                      : form.payment_method === "Cash"
-                        ? `Place order · ${formatCheckoutAmount(total)}`
-                        : `Pay securely · ${formatCheckoutAmount(total)}`}
-                  </button>
-                  <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs text-[#8b735e]"><LockKeyhole size={12} /> Your payment details are securely processed.</p>
-                </section>
-
-                <section className="rounded-2xl border border-[#e5d8ca] bg-white p-4 shadow-sm sm:p-5">
-                  <h3 className="flex items-center gap-2 text-sm font-bold text-[#351d0e]"><ShieldCheck size={18} className="text-[#a34720]" /> Why shop with us?</h3>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#8b735e]">
-                    <p className="flex items-center gap-2 rounded-xl bg-[#f7efe5] p-3"><ShieldCheck className="shrink-0 text-[#a34720]" size={17} /><span><span className="block font-bold text-[#351d0e]">Secure payment</span>Protected checkout</span></p>
-                    <p className="flex items-center gap-2 rounded-xl bg-[#f7efe5] p-3"><Truck className="shrink-0 text-[#a34720]" size={17} /><span><span className="block font-bold text-[#351d0e]">Delivery support</span>Help with your order</span></p>
-                    <p className="flex items-center gap-2 rounded-xl bg-[#f7efe5] p-3"><RotateCcw className="shrink-0 text-[#a34720]" size={17} /><span><span className="block font-bold text-[#351d0e]">Returns information</span>Clear policy details</span></p>
-                    <p className="flex items-center gap-2 rounded-xl bg-[#f7efe5] p-3"><Headphones className="shrink-0 text-[#a34720]" size={17} /><span><span className="block font-bold text-[#351d0e]">Support</span>We’re here to help</span></p>
+                    {taxSettingsError && (
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                        <p role="alert">Could not load current GST settings: {taxSettingsError}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTaxSettingsLoading(true);
+                            setTaxSettingsError("");
+                            setTaxSettingsLoadKey((key) => key + 1);
+                          }}
+                          className="rounded-md bg-white px-3 py-1.5 font-bold text-red-700 shadow-sm hover:bg-red-100"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={submitting || !cart.length || !taxSettings}
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#351d0e] px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#a34720] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <LockKeyhole size={16} />
+                      {submitting ? "Processing..." : !taxSettings
+                        ? taxSettingsLoading ? "Loading tax settings..." : "Tax settings unavailable"
+                        : form.payment_method === "Cash"
+                          ? `Place Order · ${formatCheckoutAmount(total)}`
+                          : `Pay Securely · ${formatCheckoutAmount(total)}`}
+                      <span aria-hidden="true">→</span>
+                    </button>
+                    <p className="mt-3 flex items-center justify-center gap-2 text-center text-[11px] text-[#725d4b]">
+                      <ShieldCheck size={15} className="text-[#a34720]" />
+                      Secure Checkout <span className="text-[#d9c9b9]">|</span> Your information is safe with us.
+                    </p>
                   </div>
                 </section>
               </aside>
             </form>
+
+            <section aria-label="Store service benefits" className="mt-5 grid grid-cols-2 gap-2 rounded-2xl border border-white/80 bg-white/80 p-3 shadow-[0_8px_24px_rgba(74,38,19,0.06)] sm:grid-cols-4 sm:rounded-full sm:px-5">
+              {[
+                { icon: ShieldCheck, title: "Secure Payments", detail: "Safe and encrypted transactions" },
+                { icon: Truck, title: "Reliable Delivery", detail: "On-time, careful furniture delivery" },
+                { icon: Headphones, title: "Customer Support", detail: "Need help? We’re here for you" },
+                { icon: RotateCcw, title: "Easy Returns", detail: "Hassle-free returns within 7 days" },
+              ].map(({ icon: Icon, title, detail }, index) => (
+                <div key={title} className={`flex items-center gap-2.5 px-2 py-2 ${index < 3 ? "sm:border-r sm:border-[#eadccd]" : ""}`}>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff0df] text-[#ef7412]">
+                    <Icon size={20} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-bold text-[#351d0e]">{title}</span>
+                    <span className="mt-0.5 block text-[10px] leading-snug text-[#8b735e]">{detail}</span>
+                  </span>
+                </div>
+              ))}
+            </section>
             </>
           )}
-        </PageContainer>
+        </div>
       </main>
     </>
   );
