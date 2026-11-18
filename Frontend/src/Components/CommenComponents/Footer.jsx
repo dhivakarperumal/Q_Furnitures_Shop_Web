@@ -10,6 +10,7 @@ import {
   PhoneCall,
   ChevronRight,
   ShieldCheck,
+  Tag,
 } from "lucide-react";
 import { FaFacebook, FaInstagram, FaWhatsapp } from "react-icons/fa";
 import PageContainer from "./PageContainer";
@@ -51,6 +52,7 @@ const Footer = () => {
     { label: "Home", to: "/", icon: Home },
     { label: "About Us", to: "/about", icon: Info },
     { label: "Shop Furniture", to: "/shop", icon: ShoppingBag },
+    { label: "Combos", to: "/combo", icon: Tag },
     { label: "Contact Us", to: "/contactus", icon: PhoneCall },
     { label: "Privacy Policy", to: "/privacy-policy", icon: ShieldCheck },
   ];
