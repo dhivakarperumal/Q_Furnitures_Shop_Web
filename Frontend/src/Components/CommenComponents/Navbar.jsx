@@ -250,7 +250,12 @@ const Navbar = () => {
 
           <div className="hidden flex-1 items-center justify-center gap-0 lg:flex lg:gap-1">
             <NavLink to="/" end className={navClass}>Home</NavLink>
-            <NavLink to="/shop" className={({ isActive }) => `${navClass({ isActive })} inline-flex items-center gap-1`}>
+            <NavLink
+              to="/shop"
+              className={({ isActive }) =>
+                `${navClass({ isActive: isActive && !isCategoryActive && !isRoomActive })} inline-flex items-center gap-1`
+              }
+            >
               Shop 
             </NavLink>
 
@@ -687,7 +692,9 @@ const Navbar = () => {
                     onClick={closeMobileMenu}
                     className={({ isActive }) =>
                       `flex min-h-[60px] items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                        isActive ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                        isActive && !isCategoryActive && !isRoomActive
+                          ? "border-primary/20 bg-[#fff0df] text-[#c2560b]"
+                          : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
                       }`
                     }
                   >
