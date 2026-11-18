@@ -615,7 +615,7 @@ function Reports() {
             <div className="grid grid-cols-1 gap-5">
                 <section className="h-fit rounded-2xl border border-gray-100 bg-white shadow-sm">
                 <div className="p-4 sm:p-5">
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <h2 className="text-lg font-black">{activeReport}</h2>
                             <p className="text-xs font-medium text-secondary-light">
@@ -629,13 +629,13 @@ function Reports() {
                         </div>
                     </div>
 
-                    <div className="mt-4 flex flex-col gap-3">
-                        <label className="relative w-full shrink-0">
+                    <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+                        <label className="relative w-full shrink-0 lg:w-44">
                             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
                             <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search report..." className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-primary focus:bg-white" />
                         </label>
                         <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
-                            <label className="w-full">
+                            <label className="w-full sm:w-52">
                                 <span className="sr-only">Select report</span>
                                 <select value={reportType} onChange={(event) => {
                                     setLoading(true);
