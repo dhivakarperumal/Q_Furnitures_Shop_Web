@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
@@ -8,6 +9,7 @@ function FeaturedCombos() {
   const [combos, setCombos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const sliderRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -36,6 +38,14 @@ function FeaturedCombos() {
     };
   }, []);
 
+  const scrollCombos = (direction) => {
+    if (!sliderRef.current) return;
+    sliderRef.current.scrollBy({
+      left: direction * sliderRef.current.clientWidth * 0.8,
+      behavior: "smooth",
+    });
+  };
+
   if (!loading && !error && !combos.length) return null;
 
   return (
@@ -47,7 +57,27 @@ function FeaturedCombos() {
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#351d0e] sm:text-4xl">Featured combos</h2>
             <p className="mt-2 text-sm text-[#8b735e] sm:text-base">Complete your space and save with a curated bundle.</p>
           </div>
-          <Link to="/combo" className="text-sm font-semibold text-[#a34720] transition hover:underline">View all combo offers</Link>
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="hidden items-center gap-2 sm:flex">
+              <button
+                type="button"
+                onClick={() => scrollCombos(-1)}
+                aria-label="Scroll to previous combos"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d8ca] bg-white text-[#351d0e] transition hover:border-[#351d0e] hover:bg-[#351d0e] hover:text-white"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollCombos(1)}
+                aria-label="Scroll to more combos"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d8ca] bg-white text-[#351d0e] transition hover:border-[#351d0e] hover:bg-[#351d0e] hover:text-white"
+              >
+                <ArrowRight size={18} />
+              </button>
+            </div>
+            {/* <Link to="/combo" className="text-sm font-semibold text-[#a34720] transition hover:underline">View all combo offers</Link> */}
+          </div>
         </div>
 
         {loading ? (
@@ -59,8 +89,16 @@ function FeaturedCombos() {
         ) : error ? (
           <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-5 text-center text-sm text-red-800">{error}</p>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {combos.map((combo) => <ComboOfferCard key={combo.id} combo={combo} />)}
+          <div
+            ref={sliderRef}
+            className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-3"
+            aria-label="Featured combos"
+          >
+            {combos.map((combo) => (
+              <div key={combo.id} className="w-[min(82vw,300px)] shrink-0 snap-start sm:w-[min(44vw,300px)] lg:w-[calc((100%-3.75rem)/4)] xl:w-[calc((100%-5rem)/5)]">
+                <ComboOfferCard combo={combo} />
+              </div>
+            ))}
           </div>
         )}
       </PageContainer>
