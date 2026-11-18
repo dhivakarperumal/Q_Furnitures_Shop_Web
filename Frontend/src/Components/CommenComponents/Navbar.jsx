@@ -622,6 +622,34 @@ const Navbar = () => {
             )}
             </div>
 
+            <button
+              type="button"
+              onClick={openWishlist}
+              aria-label="Open wishlist"
+              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
+            >
+              <Heart size={19} />
+              {wishlist.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
+                  {wishlist.length > 9 ? "9+" : wishlist.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={openCart}
+              aria-label="Open cart"
+              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
+            >
+              <ShoppingCart size={19} />
+              {cart.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
+                  {cart.length > 9 ? "9+" : cart.length}
+                </span>
+              )}
+            </button>
+
             {user && (
               <Link
                 to="/account"
