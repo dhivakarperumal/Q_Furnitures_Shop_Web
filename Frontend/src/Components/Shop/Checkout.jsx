@@ -498,10 +498,10 @@ const Checkout = () => {
             <form onSubmit={handleSubmit} className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.62fr)_minmax(330px,0.95fr)]">
               <section className="overflow-hidden rounded-2xl border border-[#eadccd] bg-white/95 shadow-[0_8px_28px_rgba(74,38,19,0.07)]">
                 <fieldset className="border-b border-[#eee4d8] px-4 py-5 sm:px-6 sm:py-6">
-                  <legend className="flex items-center gap-2 text-sm font-bold text-[#351d0e]">
+                  <legend className="flex pt-4 items-center gap-2 text-sm font-bold text-[#351d0e]">
                     <MapPin size={17} className="text-[#ef7412]" /> Delivery Option
                   </legend>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="mt-1 grid gap-4 sm:grid-cols-2">
                     {[
                       { value: "Delivery", label: "Delivery", description: "Deliver to my address", Icon: Truck },
                       { value: "Pickup", label: "Pickup", description: "I will collect my order", Icon: Store },
@@ -543,30 +543,9 @@ const Checkout = () => {
                 </fieldset>
                 {form.fulfillment_type === "Delivery" && (
                   <section className="border-b border-[#eee4d8] px-4 py-4 sm:px-6">
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="flex items-center gap-2 text-sm font-bold text-[#351d0e]">
-                        <MapPin size={17} className="text-[#ef7412]" /> Select Address
-                      </h3>
-                      <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={() => {
-                          setSelectedAddressId(null);
-                          setForm((current) => ({
-                            ...current,
-                            street_address: "",
-                            city: "",
-                            district: "",
-                            state: "",
-                            zip_code: "",
-                            country: "India",
-                          }));
-                        }}
-                        className="text-xs font-bold text-[#ef7412] transition hover:text-[#a34720] disabled:opacity-50"
-                      >
-                        + Add New Address
-                      </button>
-                    </div>
+                    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#351d0e]">
+                      <MapPin size={17} className="text-[#ef7412]" /> Select Address
+                    </h3>
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8b735e]" size={16} />
                       <input
