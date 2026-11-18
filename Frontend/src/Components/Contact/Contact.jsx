@@ -248,55 +248,21 @@ export default function Contact() {
                 <span className="absolute right-0 top-0 h-[3px] w-10 rounded-bl-sm bg-[#ed7010]" />
               </span>
 
-              {/* Inner 2-col grid: left = text, right = stat cards */}
-              <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-start">
+              {/* Badge */}
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#fde8cc] px-3 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#ed7010]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#ed7010]" />
+                Interior Consultation
+              </span>
 
-                {/* ── Left column: badge + heading + paragraph ── */}
-                <div>
-                  {/* Badge */}
-                  <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#fde8cc] px-3 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#ed7010]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#ed7010]" />
-                    Interior Consultation
-                  </span>
+              {/* Heading */}
+              <h2 className="mt-3 text-[1.6rem] font-extrabold leading-tight text-[#1a0f00] sm:text-3xl lg:text-[2rem]">
+                Free Interior Design Consultation
+              </h2>
 
-                  {/* Heading */}
-                  <h2 className="mt-3 text-[1.6rem] font-extrabold leading-tight text-[#1a0f00] sm:text-3xl lg:text-[2rem]">
-                    Free Interior Design
-                    <br />
-                    Consultation
-                  </h2>
-
-                  {/* Sub-text */}
-                  <p className="mt-2 text-[11px] leading-5 text-[#594333]">
-                    Get expert guidance to design a functional, stylish and comfortable space that truly suits your lifestyle and personality. Whether you're furnishing a new home, refreshing a single room, or planning a full makeover — our experienced design consultants are here to help you every step of the way, completely free of charge.
-                  </p>
-                </div>
-
-                {/* ── Right column: stat highlights ── */}
-                <div className="grid grid-cols-2 gap-2.5 lg:w-[210px] lg:shrink-0">
-                  {/* Stat 1 */}
-                  <div className="flex flex-col items-center rounded-xl bg-white px-3 py-4 text-center shadow-[0_1px_6px_rgba(237,112,16,0.10)]">
-                    <span className="text-xl font-extrabold text-[#ed7010]">500<span className="text-base">+</span></span>
-                    <span className="mt-1 text-[9px] font-semibold leading-3 text-[#594333]">Rooms<br />Designed</span>
-                  </div>
-                  {/* Stat 2 */}
-                  <div className="flex flex-col items-center rounded-xl bg-white px-3 py-4 text-center shadow-[0_1px_6px_rgba(237,112,16,0.10)]">
-                    <span className="text-xl font-extrabold text-[#ed7010]">100<span className="text-base">%</span></span>
-                    <span className="mt-1 text-[9px] font-semibold leading-3 text-[#594333]">Free<br />Consultation</span>
-                  </div>
-                  {/* Stat 3 */}
-                  <div className="flex flex-col items-center rounded-xl bg-white px-3 py-4 text-center shadow-[0_1px_6px_rgba(237,112,16,0.10)]">
-                    <span className="text-xl font-extrabold text-[#ed7010]">15<span className="text-base">+</span></span>
-                    <span className="mt-1 text-[9px] font-semibold leading-3 text-[#594333]">Expert<br />Designers</span>
-                  </div>
-                  {/* Stat 4 */}
-                  <div className="flex flex-col items-center rounded-xl bg-white px-3 py-4 text-center shadow-[0_1px_6px_rgba(237,112,16,0.10)]">
-                    <span className="text-xl font-extrabold text-[#ed7010]">24<span className="text-sm">h</span></span>
-                    <span className="mt-1 text-[9px] font-semibold leading-3 text-[#594333]">Quick<br />Response</span>
-                  </div>
-                </div>
-
-              </div>{/* end inner 2-col grid */}
+              {/* Sub-text — now fills the full right width */}
+              <p className="mt-3 text-[11px] leading-6 text-[#594333]">
+                Get expert guidance to design a functional, stylish and comfortable space that truly suits your lifestyle and personality. Whether you're furnishing a new home, refreshing a single room, or planning a full makeover — our experienced design consultants are here to help you every step of the way, completely free of charge.
+              </p>
 
               {/* 3-step row */}
               <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-0">
@@ -544,25 +510,27 @@ export default function Contact() {
           </section>
 
           {/* ── FAQ ──────────────────────────────────────────── */}
-          <section className="mb-4 grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:items-start" aria-label="Frequently asked questions">
-            {/* Left side – label + heading + chair image */}
-            <div className="flex flex-col">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#ed7010]">
-                — Quick Answers —
-              </p>
-              <h2 className="text-2xl font-extrabold text-[#351d0e] sm:text-3xl">
-                Frequently Asked Questions
-              </h2>
+          <section className="mb-4" aria-label="Frequently asked questions">
+
+            {/* Heading row — full width */}
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#ed7010]">
+              — Quick Answers —
+            </p>
+            <h2 className="text-2xl font-extrabold text-[#351d0e] sm:text-3xl">
+              Frequently Asked Questions
+            </h2>
+
+            {/* Image + Accordion side-by-side, both starting from same level */}
+            <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:items-start">
               <img
                 src={storeImage}
-                alt="Cozy orange armchair"
+                alt="Cozy furniture"
                 loading="lazy"
-                className="mt-6 hidden h-56 w-full rounded-2xl object-cover object-center lg:block"
+                className="hidden h-56 w-full rounded-2xl object-cover object-center lg:block"
               />
+              <FaqAccordion />
             </div>
 
-            {/* Right side – accordion */}
-            <FaqAccordion />
           </section>
 
           {/* ── OTHER WAYS TO REACH US ───────────────────────── */}
@@ -612,7 +580,7 @@ export default function Contact() {
 
         {/* ── PLANNING A HOME MAKEOVER CTA ─────────────────── */}
         <section
-          className="relative overflow-hidden bg-[#2a1500] py-8 text-white"
+          className="relative overflow-hidden bg-[#2a1500] py-8 mt-6 text-white"
           aria-label="Planning a home makeover"
         >
           {/* Background image */}

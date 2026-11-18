@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Mail,
   Phone,
@@ -19,6 +19,8 @@ import { categoryHasProducts } from "../../utils/categories";
 
 const Footer = () => {
   const [categories, setCategories] = useState([]);
+  const { pathname } = useLocation();
+  const noTopMargin = pathname === "/contactus";
 
   const storePhone = import.meta.env.VITE_STORE_PHONE || "+91 98765 43210";
   const storeEmail = import.meta.env.VITE_STORE_EMAIL || "support@mystore.com";
@@ -64,7 +66,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="mt-20 bg-[#2b1a10] text-white">
+    <footer className={`${noTopMargin ? "" : "mt-20"} bg-[#2b1a10] text-white`}>
       <div className="h-1.5 bg-gradient-to-r from-primary-dark via-primary to-amber-400" />
       <PageContainer>
         <div className="grid grid-cols-1 gap-x-8 gap-y-10 py-12 sm:grid-cols-2 lg:grid-cols-12">
