@@ -463,8 +463,7 @@ const Navbar = () => {
           </div>
 
           <div className="flex shrink-0 items-center gap-0.5 text-[#351d0e] sm:gap-2 lg:gap-3 lg:border-l lg:border-[#dfcbb5] lg:pl-3">
-            <div className="hidden items-center gap-1 sm:flex xl:gap-2">
-            <div className="relative">
+            <div className="relative hidden sm:block">
               <button
                 type="button"
                 onClick={() => setSearchOpen(!searchOpen)}
@@ -496,9 +495,9 @@ const Navbar = () => {
               type="button"
               onClick={openWishlist}
               aria-label="Open wishlist"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
+              className="relative flex h-8 w-8 items-center justify-center rounded-xl transition hover:bg-[#fff0df] hover:text-[#e87500] sm:h-10 sm:w-10 sm:rounded-full lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
             >
-              <Heart size={21} />
+              <Heart size={21} className="max-sm:size-4" />
               {wishlist.length > 0 && (
                 <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
                   {wishlist.length > 9 ? "9+" : wishlist.length}
@@ -510,9 +509,9 @@ const Navbar = () => {
               type="button"
               onClick={openCart}
               aria-label="Open cart"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#fff0df] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
+              className="relative flex h-8 w-8 items-center justify-center rounded-xl transition hover:bg-[#fff0df] hover:text-[#e87500] sm:h-10 sm:w-10 sm:rounded-full lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
             >
-              <ShoppingCart size={21} />
+              <ShoppingCart size={21} className="max-sm:size-4" />
               {cart.length > 0 && (
                 <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
                   {cart.length > 9 ? "9+" : cart.length}
@@ -528,7 +527,7 @@ const Navbar = () => {
                   aria-label={`Open account menu for ${profileName}`}
                   aria-expanded={userMenu}
                   aria-haspopup="menu"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7e4ca] text-xs font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] sm:h-10 sm:w-10 sm:rounded-xl sm:border sm:border-[#e87500]/45 sm:bg-white sm:text-sm lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white"
                 >
                   {profileInitial}
                 </button>
@@ -616,50 +615,10 @@ const Navbar = () => {
                 )}
               </div>
             ) : (
-              <Link to="/login" aria-label="Sign in" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] transition hover:bg-[#f1d3ac] hover:text-[#e87500] lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white">
-                <User size={21} />
+              <Link to="/login" aria-label="Sign in" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7e4ca] transition hover:bg-[#f1d3ac] hover:text-[#e87500] sm:h-10 sm:w-10 lg:rounded-xl lg:border lg:border-[#e87500]/45 lg:bg-white">
+                <User size={21} className="max-sm:size-[18px]" />
               </Link>
             )}
-            </div>
-
-            <button
-              type="button"
-              onClick={openWishlist}
-              aria-label="Open wishlist"
-              className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
-            >
-              <Heart size={16} />
-              {wishlist.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
-                  {wishlist.length > 9 ? "9+" : wishlist.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={openCart}
-              aria-label="Open cart"
-              className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
-            >
-              <ShoppingCart size={16} />
-              {cart.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
-                  {cart.length > 9 ? "9+" : cart.length}
-                </span>
-              )}
-            </button>
-
-            {user && (
-              <Link
-                to="/account"
-                aria-label="My account"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7e4ca] text-xs font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] sm:hidden"
-              >
-                {profileInitial}
-              </Link>
-            )}
-
           </div>
         </div>
       </PageContainer>
