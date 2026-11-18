@@ -565,7 +565,7 @@ const Navbar = () => {
                         </span>
                       </Link>
                       <Link
-                        to="/ordersmain"
+                        to="/account?tab=orders"
                         onClick={() => setUserMenu(false)}
                         className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-orange-50"
                       >

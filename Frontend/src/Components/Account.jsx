@@ -26,7 +26,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../api";
 import { AuthContext } from "../PrivateRouter/AuthContext";
@@ -98,9 +98,11 @@ function orderFilterGroup(status) {
 
 function Account() {
   const { user, updateUser, logout } = useContext(AuthContext);
+  const [searchParams, setSearchParams] = useSearchParams();
   const photoInputRef = useRef(null);
   const addressModalRef = useRef(null);
-  const [activeTab, setActiveTab] = useState("profile");
+  const requestedTab = searchParams.get("tab");
+  const activeTab = tabs.some(({ id }) => id === requestedTab) ? requestedTab : "profile";
   const [profile, setProfile] = useState({
     name: user?.name || user?.username || "",
     email: user?.email || "",
@@ -159,6 +161,12 @@ function Account() {
   const userId = user?.id;
   const userProfileImage = user?.profile_image;
   const closeOrderDetails = useCallback(() => setSelectedOrder(null), []);
+  const selectTab = (tab) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (tab === "profile") nextParams.delete("tab");
+    else nextParams.set("tab", tab);
+    setSearchParams(nextParams);
+  };
 
   useEffect(() => {
     if (!addressFormOpen) return undefined;
@@ -512,7 +520,7 @@ function Account() {
                   role="tab"
                   aria-selected={activeTab === id}
                   aria-controls={`account-panel-${id}`}
-                  onClick={() => setActiveTab(id)}
+                  onClick={() => selectTab(id)}
                   className={`inline-flex min-h-11 w-full min-w-0 items-center gap-2 rounded-xl px-2.5 py-2.5 text-left text-[11px] font-bold transition sm:gap-3 sm:px-3 sm:text-sm ${
                     activeTab === id
                       ? "bg-[#fff0df] text-[#351d0e] shadow-sm ring-1 ring-inset ring-[#f6d2b2]"
