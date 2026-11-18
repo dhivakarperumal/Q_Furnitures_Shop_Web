@@ -631,14 +631,65 @@ const Navbar = () => {
           />
 
           {/* Drawer */}
-          <div className="absolute inset-0 h-full w-full overflow-y-auto bg-white">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation"
+            className="absolute bottom-0 right-0 top-0 flex h-full w-[min(94vw,380px)] flex-col border-l border-[#f0dfce] bg-[#fffaf5] shadow-2xl"
+          >
+            <div className="flex shrink-0 items-center gap-2 border-b border-[#f0e5da] bg-white px-3 py-3">
+              <Link to="/" onClick={closeMobileMenu} aria-label="Q Living Furniture home" className="mr-auto flex min-w-0 items-center">
+                <img src="/images/logo.png" alt="Q Living Furniture" className="h-10 w-32 object-contain" />
+              </Link>
+              <button
+                type="button"
+                onClick={(event) => {
+                  openWishlist(event);
+                  closeMobileMenu();
+                }}
+                aria-label="Open wishlist"
+                className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#f1e3d4] text-[#351d0e] transition hover:bg-[#fff0df]"
+              >
+                <Heart size={18} />
+                {wishlist.length > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-[9px] font-bold text-white">{wishlist.length}</span>}
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  openCart(event);
+                  closeMobileMenu();
+                }}
+                aria-label="Open cart"
+                className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#f1e3d4] text-[#351d0e] transition hover:bg-[#fff0df]"
+              >
+                <ShoppingCart size={18} />
+                {cart.length > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-[9px] font-bold text-white">{cart.length}</span>}
+              </button>
+              <Link
+                to={user ? "/account" : "/login"}
+                onClick={closeMobileMenu}
+                aria-label={user ? "My account" : "Sign in"}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#f1e3d4] bg-white text-sm font-bold text-[#351d0e] transition hover:bg-[#fff0df]"
+              >
+                {user ? profileInitial : <User size={18} />}
+              </Link>
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                aria-label="Close menu"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
 
             {/* MENU SCREEN */}
             {!mobileCategory && !mobilePages && (
               <>
-                {/* Links */}
-                <div className="flex flex-col p-5 space-y-3">
-                  <form onSubmit={handleSearch} className="mb-1 flex gap-2">
+                <div className="flex flex-col gap-2.5">
+                  <form onSubmit={handleSearch} className="relative mb-1">
                     <label htmlFor="mobile-furniture-search" className="sr-only">Search furniture</label>
                     <input
                       id="mobile-furniture-search"
@@ -646,132 +697,95 @@ const Navbar = () => {
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
                       placeholder="Search furniture"
-                      className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-orange-400"
+                      className="h-14 w-full rounded-2xl border border-[#f0e5da] bg-white pl-12 pr-4 text-sm font-medium text-[#351d0e] outline-none transition placeholder:text-[#8b735e] focus:border-primary"
                     />
-                    <button type="submit" aria-label="Search" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-600 text-white">
-                      <Search size={18} />
-                    </button>
+                    <Search size={19} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
                   </form>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        closeMobileMenu();
-                        openWishlist(event);
-                      }}
-                      className="flex items-center justify-center gap-2 rounded-lg border border-orange-100 px-3 py-3 text-sm font-semibold text-slate-700"
-                    >
-                      <Heart size={17} />
-                      Wishlist{wishlist.length > 0 ? ` (${wishlist.length})` : ""}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        closeMobileMenu();
-                        openCart(event);
-                      }}
-                      className="flex items-center justify-center gap-2 rounded-lg border border-orange-100 px-3 py-3 text-sm font-semibold text-slate-700"
-                    >
-                      <ShoppingCart size={17} />
-                      Cart{cart.length > 0 ? ` (${cart.length})` : ""}
-                    </button>
-                  </div>
 
                   <NavLink
                     to="/"
                     onClick={closeMobileMenu}
-                    className={mobileNavClass}
+                    className={({ isActive }) =>
+                      `flex min-h-[60px] items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        isActive ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                      }`
+                    }
                   >
-                    <FiHome size={16} />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiHome size={18} /></span>
                     Home
                   </NavLink>
 
                   <NavLink
                     to="/shop"
                     onClick={closeMobileMenu}
-                    className={mobileNavClass}
+                    className={({ isActive }) =>
+                      `flex min-h-[60px] items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        isActive ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                      }`
+                    }
                   >
-                    <FiShoppingBag size={16} />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiShoppingBag size={18} /></span>
                     Shop
                   </NavLink>
 
                   <button
                     onClick={() => setMobileCategory(true)}
-                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
+                    className="flex min-h-[60px] items-center justify-between gap-3 rounded-2xl border border-[#f0e5da] bg-white px-4 py-3 text-sm font-semibold text-[#351d0e] transition hover:border-primary/40"
                   >
-                    <div className="flex items-center gap-3">
-                      <FiGrid size={16} />
-                      Categories
-                    </div>
-
-                    <FiChevronRight size={16} />
+                    <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiGrid size={18} /></span>Categories</span>
+                    <FiChevronRight size={17} className="text-primary" />
                   </button>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {roomLinks.map(({ name, slug, icon: RoomIcon }) => (
-                      <NavLink
-                        key={slug}
-                        to={`/shop?room=${encodeURIComponent(slug)}`}
-                        onClick={closeMobileMenu}
-                        className={({ isActive }) =>
-                          `flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-medium transition ${
-                            isActive
-                              ? "border-[#ed720a] bg-[#ed720a] text-white"
-                              : "border-orange-100 text-gray-800 hover:bg-orange-50 hover:text-orange-700"
-                          }`
-                        }
-                      >
-                        <RoomIcon size={15} className="shrink-0" />
-                        <span className="truncate">{name}</span>
-                      </NavLink>
-                    ))}
-                  </div>
 
                   <NavLink
                     to="/combo"
                     onClick={closeMobileMenu}
-                    className={mobileNavClass}
+                    className={({ isActive }) =>
+                      `flex min-h-[60px] items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        isActive ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                      }`
+                    }
                   >
-                    <FiTag size={16} />
-                    Combos
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiTag size={18} /></span>
+                    Combo Offers
                   </NavLink>
 
                   <Link
                     to="/about"
                     onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
+                    className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-[#f0e5da] bg-white px-4 py-3 text-sm font-semibold text-[#351d0e] transition hover:border-primary/40"
                   >
-                    <FiFileText size={16} />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={18} /></span>
                     Interior Ideas
                   </Link>
 
                   <button
                     onClick={() => setMobilePages(true)}
-                    className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
+                    className="flex min-h-[60px] items-center justify-between gap-3 rounded-2xl border border-[#f0e5da] bg-white px-4 py-3 text-sm font-semibold text-[#351d0e] transition hover:border-primary/40"
                   >
-                    <div className="flex items-center gap-3">
-                      <FiFileText size={16} />
-                      Pages
-                    </div>
-
-                    <FiChevronRight size={16} />
+                    <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={18} /></span>Pages</span>
+                    <FiChevronRight size={17} className="text-primary" />
                   </button>
 
-                  <Link
-                    to={user ? "/account" : "/login"}
-                    onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-800 transition hover:text-orange-700"
-                  >
-                    {user ? (
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700">
-                        {profileInitial}
-                      </span>
-                    ) : (
-                      <User size={16} />
-                    )}
-                    {user ? "My Account" : "Sign In"}
-                  </Link>
+                  <div className="pt-2">
+                    <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-[#8b735e]">Shop by room</h2>
+                    <div className="grid grid-cols-2 gap-2">
+                      {roomLinks.map(({ name, slug, icon: RoomIcon }) => (
+                        <NavLink
+                          key={slug}
+                          to={`/shop?room=${encodeURIComponent(slug)}`}
+                          onClick={closeMobileMenu}
+                          className={({ isActive }) =>
+                            `flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                              isActive ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                            }`
+                          }
+                        >
+                          <RoomIcon size={16} className="shrink-0 text-primary" />
+                          <span className="truncate">{name}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
 
                 </div>
               </>
@@ -893,6 +907,7 @@ const Navbar = () => {
               </>
             )}
           </div>
+        </div>
         </div>
       )}
       <CartDrawer isOpen={cartOpen} onClose={closeCart} />
