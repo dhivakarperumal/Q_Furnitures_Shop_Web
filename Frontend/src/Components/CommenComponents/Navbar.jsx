@@ -621,8 +621,8 @@ const Navbar = () => {
         </div>,
         document.body
       )}
-      {mobileMenu && (
-        <div className="fixed inset-x-0 bottom-0 z-50" style={{ top: `${mobileMenuTop}px` }}>
+      {mobileMenu && createPortal(
+        <div className="fixed inset-x-0 bottom-0 z-[60]" style={{ top: `${mobileMenuTop}px` }}>
 
           {/* Overlay */}
           <div
@@ -863,6 +863,7 @@ const Navbar = () => {
           </div>
         </div>
         </div>
+      , document.body
       )}
       <CartDrawer isOpen={cartOpen} onClose={closeCart} />
       <WishlistDrawer isOpen={wishlistOpen} onClose={closeWishlist} />
