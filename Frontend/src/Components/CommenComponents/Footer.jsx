@@ -76,8 +76,9 @@ const Footer = () => {
               />
             </Link>
             <p className="max-w-sm text-justify text-sm leading-7 text-white/70">
-              Thoughtfully selected furniture for every room, designed to bring comfort,
-              style, and lasting quality to your home.
+              At Q Furnitures, find thoughtfully selected pieces for living, dining, and
+              bedroom spaces. Our collection balances everyday comfort, practical function,
+              and timeless design to help make your home feel welcoming and distinctly yours.
             </p>
           </div>
 
