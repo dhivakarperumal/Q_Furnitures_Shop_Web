@@ -417,21 +417,20 @@ function createProductService(pool) {
       };
     },
 
-    async getRoomCounts(rooms) {
-      // rooms is an array of { slug, keywords }
-      // For each room, count active products whose name OR category matches any keyword
+    async getRoomCounts(slugs) {
+      // Uses the exact same search logic as the shop page:
+      // slug → "home-office" → "home office" → LIKE on name, product_code, category
       const results = await Promise.all(
-        rooms.map(async ({ slug, keywords }) => {
-          const conditions = keywords.map(() => "(p.name LIKE ? OR p.category LIKE ?)").join(" OR ");
-          const params = keywords.flatMap((kw) => [`%${kw}%`, `%${kw}%`]);
+        slugs.map(async (slug) => {
+          const term = `%${slug.replace(/-/g, " ")}%`;
           const [rows] = await pool.execute(
             `SELECT COUNT(*) AS productCount
              FROM products p
              LEFT JOIN product_stock ps ON ps.product_id = p.id
              WHERE p.status = 'Active'
                AND COALESCE(ps.available_stock, p.total_stock) > 0
-               AND (${conditions})`,
-            params,
+               AND (p.name LIKE ? OR p.product_code LIKE ? OR p.category LIKE ?)`,
+            [term, term, term],
           );
           return { slug, productCount: Number(rows[0]?.productCount || 0) };
         }),

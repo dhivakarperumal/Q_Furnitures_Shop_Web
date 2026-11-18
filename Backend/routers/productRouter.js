@@ -130,15 +130,15 @@ function createProductRouter(productService) {
 
   router.get("/rooms", async (request, response, next) => {
     try {
-      const ROOMS = [
-        { slug: "living-room",  keywords: ["living room", "sofa", "coffee table", "tv unit"] },
-        { slug: "bedroom",      keywords: ["bedroom", "bed", "wardrobe", "mattress", "dresser"] },
-        { slug: "dining-room",  keywords: ["dining", "dining table", "dining chair"] },
-        { slug: "home-office",  keywords: ["office", "study", "desk", "workstation"] },
-        { slug: "kids-room",    keywords: ["kids", "children", "bunk bed", "study table"] },
-        { slug: "outdoor",      keywords: ["outdoor", "garden", "patio", "balcony"] },
+      const ROOM_SLUGS = [
+        "living-room",
+        "bedroom",
+        "dining-room",
+        "home-office",
+        "kids-room",
+        "outdoor",
       ];
-      const counts = await productService.getRoomCounts(ROOMS);
+      const counts = await productService.getRoomCounts(ROOM_SLUGS);
       return response.json(counts);
     } catch (error) {
       return next(error);
