@@ -556,7 +556,7 @@ const CreateOrder = () => {
                                                         </div>
                                                     </button>
                                                     <div className="flex min-h-9 items-center justify-between gap-1 px-2.5 pb-2">
-                                                        <span className="truncate text-xs font-black text-primary-dark">{formatCurrency(price)}</span>
+                                                        <span className="whitespace-nowrap text-[10px] font-black text-primary-dark sm:text-xs">{formatCurrency(price, { compact: false })}</span>
                                                         {productQuantity === 0 ? (
                                                             <button
                                                                 type="button"
@@ -636,7 +636,7 @@ const CreateOrder = () => {
                                                         </div>
                                                     </button>
                                                     <div className="flex min-h-9 items-center justify-between gap-1 px-2.5 pb-2">
-                                                        <span className="truncate text-xs font-black text-primary-dark">{formatCurrency(price)}</span>
+                                                        <span className="whitespace-nowrap text-[10px] font-black text-primary-dark sm:text-xs">{formatCurrency(price, { compact: false })}</span>
                                                         {quantity === 0 ? (
                                                             <button
                                                                 type="button"
@@ -1058,7 +1058,7 @@ const CreateOrder = () => {
                                                                 <FiTrash2 size={14} />
                                                             </button>
                                                         </div>
-                                                        <span className="shrink-0 text-xs font-bold">{formatCurrency(item.total)}</span>
+                                                        <span className="shrink-0 text-xs font-bold">{formatCurrency(item.total, { compact: false })}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1069,7 +1069,7 @@ const CreateOrder = () => {
                                 )}
                                 <div className="flex justify-between text-sm opacity-60 font-bold">
                                     <span>Subtotal</span>
-                                    <span>{formatCurrency(orderTotals.subtotal)}</span>
+                                    <span>{formatCurrency(orderTotals.subtotal, { compact: false })}</span>
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-3 text-sm font-bold">
@@ -1091,7 +1091,7 @@ const CreateOrder = () => {
                                     </div>
                                     <div className="flex justify-between text-xs font-semibold text-white/60">
                                         <span>GST on subtotal (before discount)</span>
-                                        <span>{formatCurrency(orderTotals.gst_amount)}</span>
+                                        <span>{formatCurrency(orderTotals.gst_amount, { compact: false })}</span>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
@@ -1127,7 +1127,7 @@ const CreateOrder = () => {
                                     </div>
                                     <div className="flex justify-between text-xs font-semibold text-white/60">
                                         <span>Discount applied</span>
-                                        <span>-{formatCurrency(orderTotals.discount_amount)}</span>
+                                        <span>-{formatCurrency(orderTotals.discount_amount, { compact: false })}</span>
                                     </div>
                                 </div>
                                 {pricingError && (
@@ -1137,7 +1137,7 @@ const CreateOrder = () => {
 
                             <div className="mb-6 flex items-center justify-between gap-3">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-orange-200">Grand Total</p>
-                                <h2 className="text-xl font-black italic sm:text-2xl">{formatCurrency(orderTotals.total_amount)}</h2>
+                                <h2 className="text-xl font-black italic sm:text-2xl">{formatCurrency(orderTotals.total_amount, { compact: false })}</h2>
                             </div>
                         </div>
 

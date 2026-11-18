@@ -24,12 +24,12 @@ function parseAmount(value) {
   return Number.isFinite(parsedAmount) ? parsedAmount : 0;
 }
 
-export function formatCurrency(value) {
+export function formatCurrency(value, { compact = true } = {}) {
   const amount = parseAmount(value);
   const prefix = amount < 0 ? "-₹" : "₹";
   const absoluteAmount = Math.abs(amount);
 
-  if (absoluteAmount < 1_000) {
+  if (!compact || absoluteAmount < 1_000) {
     return `${prefix}${indianNumberFormatter.format(absoluteAmount)}`;
   }
 

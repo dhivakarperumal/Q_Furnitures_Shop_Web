@@ -61,7 +61,7 @@ const pageTitles = {
   "/admin/products/stock/add": "Add Stock",
   "/admin/products": "Inventory",
   "/admin/orders/billing": "Billing",
-  "/admin/orders/shop-create": "New Bills",
+  "/admin/orders/shop-create": "New Shop Order",
   "/admin/orders/new": "New Orders",
   "/admin/orders/all": "All Orders",
   "/admin/orders/delivery": "Delivery Orders",
@@ -431,10 +431,10 @@ const Header = ({ onMenuClick, onSearchQueryChange }) => {
               to="/admin/orders/billing"
               aria-label="Go to Billing"
               title="Go to Billing"
-              className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-orange-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:h-12 sm:w-12"
+              className="flex h-11 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-orange-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:h-12 sm:w-24"
             >
               <img
-                src="/images/logo1.png"
+                src="/images/logo.png"
                 alt="Q Living Furniture"
                 className="h-full w-full object-contain"
               />
