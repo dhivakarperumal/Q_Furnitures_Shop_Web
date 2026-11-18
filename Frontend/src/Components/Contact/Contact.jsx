@@ -161,12 +161,11 @@ function SupportCard({ icon: Icon, title, desc }) {
   );
 }
 
-function FaqItem({ icon: Icon, question, answer }) {
-  const [open, setOpen] = useState(false);
+function FaqItem({ icon: Icon, question, answer, open, onToggle }) {
   return (
     <div className="rounded-xl border border-[#f2e6da] bg-white overflow-hidden">
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         className="flex w-full items-center gap-3 px-4 py-4 text-left transition hover:bg-[#fffaf5]"
         aria-expanded={open}
       >
@@ -188,6 +187,22 @@ function FaqItem({ icon: Icon, question, answer }) {
           <p className="px-5 pb-4 pt-0 text-xs leading-5 text-[#594333]">{answer}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function FaqAccordion() {
+  const [openIndex, setOpenIndex] = useState(null);
+  return (
+    <div className="flex flex-col gap-3">
+      {faqs.map((faq, i) => (
+        <FaqItem
+          key={faq.question}
+          {...faq}
+          open={openIndex === i}
+          onToggle={() => setOpenIndex(openIndex === i ? null : i)}
+        />
+      ))}
     </div>
   );
 }
@@ -529,7 +544,7 @@ export default function Contact() {
           </section>
 
           {/* ── FAQ ──────────────────────────────────────────── */}
-          <section className="mb-8 grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:items-start" aria-label="Frequently asked questions">
+          <section className="mb-4 grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:items-start" aria-label="Frequently asked questions">
             {/* Left side – label + heading + chair image */}
             <div className="flex flex-col">
               <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#ed7010]">
@@ -547,17 +562,13 @@ export default function Contact() {
             </div>
 
             {/* Right side – accordion */}
-            <div className="flex flex-col gap-3">
-              {faqs.map((faq) => (
-                <FaqItem key={faq.question} {...faq} />
-              ))}
-            </div>
+            <FaqAccordion />
           </section>
 
           {/* ── OTHER WAYS TO REACH US ───────────────────────── */}
           <section
             aria-label="Other ways to reach us"
-            className="mb-5 grid gap-3 rounded-2xl bg-[#fbf2e9] p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-center"
+            className="mb-0 grid gap-3 rounded-2xl bg-[#fbf2e9] p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-center"
           >
             <h2 className="text-base font-extrabold leading-5">
               Other Ways to
@@ -601,7 +612,7 @@ export default function Contact() {
 
         {/* ── PLANNING A HOME MAKEOVER CTA ─────────────────── */}
         <section
-          className="relative overflow-hidden bg-[#2a1500] py-12 text-white"
+          className="relative overflow-hidden bg-[#2a1500] py-8 text-white"
           aria-label="Planning a home makeover"
         >
           {/* Background image */}
