@@ -612,9 +612,10 @@ function Reports() {
                 {optionsError && <p className="mt-3 text-xs text-rose-600">{optionsError}</p>}
             </section>
 
-            <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-                <div className="border-b border-gray-100 p-4 sm:p-5">
-                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="grid grid-cols-1 gap-5">
+                <section className="h-fit rounded-2xl border border-gray-100 bg-white shadow-sm">
+                <div className="p-4 sm:p-5">
+                    <div className="flex flex-col gap-4">
                         <div>
                             <h2 className="text-lg font-black">{activeReport}</h2>
                             <p className="text-xs font-medium text-secondary-light">
@@ -628,13 +629,13 @@ function Reports() {
                         </div>
                     </div>
 
-                    <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
-                        <label className="relative w-full shrink-0 lg:w-44">
+                    <div className="mt-4 flex flex-col gap-3">
+                        <label className="relative w-full shrink-0">
                             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
                             <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search report..." className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-primary focus:bg-white" />
                         </label>
                         <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
-                            <label className="w-full sm:w-52">
+                            <label className="w-full">
                                 <span className="sr-only">Select report</span>
                                 <select value={reportType} onChange={(event) => {
                                     setLoading(true);
@@ -668,7 +669,9 @@ function Reports() {
                         </div>
                     </div>
                 </div>
+                </section>
 
+                <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center rounded-b-2xl bg-white py-24" aria-label="Loading report">
                         <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-orange-100 border-t-primary" />
@@ -747,7 +750,8 @@ function Reports() {
                         </footer>
                     </>
                 )}
-            </section>
+                </section>
+            </div>
 
             {sourceModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onMouseDown={(event) => {
