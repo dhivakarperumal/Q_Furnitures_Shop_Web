@@ -95,7 +95,7 @@ function FeaturedCombos() {
             aria-label="Featured combos"
           >
             {combos.map((combo) => (
-              <div key={combo.id} className="w-[min(82vw,300px)] shrink-0 snap-start sm:w-[min(44vw,300px)] lg:w-[calc((100%-3.75rem)/4)] xl:w-[calc((100%-5rem)/5)]">
+              <div key={combo.id} className="w-[min(82vw,300px)] shrink-0 snap-start sm:w-[min(44vw,300px)] lg:w-[calc((100%-3.75rem)/4)]">
                 <ComboOfferCard combo={combo} />
               </div>
             ))}
