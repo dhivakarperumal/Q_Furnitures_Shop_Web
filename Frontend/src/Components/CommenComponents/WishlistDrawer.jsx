@@ -119,7 +119,7 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
                         <FiTrash2 size={16} />
                       </button>
                     </div>
-                    <p className="mt-1 text-sm font-semibold text-primary">₹{Number(item.price || 0).toFixed(2)}</p>
+                    <p className="mt-1 text-sm font-semibold text-[#351d0e]">₹{Number(item.price || 0).toFixed(2)}</p>
                     <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-500">
                       {item.colorName && <span>Color: {item.colorName}</span>}
                       {item.size && <span>Size: {item.size}</span>}

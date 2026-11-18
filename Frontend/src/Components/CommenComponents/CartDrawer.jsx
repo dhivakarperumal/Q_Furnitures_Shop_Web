@@ -111,7 +111,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                           Includes {item.combo_items.length} {item.combo_items.length === 1 ? "product" : "products"}
                         </p>
                       )}
-                      <p className="mt-1 text-sm font-semibold text-primary">₹{Number(item.price || 0).toFixed(2)}</p>
+                      <p className="mt-1 text-sm font-semibold text-[#351d0e]">₹{Number(item.price || 0).toFixed(2)}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                         {item.colorName && (
                           <span className="flex items-center gap-1.5">
@@ -163,7 +163,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
             </div>
             <div className="mb-4 flex justify-between text-lg font-bold text-gray-800">
               <span>Total Amount</span>
-              <span className="text-primary">₹{totalAmount.toFixed(2)}</span>
+              <span className="text-[#351d0e]">₹{totalAmount.toFixed(2)}</span>
             </div>
             <button
               type="button"
