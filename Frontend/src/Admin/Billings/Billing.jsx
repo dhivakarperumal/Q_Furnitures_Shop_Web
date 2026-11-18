@@ -21,14 +21,6 @@ import {
 } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
 
-const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-}[character]));
-
 const Billing = () => {
     const navigate = useNavigate();
     const [invoices, setInvoices] = useState([]);
@@ -116,55 +108,8 @@ const Billing = () => {
         }
     };
 
-    const handlePrint = () => {
-        const printWindow = window.open("", "", "width=1000,height=700");
-        if (!printWindow) {
-            window.alert("Allow pop-ups to print billing orders.");
-            return;
-        }
-
-        const rows = filteredInvoices.map((invoice, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${escapeHtml(invoice.id)}</td>
-                <td>${escapeHtml(invoice.customer)}</td>
-                <td>${escapeHtml(formatCurrency(invoice.amount))}</td>
-                <td>${escapeHtml(invoice.method)}</td>
-                <td>${escapeHtml(invoice.status)}</td>
-                <td>${escapeHtml(invoice.date)}</td>
-            </tr>
-        `).join("");
-
-        printWindow.document.write(`<!doctype html>
-            <html>
-                <head>
-                    <title>Billing Orders</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 32px; color: #1e293b; }
-                        h1 { color: #3b1a0b; margin: 0 0 6px; }
-                        p { color: #64748b; margin: 0 0 24px; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { border: 1px solid #dbe1ea; padding: 10px; text-align: left; font-size: 12px; }
-                        th { background: #3b1a0b; color: #fcd34d; text-transform: uppercase; font-size: 11px; }
-                        tr:nth-child(even) { background: #f8fafc; }
-                        @media print { body { padding: 0; } }
-                    </style>
-                </head>
-                <body>
-                    <h1>Q Furnitures Billing Orders</h1>
-                    <p>${filteredInvoices.length} order${filteredInvoices.length === 1 ? "" : "s"} · Printed ${escapeHtml(new Date().toLocaleString())}</p>
-                    <table>
-                        <thead>
-                            <tr><th>S. No.</th><th>Order ID</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Status</th><th>Order Date</th></tr>
-                        </thead>
-                        <tbody>${rows || '<tr><td colspan="7">No orders found.</td></tr>'}</tbody>
-                    </table>
-                </body>
-            </html>`);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+    const handlePrintOrder = (orderId) => {
+        navigate(`/admin/orders/${orderId}`, { state: { autoPrint: true } });
     };
 
     return (
@@ -272,16 +217,6 @@ const Billing = () => {
                             </button>
                         </div>
                         <button
-                            type="button"
-                            onClick={handlePrint}
-                            disabled={loading || Boolean(loadError) || filteredInvoices.length === 0}
-                            title="Print filtered billing orders"
-                            aria-label="Print filtered billing orders"
-                            className="inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-white px-4 py-3 text-sm font-bold text-orange-800 transition-colors hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <FiPrinter size={16} /> Print
-                        </button>
-                        <button
                         type="button"
                         onClick={() => navigate("/admin/orders/shop-create")}
                         className="flex items-center gap-2 rounded-md bg-gradient-to-r from-primary to-primary-dark px-5 py-3 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:from-secondary-light hover:to-secondary-dark active:scale-95"
@@ -339,6 +274,9 @@ const Billing = () => {
                                         <div className="flex items-center justify-end gap-2">
                                             <button onClick={() => navigate(`/admin/orders/${inv.orderId}`)} className="rounded-lg p-2 text-orange-800 transition-all hover:bg-orange-100" title="View order" aria-label={`View order ${inv.id}`}>
                                                 <FiEye size={16} />
+                                            </button>
+                                            <button type="button" onClick={() => handlePrintOrder(inv.orderId)} className="rounded-lg p-2 text-orange-800 transition-all hover:bg-orange-100" title="Print order" aria-label={`Print order ${inv.id}`}>
+                                                <FiPrinter size={16} />
                                             </button>
                                            
                                         </div>
@@ -398,6 +336,9 @@ const Billing = () => {
                                 <div className="mt-5 flex justify-end gap-2 border-t border-gray-100 pt-4">
                                     <button onClick={() => navigate(`/admin/orders/${inv.orderId}`)} className="rounded-lg p-2 text-orange-800 transition-all hover:bg-orange-100" title="View order" aria-label={`View order ${inv.id}`}>
                                         <FiEye size={16} />
+                                    </button>
+                                    <button type="button" onClick={() => handlePrintOrder(inv.orderId)} className="rounded-lg p-2 text-orange-800 transition-all hover:bg-orange-100" title="Print order" aria-label={`Print order ${inv.id}`}>
+                                        <FiPrinter size={16} />
                                     </button>
                                     <button className="rounded-lg p-2 text-gray-400 transition-all hover:bg-gray-100" title="More actions" aria-label={`More actions for ${inv.id}`}>
                                         <FiMoreVertical size={16} />

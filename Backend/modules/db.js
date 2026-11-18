@@ -1093,6 +1093,14 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS store_tax_settings (
+      id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+      gst_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      gst_rate DECIMAL(5,2) NOT NULL DEFAULT 18.00,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS product_import_logs (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       import_token CHAR(36) NOT NULL UNIQUE,
@@ -1342,6 +1350,7 @@ async function initializeDatabase(pool) {
     FROM products
   `);
   await pool.query("INSERT IGNORE INTO stock_settings (id, allow_negative_stock) VALUES (1, 0)");
+  await pool.query("INSERT IGNORE INTO store_tax_settings (id, gst_enabled, gst_rate) VALUES (1, 1, 18.00)");
   await pool.query(`
     INSERT IGNORE INTO stock_transactions
       (transaction_ref, transaction_type, reference_type, reference_id, reference_number, remarks)
@@ -1448,6 +1457,132 @@ async function initializeDatabase(pool) {
       CONSTRAINT dealer_ledger_dealer_fk FOREIGN KEY (dealer_id) REFERENCES dealers(id) ON DELETE CASCADE,
       CONSTRAINT dealer_ledger_invoice_fk FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE SET NULL,
       KEY dealer_ledger_dealer_date_idx (dealer_id, transaction_date, id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS suppliers (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(191) NOT NULL,
+      contact_person VARCHAR(191) NULL,
+      phone VARCHAR(32) NOT NULL,
+      email VARCHAR(191) NULL,
+      gstin VARCHAR(15) NULL,
+      address TEXT NULL,
+      status ENUM('Active', 'Inactive') NOT NULL DEFAULT 'Active',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY suppliers_name_idx (name),
+      KEY suppliers_status_idx (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS purchase_receipts (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      purchase_number VARCHAR(40) NULL UNIQUE,
+      supplier_id BIGINT UNSIGNED NULL,
+      supplier_bill_number VARCHAR(100) NULL,
+      purchase_date DATE NOT NULL,
+      is_opening_stock TINYINT(1) NOT NULL DEFAULT 0,
+      subtotal DECIMAL(14,2) NOT NULL DEFAULT 0,
+      discount_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      taxable_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      gst_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      total_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      amount_paid DECIMAL(14,2) NOT NULL DEFAULT 0,
+      balance_due DECIMAL(14,2) NOT NULL DEFAULT 0,
+      payment_method VARCHAR(32) NULL,
+      notes TEXT NULL,
+      created_by VARCHAR(191) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT purchase_receipts_supplier_fk FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,
+      KEY purchase_receipts_date_idx (purchase_date, id),
+      KEY purchase_receipts_supplier_date_idx (supplier_id, purchase_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS purchase_receipt_items (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      purchase_id BIGINT UNSIGNED NOT NULL,
+      product_id BIGINT UNSIGNED NOT NULL,
+      product_name VARCHAR(191) NOT NULL,
+      sku VARCHAR(128) NULL,
+      category VARCHAR(191) NULL,
+      quantity INT UNSIGNED NOT NULL,
+      unit_cost DECIMAL(14,2) NOT NULL,
+      discount_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      taxable_amount DECIMAL(14,2) NOT NULL,
+      gst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+      gst_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      total_amount DECIMAL(14,2) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT purchase_receipt_items_purchase_fk FOREIGN KEY (purchase_id) REFERENCES purchase_receipts(id) ON DELETE CASCADE,
+      CONSTRAINT purchase_receipt_items_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+      KEY purchase_receipt_items_product_idx (product_id, purchase_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS purchase_receipt_payments (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      purchase_id BIGINT UNSIGNED NOT NULL,
+      paid_at DATE NOT NULL,
+      payment_method VARCHAR(32) NOT NULL,
+      reference_number VARCHAR(100) NULL,
+      amount DECIMAL(14,2) NOT NULL,
+      notes TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT purchase_receipt_payments_purchase_fk FOREIGN KEY (purchase_id) REFERENCES purchase_receipts(id) ON DELETE CASCADE,
+      KEY purchase_receipt_payments_date_idx (paid_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS purchase_returns (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      return_number VARCHAR(40) NULL UNIQUE,
+      purchase_id BIGINT UNSIGNED NOT NULL,
+      supplier_id BIGINT UNSIGNED NULL,
+      return_date DATE NOT NULL,
+      reason VARCHAR(191) NOT NULL,
+      taxable_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      gst_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      total_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      created_by VARCHAR(191) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT purchase_returns_purchase_fk FOREIGN KEY (purchase_id) REFERENCES purchase_receipts(id) ON DELETE RESTRICT,
+      CONSTRAINT purchase_returns_supplier_fk FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,
+      KEY purchase_returns_date_idx (return_date, id),
+      KEY purchase_returns_purchase_idx (purchase_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS purchase_return_items (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      return_id BIGINT UNSIGNED NOT NULL,
+      purchase_item_id BIGINT UNSIGNED NOT NULL,
+      product_id BIGINT UNSIGNED NOT NULL,
+      product_name VARCHAR(191) NOT NULL,
+      quantity INT UNSIGNED NOT NULL,
+      taxable_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      gst_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      total_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+      CONSTRAINT purchase_return_items_return_fk FOREIGN KEY (return_id) REFERENCES purchase_returns(id) ON DELETE CASCADE,
+      CONSTRAINT purchase_return_items_purchase_item_fk FOREIGN KEY (purchase_item_id) REFERENCES purchase_receipt_items(id) ON DELETE RESTRICT,
+      CONSTRAINT purchase_return_items_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+      KEY purchase_return_items_purchase_item_idx (purchase_item_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS expenses (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      expense_date DATE NOT NULL,
+      category VARCHAR(100) NOT NULL,
+      description VARCHAR(500) NOT NULL,
+      amount DECIMAL(14,2) NOT NULL,
+      payment_method VARCHAR(32) NOT NULL,
+      reference_number VARCHAR(100) NULL,
+      created_by VARCHAR(191) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      KEY expenses_date_idx (expense_date, id),
+      KEY expenses_category_date_idx (category, expense_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   const [invoiceColumns] = await pool.execute(
