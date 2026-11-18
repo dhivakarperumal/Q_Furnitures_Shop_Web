@@ -802,7 +802,7 @@ function Account() {
                     <p className="mt-1 text-sm text-[#806d5d]">Choose another filter to see more of your orders.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                     {visibleOrders.map((order) => {
                       const firstItem = Array.isArray(order.items) ? order.items[0] : null;
                       const status = order.status || "Order Placed";
@@ -810,9 +810,9 @@ function Account() {
                       return (
                       <article
                         key={orderNumber}
-                        className="grid grid-cols-[56px_minmax(0,1fr)_36px] items-center gap-x-3 gap-y-2 overflow-hidden rounded-xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white px-2 py-1 shadow-[0_5px_16px_rgba(53,29,14,0.05)] transition hover:border-[#edc9a9] hover:border-l-[#f07816] sm:grid-cols-[56px_minmax(0,1fr)_minmax(155px,auto)_40px] sm:gap-x-3 sm:gap-y-0 sm:py-1 lg:grid-cols-[64px_minmax(0,1fr)_minmax(175px,auto)_44px] lg:gap-x-4 lg:px-3 lg:py-1.5"
+                        className="grid grid-cols-[56px_minmax(0,1fr)_36px] items-center gap-x-3 gap-y-2 overflow-hidden rounded-xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white px-2 py-1 shadow-[0_5px_16px_rgba(53,29,14,0.05)] transition hover:border-[#edc9a9] hover:border-l-[#f07816] sm:grid-cols-[56px_minmax(0,1fr)_minmax(155px,auto)_40px] sm:gap-x-3 sm:gap-y-0 sm:py-1 lg:grid-cols-[64px_minmax(0,1fr)_minmax(175px,auto)_44px] lg:gap-x-4 lg:px-3 lg:py-1.5 xl:grid-cols-[56px_minmax(0,1fr)_36px] xl:gap-x-3 xl:px-2 xl:py-1"
                       >
-                        <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#f1e7dd] bg-[#fffaf5] p-1 shadow-sm lg:h-16 lg:w-16">
+                        <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#f1e7dd] bg-[#fffaf5] p-1 shadow-sm lg:h-16 lg:w-16 xl:h-14 xl:w-14">
                           {firstItem?.image ? (
                             <img
                               src={resolveMediaUrl(firstItem.image)}
@@ -837,7 +837,7 @@ function Account() {
                             </p>
                           )}
                         </div>
-                        <div className="col-span-3 flex min-w-0 items-center justify-between gap-2 border-t border-[#eee4d8] pt-2.5 sm:col-span-1 sm:flex-col sm:items-start sm:justify-center sm:border-l sm:border-t-0 sm:py-0 sm:pl-3 sm:pt-0 lg:pl-4">
+                        <div className="col-span-3 flex min-w-0 items-center justify-between gap-2 border-t border-[#eee4d8] pt-2.5 sm:col-span-1 sm:flex-col sm:items-start sm:justify-center sm:border-l sm:border-t-0 sm:py-0 sm:pl-3 sm:pt-0 lg:pl-4 xl:col-span-3 xl:flex-row xl:items-center xl:justify-between xl:border-l-0 xl:border-t xl:py-2.5 xl:pl-0 xl:pt-2.5">
                           <span className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight ${statusClass(status)}`}>
                               <PackageCheck size={13} className="shrink-0" />
                               <span className="truncate">{status}</span>
@@ -853,7 +853,7 @@ function Account() {
                           type="button"
                           onClick={() => setSelectedOrder(order)}
                           aria-label={`View details for order ${orderNumber}`}
-                          className="col-start-3 row-start-1 flex h-9 w-9 items-center justify-center rounded-full border border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:col-start-auto sm:row-start-auto sm:h-10 sm:w-10 lg:h-11 lg:w-11"
+                          className="col-start-3 row-start-1 flex h-9 w-9 items-center justify-center rounded-full border border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:col-start-auto sm:row-start-auto sm:h-10 sm:w-10 lg:h-11 lg:w-11 xl:col-start-3 xl:row-start-1 xl:h-9 xl:w-9"
                         >
                           <ArrowRight size={19} />
                         </button>
