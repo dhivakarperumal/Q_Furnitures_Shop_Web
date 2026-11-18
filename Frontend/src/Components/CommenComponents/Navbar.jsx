@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef, useEffect } from "react";
+import React, { useContext, useState, useRef, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../PrivateRouter/AuthContext";
@@ -47,6 +47,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [mobileMenuTop, setMobileMenuTop] = useState(0);
   const [userMenu, setUserMenu] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [roomsMenu, setRoomsMenu] = useState(false);
@@ -64,6 +65,7 @@ const Navbar = () => {
   const profileImage = user?.profile_image ? resolveMediaUrl(user.profile_image) : "";
 
   const menuRef = useRef();
+  const navbarRef = useRef(null);
   const categoryRef = useRef();
   const roomsRef = useRef();
   const pagesRef = useRef();
@@ -139,6 +141,18 @@ const Navbar = () => {
 
   }, []);
 
+  useLayoutEffect(() => {
+    if (!mobileMenu) return undefined;
+
+    const updateMenuPosition = () => {
+      setMobileMenuTop(navbarRef.current?.getBoundingClientRect().bottom || 0);
+    };
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    return () => window.removeEventListener("resize", updateMenuPosition);
+  }, [mobileMenu]);
+
   // Fetch categories
   useEffect(() => {
 
@@ -201,9 +215,9 @@ const Navbar = () => {
 
   return (
 
-    <nav className="sticky top-0 z-50 bg-[#fffaf5]/95 py-2 backdrop-blur-md">
+    <nav ref={navbarRef} className="sticky top-0 z-50 bg-[#fffaf5]/95 py-2 backdrop-blur-md">
       <PageContainer>
-        <div className="flex min-h-[68px] items-center justify-between gap-2 rounded-2xl border border-[#f07816]/40 bg-white/95 px-3 shadow-[0_10px_30px_rgba(74,42,19,0.12)] sm:min-h-[76px] sm:gap-3 sm:px-4 lg:rounded-full lg:px-4">
+        <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f07816]/40 bg-white/95 px-3 shadow-[0_10px_30px_rgba(74,42,19,0.12)] sm:min-h-[76px] sm:gap-3 sm:px-4 lg:rounded-full lg:px-4">
           <button
             type="button"
             onClick={() => mobileMenu ? closeMobileMenu() : setMobileMenu(true)}
@@ -227,7 +241,7 @@ const Navbar = () => {
 
           <span aria-hidden="true" className="hidden h-10 w-px shrink-0 bg-[#dfcbb5] xl:block" />
 
-          <div className="hidden flex-1 items-center justify-center gap-0 xl:flex xl:gap-1">
+          <div className="order-last flex w-full flex-wrap items-center justify-center gap-x-1 gap-y-0 border-t border-[#f3e7d9] py-1 xl:order-none xl:w-auto xl:flex-1 xl:flex-nowrap xl:justify-center xl:border-t-0 xl:py-0 xl:gap-1">
             <NavLink to="/" end className={navClass}>Home</NavLink>
             <NavLink to="/shop" className={({ isActive }) => `${navClass({ isActive })} inline-flex items-center gap-1`}>
               Shop 
@@ -608,7 +622,7 @@ const Navbar = () => {
         document.body
       )}
       {mobileMenu && (
-        <div className="fixed inset-x-0 bottom-0 top-[84px] z-50 sm:top-[92px]">
+        <div className="fixed inset-x-0 bottom-0 z-50" style={{ top: `${mobileMenuTop}px` }}>
 
           {/* Overlay */}
           <div
