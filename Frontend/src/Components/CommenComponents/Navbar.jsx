@@ -178,13 +178,13 @@ const Navbar = () => {
   }, [user]);
 
   const navClass = ({ isActive }) =>
-    `relative inline-flex items-center whitespace-nowrap px-2 py-2.5 text-xs font-semibold transition-colors after:absolute after:bottom-1 after:left-2 after:right-2 after:h-0.5 after:origin-left after:scale-x-0 after:bg-[#ef7412] after:transition-transform xl:px-2.5 xl:text-[13px] ${
+    `inline-flex items-center whitespace-nowrap rounded-md px-2.5 py-2 text-xs font-semibold transition-colors xl:px-3 xl:text-[13px] ${
       isActive
-        ? "text-[#d9650b] after:scale-x-100"
-        : "text-[#351d0e] hover:text-[#e87500] hover:after:scale-x-100"
+        ? "bg-[#ed720a] text-white shadow-sm"
+        : "text-[#351d0e] hover:text-[#e87500]"
     }`;
   const mobileNavClass = ({ isActive }) =>
-    `flex items-center gap-3 rounded-full px-4 py-3 text-sm font-medium transition ${
+    `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
       isActive
         ? "bg-[#ed720a] text-white shadow-sm"
         : "text-gray-800 hover:text-orange-700"
@@ -225,9 +225,9 @@ const Navbar = () => {
             />
           </Link>
 
-          <span aria-hidden="true" className="hidden h-10 w-px shrink-0 bg-[#dfcbb5] lg:block" />
+          <span aria-hidden="true" className="hidden h-10 w-px shrink-0 bg-[#dfcbb5] xl:block" />
 
-          <div className="hidden flex-1 items-center justify-center gap-0 lg:flex xl:gap-1">
+          <div className="hidden flex-1 items-center justify-center gap-0 xl:flex xl:gap-1">
             <NavLink to="/" end className={navClass}>Home</NavLink>
             <NavLink to="/shop" className={({ isActive }) => `${navClass({ isActive })} inline-flex items-center gap-1`}>
               Shop 
@@ -240,7 +240,7 @@ const Navbar = () => {
                   setCategoryMenu(!categoryMenu);
                   setRoomsMenu(false);
                 }}
-                className="relative inline-flex items-center gap-1 whitespace-nowrap px-2 py-2.5 text-xs font-semibold text-[#351d0e] transition-colors after:absolute after:bottom-1 after:left-2 after:right-2 after:h-0.5 after:origin-left after:scale-x-0 after:bg-[#ef7412] after:transition-transform hover:text-[#e87500] hover:after:scale-x-100 xl:text-[13px]"
+                className="inline-flex items-center gap-1 whitespace-nowrap px-2 py-2 text-xs font-semibold text-[#351d0e] transition-colors hover:text-[#e87500] xl:text-[13px]"
                 aria-expanded={categoryMenu}
               >
                 Collections
@@ -308,7 +308,7 @@ const Navbar = () => {
                   setRoomsMenu(!roomsMenu);
                   setCategoryMenu(false);
                 }}
-                className="relative inline-flex items-center gap-1 whitespace-nowrap px-2 py-2.5 text-xs font-semibold text-[#351d0e] transition-colors after:absolute after:bottom-1 after:left-2 after:right-2 after:h-0.5 after:origin-left after:scale-x-0 after:bg-[#ef7412] after:transition-transform hover:text-[#e87500] hover:after:scale-x-100 xl:text-[13px]"
+                className="inline-flex items-center gap-1 whitespace-nowrap px-2 py-2 text-xs font-semibold text-[#351d0e] transition-colors hover:text-[#e87500] xl:text-[13px]"
                 aria-expanded={roomsMenu}
               >
                 Rooms
@@ -361,7 +361,7 @@ const Navbar = () => {
               <button
                 type="button"
                 onClick={() => setPagesMenu((current) => !current)}
-                className="relative inline-flex items-center gap-1 whitespace-nowrap px-2 py-2.5 text-xs font-semibold text-[#351d0e] transition-colors after:absolute after:bottom-1 after:left-2 after:right-2 after:h-0.5 after:origin-left after:scale-x-0 after:bg-[#ef7412] after:transition-transform hover:text-[#e87500] hover:after:scale-x-100 xl:text-[13px]"
+                className="inline-flex items-center gap-1 whitespace-nowrap px-2 py-2 text-xs font-semibold text-[#351d0e] transition-colors hover:text-[#e87500] xl:text-[13px]"
                 aria-expanded={pagesMenu}
               >
                 Pages
@@ -393,7 +393,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 lg:border-l lg:border-[#dfcbb5] lg:pl-3 xl:gap-3 xl:pl-5">
+          <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 xl:gap-3 xl:border-l xl:border-[#dfcbb5] xl:pl-3">
             <div className="hidden items-center gap-1 sm:flex xl:gap-2">
             <div className="relative">
               <button
