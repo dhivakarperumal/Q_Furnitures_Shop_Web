@@ -23,6 +23,7 @@ import { AuthContext } from "../../PrivateRouter/AuthContext";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
+import { INDIAN_STATES, INDIAN_UNION_TERRITORIES } from "../../utils/indianStates";
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 const checkoutAmountFormatter = new Intl.NumberFormat("en-IN", {
@@ -646,7 +647,15 @@ const Checkout = () => {
                         </label>
                         <label className={labelClass}>
                           State *
-                          <input className={fieldClass} name="state" value={form.state} onChange={updateForm} autoComplete="address-level1" required maxLength={191} />
+                          <select className={fieldClass} name="state" value={form.state} onChange={updateForm} autoComplete="address-level1" required>
+                            <option value="" disabled>Select a state or union territory</option>
+                            <optgroup label="States">
+                              {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
+                            </optgroup>
+                            <optgroup label="Union territories">
+                              {INDIAN_UNION_TERRITORIES.map((state) => <option key={state} value={state}>{state}</option>)}
+                            </optgroup>
+                          </select>
                         </label>
                         <label className={labelClass}>
                           PIN Code *

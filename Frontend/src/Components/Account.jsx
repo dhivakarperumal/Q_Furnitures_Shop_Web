@@ -26,6 +26,7 @@ import { toast } from "react-hot-toast";
 import api from "../api";
 import { AuthContext } from "../PrivateRouter/AuthContext";
 import { resolveMediaUrl } from "../utils/media";
+import { INDIAN_STATES, INDIAN_UNION_TERRITORIES } from "../utils/indianStates";
 import PageContainer from "./CommenComponents/PageContainer";
 import PageHeader from "./CommenComponents/PageHeader";
 import OrderDetailsModal from "./OrderDetailsModal";
@@ -977,14 +978,21 @@ function Account() {
                             </label>
                             <label className="block text-xs font-bold">
                               State
-                              <input
+                              <select
                                 className={inputClass}
                                 value={addressDraft.state}
-                                maxLength={191}
                                 onChange={(event) => setAddressDraft((current) => ({ ...current, state: event.target.value }))}
                                 autoComplete="address-level1"
                                 required
-                              />
+                              >
+                                <option value="" disabled>Select a state or union territory</option>
+                                <optgroup label="States">
+                                  {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
+                                </optgroup>
+                                <optgroup label="Union territories">
+                                  {INDIAN_UNION_TERRITORIES.map((state) => <option key={state} value={state}>{state}</option>)}
+                                </optgroup>
+                              </select>
                             </label>
                             <label className="block text-xs font-bold">
                               Country
