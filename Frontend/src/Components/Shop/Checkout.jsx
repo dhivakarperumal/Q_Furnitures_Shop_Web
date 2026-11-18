@@ -713,7 +713,7 @@ const Checkout = () => {
                 </div>
               </section>
 
-              <aside className="self-start lg:sticky lg:top-5">
+              <aside className="self-start lg:sticky lg:top-10">
                 <section className="overflow-hidden rounded-2xl border border-[#eadccd] bg-white/95 shadow-[0_8px_28px_rgba(74,38,19,0.07)]">
                   <div className="flex items-center justify-between gap-3 border-b border-[#eee4d8] px-4 py-4 sm:px-5">
                     <div className="flex items-center gap-3">
