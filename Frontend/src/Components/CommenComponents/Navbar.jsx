@@ -361,12 +361,12 @@ const Navbar = () => {
                 <FiChevronDown className={`transition-transform ${roomsMenu ? "rotate-180" : ""}`} />
               </button>
               {roomsMenu && (
-                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(88vw,390px)] -translate-x-1/2 overflow-hidden rounded-3xl border border-[#f1dfca] bg-white">
+                <div className="absolute left-1/2 top-full z-[70] mt-3 w-[min(92vw,500px)] -translate-x-1/2 overflow-hidden rounded-3xl border border-[#f1dfca] bg-white">
                   <div className="bg-gradient-to-r from-[#fff5e9] to-[#fff0df] px-5 py-4">
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c66a22]">Made for every space</p>
                     <h3 className="mt-1 text-base font-bold text-[#351d0e]">Shop by room</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-2.5 p-4">
+                  <div className="grid grid-cols-3 gap-2 p-4">
                     {roomLinks.map(({ name, slug, icon: RoomIcon, description }) => (
                       <Link
                         key={slug}
