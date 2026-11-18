@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { resolveMediaUrl } from "../../utils/media";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
+import ShopByRoom from "../Home/ShopByRoom";
 
 const livingRoomImage = resolveMediaUrl("/uploads/banners/1a4fd15f-b369-42f2-9d40-47fcb5d305a2.png");
 const storyImage = resolveMediaUrl("/uploads/banners/3050044b-1e64-433a-9d86-6a9524a16c6e.png");
@@ -178,6 +179,8 @@ const About = () => (
           </div>
         </PageContainer>
       </section>
+
+      <ShopByRoom />
 
 
       <section className="py-14 sm:py-18 lg:py-20">
