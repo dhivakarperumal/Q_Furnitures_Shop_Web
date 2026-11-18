@@ -81,6 +81,9 @@ const cartController = createCartController(cartService);
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads"), { dotfiles: "deny", index: false }));
+app.get("/", (request, response) => {
+  response.type("html").send("<!doctype html><html><body>Backend is running.</body></html>");
+});
 app.get("/api/health", async (request, response) => {
   try {
     await pool.query("SELECT 1");

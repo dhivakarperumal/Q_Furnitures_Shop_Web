@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { FiPlus, FiMinus, FiTrash2, FiSave, FiUser, FiPackage, FiSearch, FiCheckCircle, FiMapPin, FiTruck, FiArrowRight, FiX, FiClock } from "react-icons/fi";
+import { FiPlus, FiMinus, FiTrash2, FiSave, FiUser, FiPackage, FiSearch, FiCheckCircle, FiMapPin, FiTruck, FiArrowRight, FiX, FiClock, FiChevronDown } from "react-icons/fi";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import api from "../../api";
 import { toast, Toaster } from "react-hot-toast";
@@ -35,6 +35,80 @@ function calculateOrderTotals(items, discountType, discountValue, gstRate) {
         gst_amount: gstAmount,
         total_amount: roundCurrency(subtotal + gstAmount - discountAmount),
     };
+}
+
+function MachDropdown({ value, options, onChange, ariaLabel }) {
+    const [open, setOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        if (!open) return undefined;
+
+        const closeDropdown = (event) => {
+            if (!dropdownRef.current?.contains(event.target)) setOpen(false);
+        };
+        const closeOnEscape = (event) => {
+            if (event.key === "Escape") setOpen(false);
+        };
+
+        document.addEventListener("mousedown", closeDropdown);
+        document.addEventListener("keydown", closeOnEscape);
+        return () => {
+            document.removeEventListener("mousedown", closeDropdown);
+            document.removeEventListener("keydown", closeOnEscape);
+        };
+    }, [open]);
+
+    const chooseOption = (optionValue) => {
+        onChange(optionValue);
+        setOpen(false);
+    };
+
+    return (
+        <div ref={dropdownRef} className="relative">
+            <button
+                type="button"
+                role="combobox"
+                aria-label={ariaLabel}
+                aria-expanded={open}
+                aria-haspopup="listbox"
+                onClick={() => setOpen((current) => !current)}
+                className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition hover:border-orange-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-100/70"
+            >
+                <span>{value}</span>
+                <FiChevronDown className={`ml-3 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} size={17} />
+            </button>
+
+            {open && (
+                <div
+                    role="listbox"
+                    aria-label={ariaLabel}
+                    className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-xl border border-orange-100 bg-white p-1.5 shadow-[0_12px_30px_rgba(62,38,20,0.16)]"
+                >
+                    {options.map((option) => {
+                        const selected = option.value === value;
+                        return (
+                            <button
+                                type="button"
+                                role="option"
+                                aria-selected={selected}
+                                key={option.value}
+                                onClick={() => chooseOption(option.value)}
+                                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition ${
+                                    selected
+                                        ? "bg-orange-50 font-bold text-orange-800"
+                                        : "font-medium text-slate-600 hover:bg-orange-50/70 hover:text-orange-800"
+                                }`}
+                            >
+                                <span>{option.label}</span>
+                                {selected && <FiCheckCircle className="shrink-0 text-orange-600" size={16} />}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
 }
 
 const CreateOrder = () => {
@@ -958,30 +1032,32 @@ const CreateOrder = () => {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Payment Type</label>
-                                        <select
+                                        <MachDropdown
                                             value={formData.payment_method}
-                                            onChange={(e) => setFormData(p => ({ ...p, payment_method: e.target.value }))}
-                                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100/70"
-                                        >
-                                            <option value="Cash">Cash</option>
-                                            <option value="UPI">UPI</option>
-                                            <option value="Card">Card</option>
-                                        </select>
+                                            onChange={(value) => setFormData(p => ({ ...p, payment_method: value }))}
+                                            ariaLabel="Payment type"
+                                            options={[
+                                                { value: "Cash", label: "Cash" },
+                                                { value: "UPI", label: "UPI" },
+                                                { value: "Card", label: "Card" }
+                                            ]}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Order Status</label>
-                                        <select
+                                        <MachDropdown
                                             value={formData.status}
-                                            onChange={(e) => setFormData(p => ({ ...p, status: e.target.value }))}
-                                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100/70"
-                                        >
-                                            <option value="Order Placed">Order Placed</option>
-                                            <option value="Packing">Packing</option>
-                                            <option value="Shipping">Shipping</option>
-                                            <option value="Out for Delivery">Out for Delivery</option>
-                                            <option value="Delivered">Delivered</option>
-                                            <option value="Cancelled">Cancelled</option>
-                                        </select>
+                                            onChange={(value) => setFormData(p => ({ ...p, status: value }))}
+                                            ariaLabel="Order status"
+                                            options={[
+                                                { value: "Order Placed", label: "Order Placed" },
+                                                { value: "Packing", label: "Packing" },
+                                                { value: "Shipping", label: "Shipping" },
+                                                { value: "Out for Delivery", label: "Out for Delivery" },
+                                                { value: "Delivered", label: "Delivered" },
+                                                { value: "Cancelled", label: "Cancelled" }
+                                            ]}
+                                        />
                                     </div>
                                 </div>
                             </div>
