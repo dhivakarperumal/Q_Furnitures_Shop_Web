@@ -808,56 +808,60 @@ function Account() {
                       const status = order.status || "Order Placed";
                       const orderNumber = order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
                       return (
-                      <article
-                        key={orderNumber}
-                        className="grid grid-cols-[56px_minmax(0,1fr)_36px] items-center gap-x-3 gap-y-2 overflow-hidden rounded-xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white px-2 py-1 shadow-[0_5px_16px_rgba(53,29,14,0.05)] transition hover:border-[#edc9a9] hover:border-l-[#f07816] sm:grid-cols-[56px_minmax(0,1fr)_minmax(155px,auto)_40px] sm:gap-x-3 sm:gap-y-0 sm:py-1 lg:grid-cols-[64px_minmax(0,1fr)_minmax(175px,auto)_44px] lg:gap-x-4 lg:px-3 lg:py-1.5 xl:grid-cols-[56px_minmax(0,1fr)_36px] xl:gap-x-3 xl:px-2 xl:py-1"
-                      >
-                        <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#f1e7dd] bg-[#fffaf5] p-1 shadow-sm lg:h-16 lg:w-16 xl:h-14 xl:w-14">
-                          {firstItem?.image ? (
-                            <img
-                              src={resolveMediaUrl(firstItem.image)}
-                              alt={firstItem.product_name || firstItem.name || "Ordered furniture"}
-                              className="h-full w-full object-contain p-1"
-                            />
-                          ) : <PackageCheck size={25} className="text-[#a34720]" />}
-                        </span>
-                        <div className="min-w-0">
-                          <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-md bg-[#fff0df] px-2 py-0.5 text-[10px] font-extrabold leading-tight text-[#a34720] sm:text-xs">
-                            <CalendarDays size={13} className="shrink-0" />
-                            <span className="truncate">{orderNumber}</span>
-                          </span>
-                          <h3 className="mt-0.5 line-clamp-2 text-xs font-extrabold leading-tight text-[#351d0e] sm:line-clamp-1 sm:text-[13px]">
-                            {firstItem?.product_name || firstItem?.name || "Furniture order"}
-                            {Number(firstItem?.quantity) > 1 ? ` × ${firstItem.quantity}` : ""}
-                          </h3>
-                          {Array.isArray(order.items) && order.items.length > 1 && (
-                            <p className="mt-0 inline-flex max-w-full items-center gap-1 text-[10px] leading-tight text-[#806d5d]">
-                              <Layers size={12} />
-                              <span className="min-w-0 break-words">+ {order.items.length - 1} more item(s)</span>
-                            </p>
-                          )}
-                        </div>
-                        <div className="col-span-3 flex min-w-0 items-center justify-between gap-2 border-t border-[#eee4d8] pt-2.5 sm:col-span-1 sm:flex-col sm:items-start sm:justify-center sm:border-l sm:border-t-0 sm:py-0 sm:pl-3 sm:pt-0 lg:pl-4 xl:col-span-3 xl:flex-row xl:items-center xl:justify-between xl:border-l-0 xl:border-t xl:py-2.5 xl:pl-0 xl:pt-2.5">
-                          <span className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight ${statusClass(status)}`}>
-                              <PackageCheck size={13} className="shrink-0" />
-                              <span className="truncate">{status}</span>
-                          </span>
-                          <div className="flex flex-col items-end gap-0 text-right sm:mt-0.5 sm:block sm:text-left">
-                            <p className="text-[10px] leading-none text-[#806d5d]">Total Amount</p>
-                            <p className="text-base font-extrabold leading-none text-[#351d0e] sm:text-lg">
-                              {formatAmount(order.total_amount)}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedOrder(order)}
-                          aria-label={`View details for order ${orderNumber}`}
-                          className="col-start-3 row-start-1 flex h-9 w-9 items-center justify-center rounded-full border border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:col-start-auto sm:row-start-auto sm:h-10 sm:w-10 lg:h-11 lg:w-11 xl:col-start-3 xl:row-start-1 xl:h-9 xl:w-9"
+                        <article
+                          key={orderNumber}
+                          className="flex h-full min-w-0 flex-col gap-3 rounded-2xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white p-3 shadow-[0_5px_16px_rgba(53,29,14,0.05)] transition hover:-translate-y-0.5 hover:border-[#edc9a9] hover:border-l-[#f07816] sm:p-4"
                         >
-                          <ArrowRight size={19} />
-                        </button>
-                      </article>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-lg bg-[#fff0df] px-2.5 py-1 text-xs font-extrabold text-[#a34720]">
+                              <CalendarDays size={14} className="shrink-0" />
+                              <span className="truncate">{orderNumber}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrder(order)}
+                              aria-label={`View details for order ${orderNumber}`}
+                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                            >
+                              <ArrowRight size={19} />
+                            </button>
+                          </div>
+                          <div className="flex min-h-[64px] min-w-0 flex-1 items-center gap-3 sm:min-h-[72px]">
+                            <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#f1e7dd] bg-[#fffaf5] p-1 shadow-sm sm:h-16 sm:w-16">
+                              {firstItem?.image ? (
+                                <img
+                                  src={resolveMediaUrl(firstItem.image)}
+                                  alt={firstItem.product_name || firstItem.name || "Ordered furniture"}
+                                  className="h-full w-full object-contain p-1"
+                                />
+                              ) : <PackageCheck size={25} className="text-[#a34720]" />}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="line-clamp-2 text-sm font-extrabold leading-snug text-[#351d0e]">
+                                {firstItem?.product_name || firstItem?.name || "Furniture order"}
+                                {Number(firstItem?.quantity) > 1 ? ` × ${firstItem.quantity}` : ""}
+                              </h3>
+                              {Array.isArray(order.items) && order.items.length > 1 && (
+                                <p className="mt-1 inline-flex max-w-full items-center gap-1 text-xs leading-tight text-[#806d5d]">
+                                  <Layers size={13} className="shrink-0" />
+                                  <span className="min-w-0 truncate">+ {order.items.length - 1} more item(s)</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex min-w-0 items-center justify-between gap-2 border-t border-[#eee4d8] pt-3">
+                            <span className={`inline-flex min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${statusClass(status)}`}>
+                              <PackageCheck size={14} className="shrink-0" />
+                              <span className="truncate">{status}</span>
+                            </span>
+                            <div className="shrink-0 text-right">
+                              <p className="text-[10px] leading-tight text-[#806d5d]">Total Amount</p>
+                              <p className="text-base font-extrabold leading-tight text-[#351d0e] sm:text-lg">
+                                {formatAmount(order.total_amount)}
+                              </p>
+                            </div>
+                          </div>
+                        </article>
                       );
                     })}
                   </div>
