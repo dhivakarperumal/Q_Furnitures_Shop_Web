@@ -1093,6 +1093,14 @@ async function initializeDatabase(pool) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS store_tax_settings (
+      id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+      gst_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      gst_rate DECIMAL(5,2) NOT NULL DEFAULT 18.00,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS product_import_logs (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       import_token CHAR(36) NOT NULL UNIQUE,
@@ -1342,6 +1350,7 @@ async function initializeDatabase(pool) {
     FROM products
   `);
   await pool.query("INSERT IGNORE INTO stock_settings (id, allow_negative_stock) VALUES (1, 0)");
+  await pool.query("INSERT IGNORE INTO store_tax_settings (id, gst_enabled, gst_rate) VALUES (1, 1, 18.00)");
   await pool.query(`
     INSERT IGNORE INTO stock_transactions
       (transaction_ref, transaction_type, reference_type, reference_id, reference_number, remarks)

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import { QRCodeSVG } from "qrcode.react";
 import {
   ArrowLeft,
@@ -13,6 +14,7 @@ import {
   Truck,
 } from "lucide-react";
 import { formatCurrency } from "../../utils/currency";
+import api from "../../api";
 
 const INITIAL_SETTINGS = {
   printerModel: "Epson TM-T82",
@@ -297,10 +299,75 @@ export default function Settings() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState(null);
   const [settings, setSettings] = useState(INITIAL_SETTINGS);
+  const [taxSettingsLoading, setTaxSettingsLoading] = useState(true);
+  const [taxSettingsLoaded, setTaxSettingsLoaded] = useState(false);
+  const [taxSettingsSaving, setTaxSettingsSaving] = useState(false);
+  const [taxSettingsError, setTaxSettingsError] = useState("");
+  const [taxSettingsLoadKey, setTaxSettingsLoadKey] = useState(0);
   const activeSectionData = SETTINGS_SECTIONS.find((section) => section.id === activeSection);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get("/settings/gst").then(({ data }) => {
+      const gstRate = Number(data?.gst_rate);
+      if (typeof data?.gst_enabled !== "boolean" || !Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) {
+        throw new Error("The GST settings response was invalid.");
+      }
+      if (cancelled) return;
+      setSettings((current) => ({
+        ...current,
+        gstEnabled: data.gst_enabled,
+        gstRate: `${gstRate}%`,
+      }));
+      setTaxSettingsLoaded(true);
+    }).catch((error) => {
+      if (cancelled) return;
+      const message = error.response?.data?.message || error.message || "Unable to load GST settings.";
+      setTaxSettingsError(message);
+      toast.error(`Unable to load GST settings: ${message}`);
+    }).finally(() => {
+      if (!cancelled) setTaxSettingsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [taxSettingsLoadKey]);
 
   const updateSetting = (name, value) => {
     setSettings((current) => ({ ...current, [name]: value }));
+  };
+
+  const saveTaxSettings = async () => {
+    const gstRate = Number(String(settings.gstRate).replace("%", "").trim());
+    if (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) {
+      const message = "GST rate must be between 0% and 100%.";
+      setTaxSettingsError(message);
+      toast.error(message);
+      return;
+    }
+
+    setTaxSettingsSaving(true);
+    setTaxSettingsError("");
+    try {
+      const { data } = await api.put("/settings/gst", {
+        gst_enabled: settings.gstEnabled,
+        gst_rate: gstRate,
+      });
+      const savedRate = Number(data?.gst_rate);
+      if (typeof data?.gst_enabled !== "boolean" || !Number.isFinite(savedRate) || savedRate < 0 || savedRate > 100) {
+        throw new Error("The saved GST settings response was invalid.");
+      }
+      setSettings((current) => ({
+        ...current,
+        gstEnabled: data.gst_enabled,
+        gstRate: `${savedRate}%`,
+      }));
+      toast.success("GST settings saved.");
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || "Unable to save GST settings.";
+      setTaxSettingsError(message);
+      toast.error(`Unable to save GST settings: ${message}`);
+    } finally {
+      setTaxSettingsSaving(false);
+    }
   };
 
   const resetSection = () => {
@@ -321,7 +388,7 @@ export default function Settings() {
           <p className="mt-1 text-sm text-stone-500">Configure Q Furnitures store preferences and workflows.</p>
         </div>
         <span className="inline-flex items-center gap-2 self-start rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 sm:self-auto">
-          <Info size={14} /> Preview only — changes are not saved
+          <Info size={14} /> GST settings are API-backed; other settings are previews
         </span>
       </header>
 
@@ -364,21 +431,49 @@ export default function Settings() {
                 <p className="text-sm text-stone-500">{activeSectionData.description}</p>
               </div>
             </div>
-            <button type="button" onClick={resetSection} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-stone-600 transition hover:bg-stone-100">
+            <button type="button" onClick={resetSection} disabled={activeSection === "tax" && (!taxSettingsLoaded || taxSettingsLoading)} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-stone-600 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50">
               <RotateCcw size={15} /> Reset section
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {activeSectionData.fields.map((field) => (
-              <SettingField
-                key={field.name}
-                field={field}
-                value={settings[field.name]}
-                onChange={(value) => updateSetting(field.name, value)}
-              />
-            ))}
-          </div>
+          {activeSection === "tax" && taxSettingsLoading ? (
+            <p className="rounded-xl bg-orange-50 p-4 text-sm font-semibold text-orange-900">Loading GST settings...</p>
+          ) : activeSection === "tax" && !taxSettingsLoaded ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50 p-4">
+              <p role="alert" className="text-sm font-semibold text-red-700">{taxSettingsError || "GST settings could not be loaded."}</p>
+              <button type="button" onClick={() => {
+                setTaxSettingsLoading(true);
+                setTaxSettingsLoaded(false);
+                setTaxSettingsError("");
+                setTaxSettingsLoadKey((key) => key + 1);
+              }} className="rounded-lg bg-white px-4 py-2 text-sm font-bold text-red-700 shadow-sm hover:bg-red-100">
+                Retry
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {activeSectionData.fields.map((field) => (
+                <SettingField
+                  key={field.name}
+                  field={field}
+                  value={settings[field.name]}
+                  onChange={(value) => updateSetting(field.name, value)}
+                />
+              ))}
+            </div>
+          )}
+
+          {activeSection === "tax" && taxSettingsLoaded && (
+            <div className="flex flex-col gap-3 border-t border-orange-50 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-700">GST status and default rate are saved to the server.</p>
+                {taxSettingsError && <p role="alert" className="mt-1 text-sm font-semibold text-red-600">{taxSettingsError}</p>}
+              </div>
+              <button type="button" onClick={saveTaxSettings} disabled={taxSettingsSaving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60">
+                {taxSettingsSaving ? "Saving..." : "Save GST settings"}
+              </button>
+            </div>
+          )}
 
           {activeSection === "receipt" && <ReceiptPreview settings={settings} />}
 
@@ -394,7 +489,9 @@ export default function Settings() {
 
           <div className="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
             <ShieldCheck className="mt-0.5 shrink-0 text-emerald-600" size={15} />
-            These controls are a UI preview only. Changes stay on this page and reset when you leave or refresh.
+            {activeSection === "tax"
+              ? "GST status and default rate are saved through the API. Tax mode and other settings remain preview-only."
+              : "These controls are a UI preview only. Changes stay on this page and reset when you leave or refresh."}
           </div>
         </section>
       )}

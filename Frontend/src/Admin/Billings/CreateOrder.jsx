@@ -55,6 +55,9 @@ const CreateOrder = () => {
     const [users, setUsers] = useState([]);
     const [userSearchTerm, setUserSearchTerm] = useState("");
     const [isGuest, setIsGuest] = useState(true);
+    const [gstSettings, setGstSettings] = useState(null);
+    const [gstSettingsError, setGstSettingsError] = useState("");
+    const [gstSettingsReloadKey, setGstSettingsReloadKey] = useState(0);
 
     const [formData, setFormData] = useState({
         user_id: "", // For future use if logged in admin has a user_id
@@ -74,7 +77,7 @@ const CreateOrder = () => {
         items: [],
         discount_type: "percentage",
         discount_value: 0,
-        gst_rate: 3,
+        gst_rate: 0,
         total_amount: 0,
         created_at: new Date().toISOString().slice(0, 16) // Default to current time for the datetime-local input
     });
@@ -114,6 +117,32 @@ const CreateOrder = () => {
         };
         fetchData();
     }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+        api.get("/settings/gst").then(({ data }) => {
+            const rate = Number(data?.gst_rate);
+            if (typeof data?.gst_enabled !== "boolean" || !Number.isFinite(rate) || rate < 0 || rate > 100) {
+                throw new Error("The GST settings response was invalid.");
+            }
+            if (cancelled) return;
+            setGstSettings({ gst_enabled: data.gst_enabled, gst_rate: rate });
+            setFormData((previous) => {
+                const gstRate = data.gst_enabled ? rate : 0;
+                return {
+                    ...previous,
+                    gst_rate: gstRate,
+                    ...calculateOrderTotals(previous.items, previous.discount_type, previous.discount_value, gstRate),
+                };
+            });
+        }).catch((error) => {
+            if (cancelled) return;
+            const message = error.response?.data?.message || error.message || "Unable to load GST settings.";
+            setGstSettingsError(message);
+            toast.error(`Unable to load GST settings: ${message}`);
+        });
+        return () => { cancelled = true; };
+    }, [gstSettingsReloadKey]);
 
     const getProductVariants = (product) => {
         if (!product) return [];
@@ -303,11 +332,13 @@ const CreateOrder = () => {
     };
 
     const updateTotal = (items) => updatePricing({ items });
+    const gstEnabled = gstSettings?.gst_enabled === true;
+    const gstRate = gstEnabled ? Number(formData.gst_rate) : 0;
     const orderTotals = calculateOrderTotals(
         formData.items,
         formData.discount_type,
         formData.discount_value,
-        formData.gst_rate,
+        gstRate,
     );
     const hasProductItems = formData.items.some((item) => item.product_id != null);
     const hasComboItems = formData.items.some((item) => item.combo_id != null);
@@ -319,14 +350,13 @@ const CreateOrder = () => {
                 ? "Single"
                 : "Select items";
     const discountValue = Number(formData.discount_value);
-    const gstRate = Number(formData.gst_rate);
     const pricingError = !Number.isFinite(discountValue) || discountValue < 0
         ? "Enter a valid discount."
         : formData.discount_type === "percentage" && discountValue > 100
             ? "Percentage discount cannot exceed 100%."
             : formData.discount_type === "fixed" && discountValue > orderTotals.subtotal
                 ? "Fixed discount cannot exceed the subtotal."
-                : !Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100
+                : gstEnabled && (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100)
                     ? "GST rate must be between 0% and 100%."
                     : "";
 
@@ -334,6 +364,10 @@ const CreateOrder = () => {
         e.preventDefault();
         const { customer_name, customer_phone, street_address, city, state, zip_code } = formData;
 
+        if (!gstSettings) {
+            toast.error(gstSettingsError || "GST settings are still loading.");
+            return;
+        }
         if (pricingError) {
             toast.error(pricingError);
             return;
@@ -345,7 +379,12 @@ const CreateOrder = () => {
 
         setLoading(true);
         try {
-            const response = await api.post("/orders", { ...formData, ...orderTotals, order_type: "Shop" });
+            const response = await api.post("/orders", {
+                ...formData,
+                ...orderTotals,
+                gst_rate: gstRate,
+                order_type: "Shop",
+            });
             const orderId = response.data?.order_id;
             if (!orderId) {
                 console.error("Order creation response did not include an order ID:", response.data);
@@ -1067,33 +1106,48 @@ const CreateOrder = () => {
                                 ) : (
                                     <p className="text-xs font-semibold text-white/50">No products added yet.</p>
                                 )}
+                                {gstSettingsError ? (
+                                    <div className="flex items-start justify-between gap-3 rounded-lg border border-red-300/30 bg-red-500/10 p-3 text-xs text-red-100">
+                                        <p role="alert">GST settings could not be loaded: {gstSettingsError}</p>
+                                        <button type="button" onClick={() => {
+                                            setGstSettingsError("");
+                                            setGstSettingsReloadKey((key) => key + 1);
+                                        }} className="shrink-0 font-bold underline">
+                                            Retry
+                                        </button>
+                                    </div>
+                                ) : !gstSettings ? (
+                                    <p className="text-xs font-semibold text-white/60">Loading GST settings...</p>
+                                ) : null}
                                 <div className="flex justify-between text-sm opacity-60 font-bold">
                                     <span>Subtotal</span>
                                     <span>{formatCurrency(orderTotals.subtotal, { compact: false })}</span>
                                 </div>
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between gap-3 text-sm font-bold">
-                                        <label htmlFor="order-gst-rate" className="text-white/75">GST rate</label>
-                                        <div className="flex items-center gap-1">
-                                            <input
-                                                id="order-gst-rate"
-                                                type="number"
-                                                min="0"
-                                                max="100"
-                                                step="0.01"
-                                                value={formData.gst_rate}
-                                                onChange={(event) => updatePricing({ gst_rate: event.target.value })}
-                                                className="w-20 rounded-lg border border-white/15 bg-white/10 px-2 py-1.5 text-right text-sm font-bold text-white outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100/20"
-                                                aria-label="GST rate percentage"
-                                            />
-                                            <span className="text-white/75">%</span>
+                                {gstEnabled && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between gap-3 text-sm font-bold">
+                                            <label htmlFor="order-gst-rate" className="text-white/75">GST rate</label>
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    id="order-gst-rate"
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.01"
+                                                    value={formData.gst_rate}
+                                                    onChange={(event) => updatePricing({ gst_rate: event.target.value })}
+                                                    className="w-20 rounded-lg border border-white/15 bg-white/10 px-2 py-1.5 text-right text-sm font-bold text-white outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100/20"
+                                                    aria-label="GST rate percentage"
+                                                />
+                                                <span className="text-white/75">%</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between text-xs font-semibold text-white/60">
+                                            <span>GST on subtotal (before discount)</span>
+                                            <span>{formatCurrency(orderTotals.gst_amount, { compact: false })}</span>
                                         </div>
                                     </div>
-                                    <div className="flex justify-between text-xs font-semibold text-white/60">
-                                        <span>GST on subtotal (before discount)</span>
-                                        <span>{formatCurrency(orderTotals.gst_amount, { compact: false })}</span>
-                                    </div>
-                                </div>
+                                )}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-3 text-sm font-bold">
                                         <label htmlFor="order-discount-value" className="text-white/75">Discount</label>
@@ -1144,6 +1198,7 @@ const CreateOrder = () => {
                         {step === 1 ? (
                             <button
                                 onClick={() => {
+                                    if (!gstSettings) return toast.error(gstSettingsError || "GST settings are still loading.");
                                     if (formData.items.length === 0) return toast.error("Please add products first");
                                     if (pricingError) return toast.error(pricingError);
                                     setStep(2);
@@ -1157,7 +1212,7 @@ const CreateOrder = () => {
                             <div className="space-y-3">
                                 <button
                                     onClick={handleSubmit}
-                                    disabled={loading || Boolean(createdOrderId)}
+                                    disabled={loading || Boolean(createdOrderId) || !gstSettings}
                                     className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-primary-dark hover:from-secondary-light hover:to-secondary-dark text-white py-4 rounded-xl text-lg font-black transition-all active:scale-95 shadow-md shadow-orange-900/20 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {loading ? <div className="w-6 h-6 border-2 border-t-white rounded-full animate-spin"></div> : (
