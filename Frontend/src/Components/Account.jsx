@@ -486,7 +486,7 @@ function Account() {
                 <span className="mt-0.5 block truncate text-xs text-[#725d4b]">{profile.email || user?.email}</span>
               </span>
             </div>
-            <nav aria-label="Account sections" role="tablist" className="mt-4 flex gap-1.5 overflow-x-auto lg:flex-col">
+            <nav aria-label="Account sections" role="tablist" className="mt-4 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-1">
               {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -496,16 +496,16 @@ function Account() {
                   aria-selected={activeTab === id}
                   aria-controls={`account-panel-${id}`}
                   onClick={() => setActiveTab(id)}
-                  className={`inline-flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition sm:text-sm lg:w-full ${
+                  className={`inline-flex min-h-11 w-full min-w-0 items-center gap-2 rounded-xl px-2.5 py-2.5 text-left text-[11px] font-bold transition sm:gap-3 sm:px-3 sm:text-sm ${
                     activeTab === id
                       ? "bg-[#fff0df] text-[#351d0e] shadow-sm ring-1 ring-inset ring-[#f6d2b2]"
                       : "text-[#5b4839] hover:bg-[#fffaf5]"
                   }`}
                 >
                   <Icon size={18} className="shrink-0 text-[#a34720]" />
-                  {label}
+                  <span className="min-w-0 break-words">{label}</span>
                   {id === "orders" && !ordersLoading && !ordersError && (
-                    <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[10px] text-[#8b735e]">{orders.length}</span>
+                    <span className="ml-auto shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] text-[#8b735e]">{orders.length}</span>
                   )}
                 </button>
               ))}
@@ -739,7 +739,7 @@ function Account() {
                     <p className="text-sm text-[#806d5d]">Check the status and summary of your recent orders.</p>
                   </div>
                 </div>
-                <div role="tablist" aria-label="Filter orders" className="mb-5 flex gap-2 overflow-x-auto border-b border-[#eee4d8] pb-2">
+                <div role="tablist" aria-label="Filter orders" className="mb-5 flex flex-wrap gap-2 border-b border-[#eee4d8] pb-2">
                   {ORDER_FILTERS.map((filter) => (
                     <button
                       key={filter}
