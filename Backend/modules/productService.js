@@ -417,6 +417,28 @@ function createProductService(pool) {
       };
     },
 
+    async getRoomCounts(rooms) {
+      // rooms is an array of { slug, keywords }
+      // For each room, count active products whose name OR category matches any keyword
+      const results = await Promise.all(
+        rooms.map(async ({ slug, keywords }) => {
+          const conditions = keywords.map(() => "(p.name LIKE ? OR p.category LIKE ?)").join(" OR ");
+          const params = keywords.flatMap((kw) => [`%${kw}%`, `%${kw}%`]);
+          const [rows] = await pool.execute(
+            `SELECT COUNT(*) AS productCount
+             FROM products p
+             LEFT JOIN product_stock ps ON ps.product_id = p.id
+             WHERE p.status = 'Active'
+               AND COALESCE(ps.available_stock, p.total_stock) > 0
+               AND (${conditions})`,
+            params,
+          );
+          return { slug, productCount: Number(rows[0]?.productCount || 0) };
+        }),
+      );
+      return results;
+    },
+
     async getById(id) {
       return getById(id);
     },

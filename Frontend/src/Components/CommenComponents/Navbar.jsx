@@ -21,11 +21,11 @@ import WishlistDrawer from "./WishlistDrawer";
 import { resolveMediaUrl } from "../../utils/media";
 import { categoryHasProducts } from "../../utils/categories";
 
-const roomLinks = [
-  { name: "Living Room", slug: "living-room", icon: FiHome, description: "Relax and unwind" },
-  { name: "Bedroom", slug: "bedroom", icon: FiMoon, description: "Restful essentials" },
-  { name: "Dining Room", slug: "dining-room", icon: FiCoffee, description: "Gather around" },
-  { name: "Home Office", slug: "home-office", icon: FiMonitor, description: "Work comfortably" },
+const ALL_ROOM_LINKS = [
+  { name: "Living Room",  slug: "living-room",  icon: FiHome,    description: "Relax and unwind" },
+  { name: "Bedroom",      slug: "bedroom",       icon: FiMoon,    description: "Restful essentials" },
+  { name: "Dining Room",  slug: "dining-room",   icon: FiCoffee,  description: "Gather around" },
+  { name: "Home Office",  slug: "home-office",   icon: FiMonitor, description: "Work comfortably" },
 ];
 
 function getCategoryImage(images) {
@@ -55,6 +55,7 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
+  const [roomLinks, setRoomLinks] = useState(ALL_ROOM_LINKS); // show all optimistically
   const [categoryMenu, setCategoryMenu] = useState(false);
   const [pagesMenu, setPagesMenu] = useState(false);
   const [mobileCategory, setMobileCategory] = useState(false);
@@ -176,6 +177,21 @@ const Navbar = () => {
 
     fetchCategories();
 
+  }, []);
+
+  // Fetch rooms with products only
+  useEffect(() => {
+    let cancelled = false;
+    api.get("/products/rooms")
+      .then(({ data }) => {
+        if (cancelled) return;
+        const withProducts = new Set(
+          data.filter((r) => r.productCount > 0).map((r) => r.slug)
+        );
+        setRoomLinks(ALL_ROOM_LINKS.filter((r) => withProducts.has(r.slug)));
+      })
+      .catch(() => { /* keep all rooms on error */ });
+    return () => { cancelled = true; };
   }, []);
 
   // Fetch user orders count

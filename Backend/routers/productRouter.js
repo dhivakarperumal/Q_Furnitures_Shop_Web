@@ -128,6 +128,23 @@ function parseId(value) {
 function createProductRouter(productService) {
   const router = express.Router();
 
+  router.get("/rooms", async (request, response, next) => {
+    try {
+      const ROOMS = [
+        { slug: "living-room",  keywords: ["living room", "sofa", "coffee table", "tv unit"] },
+        { slug: "bedroom",      keywords: ["bedroom", "bed", "wardrobe", "mattress", "dresser"] },
+        { slug: "dining-room",  keywords: ["dining", "dining table", "dining chair"] },
+        { slug: "home-office",  keywords: ["office", "study", "desk", "workstation"] },
+        { slug: "kids-room",    keywords: ["kids", "children", "bunk bed", "study table"] },
+        { slug: "outdoor",      keywords: ["outdoor", "garden", "patio", "balcony"] },
+      ];
+      const counts = await productService.getRoomCounts(ROOMS);
+      return response.json(counts);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   router.get("/", async (request, response, next) => {
     try {
       const page = Math.max(1, Number.parseInt(request.query.page, 10) || 1);

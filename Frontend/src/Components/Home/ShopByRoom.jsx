@@ -1,17 +1,40 @@
 import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
 
-const rooms = [
-  { name: "Living Room", slug: "living-room", image: "/images/ph1.png", imagePosition: "object-[66%_center]" },
-  { name: "Bedroom", slug: "bedroom", image: "/images/pageheader.png", imagePosition: "object-[88%_center]" },
-  { name: "Dining Room", slug: "dining-room", image: "/images/ph1.png", imagePosition: "object-[58%_center]" },
-  { name: "Home Office", slug: "home-office", image: "/images/pageheader1.png", imagePosition: "object-[70%_center]" },
-  { name: "Kids Room", slug: "kids-room", image: "/images/pageheader.png", imagePosition: "object-[94%_center]" },
-  { name: "Outdoor", slug: "outdoor", image: "/images/ph1.png", imagePosition: "object-[78%_center]" },
+const ALL_ROOMS = [
+  { name: "Living Room",  slug: "living-room",  image: "/images/ph1.png",        imagePosition: "object-[66%_center]" },
+  { name: "Bedroom",      slug: "bedroom",       image: "/images/pageheader.png", imagePosition: "object-[88%_center]" },
+  { name: "Dining Room",  slug: "dining-room",   image: "/images/ph1.png",        imagePosition: "object-[58%_center]" },
+  { name: "Home Office",  slug: "home-office",   image: "/images/pageheader1.png",imagePosition: "object-[70%_center]" },
+  { name: "Kids Room",    slug: "kids-room",     image: "/images/pageheader.png", imagePosition: "object-[94%_center]" },
+  { name: "Outdoor",      slug: "outdoor",        image: "/images/ph1.png",        imagePosition: "object-[78%_center]" },
 ];
 
 export default function ShopByRoom() {
+  const [rooms, setRooms] = useState(ALL_ROOMS); // show all optimistically
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get("/products/rooms")
+      .then(({ data }) => {
+        if (cancelled) return;
+        // Build a set of slugs that have at least 1 product
+        const withProducts = new Set(
+          data.filter((r) => r.productCount > 0).map((r) => r.slug)
+        );
+        setRooms(ALL_ROOMS.filter((r) => withProducts.has(r.slug)));
+      })
+      .catch(() => {
+        // On error keep all rooms visible
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!rooms.length) return null;
+
   return (
     <section aria-labelledby="shop-by-room-title" className="bg-white py-6 sm:py-8">
       <PageContainer>
