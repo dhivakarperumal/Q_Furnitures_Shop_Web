@@ -61,6 +61,7 @@ const Navbar = () => {
   const [categoryMenu, setCategoryMenu] = useState(false);
   const [pagesMenu, setPagesMenu] = useState(false);
   const [mobileCategory, setMobileCategory] = useState(false);
+  const [mobileRoom, setMobileRoom] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [orderCount, setOrderCount] = useState(0);
@@ -94,6 +95,7 @@ const Navbar = () => {
   const closeMobileMenu = () => {
     setMobileMenu(false);
     setMobileCategory(false);
+    setMobileRoom(false);
     setMobilePages(false);
   };
 
@@ -360,7 +362,7 @@ const Navbar = () => {
                 className={navClass({ isActive: roomsMenu || isRoomActive })}
                 aria-expanded={roomsMenu}
               >
-                Rooms
+                Shop by room
                 <FiChevronDown className={`transition-transform ${roomsMenu ? "rotate-180" : ""}`} />
               </button>
               {roomsMenu && (
@@ -682,7 +684,7 @@ const Navbar = () => {
             <div className="absolute inset-0 min-h-0 overflow-y-auto px-3 py-4">
 
             {/* MENU SCREEN */}
-            {!mobileCategory && !mobilePages && (
+            {!mobileCategory && !mobileRoom && !mobilePages && (
               <>
                 <div className="flex flex-col gap-2.5">
                   <form onSubmit={handleSearch} className="relative mb-1">
@@ -738,6 +740,18 @@ const Navbar = () => {
                     <FiChevronRight size={15} className="text-primary" />
                   </button>
 
+                  <button
+                    onClick={() => setMobileRoom(true)}
+                    className={`flex min-h-[60px] items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                      isRoomActive
+                        ? "border-primary/20 bg-[#fff0df] text-[#c2560b]"
+                        : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiHome size={16} /></span>Shop by room</span>
+                    <FiChevronRight size={15} className="text-primary" />
+                  </button>
+
                   <NavLink
                     to="/combo"
                     onClick={closeMobileMenu}
@@ -771,27 +785,6 @@ const Navbar = () => {
                     <span className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={16} /></span>Pages</span>
                     <FiChevronRight size={15} className="text-primary" />
                   </button>
-
-                  <div className="pt-2">
-                    <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-[#8b735e]">Shop by room</h2>
-                    <div className="grid grid-cols-2 gap-2">
-                      {roomLinks.map(({ name, slug, icon: RoomIcon }) => (
-                        <NavLink
-                          key={slug}
-                          to={`/shop?room=${encodeURIComponent(slug)}`}
-                          onClick={closeMobileMenu}
-                          className={
-                            `flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
-                              isRoomActive && activeRoom === slug ? "border-primary/20 bg-[#fff0df] text-[#c2560b]" : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
-                            }`
-                          }
-                        >
-                          <RoomIcon size={14} className="shrink-0 text-primary" />
-                          <span className="truncate">{name}</span>
-                        </NavLink>
-                      ))}
-                    </div>
-                  </div>
 
                 </div>
               </>
@@ -860,6 +853,68 @@ const Navbar = () => {
                 </div>
               </>
             )}
+
+            {/* SHOP BY ROOM SCREEN */}
+            {mobileRoom && (
+              <>
+                <div className="flex items-center justify-between bg-orange-600 px-6 py-4 text-white">
+                  <button
+                    type="button"
+                    onClick={() => setMobileRoom(false)}
+                    aria-label="Back to mobile menu"
+                    className="text-lg"
+                  >
+                    ←
+                  </button>
+
+                  <h2 className="text-sm font-semibold">Shop by room</h2>
+
+                  <X
+                    size={20}
+                    className="cursor-pointer"
+                    onClick={closeMobileMenu}
+                  />
+                </div>
+
+                <div className="flex flex-col space-y-3 p-5">
+                  {roomLinks.map(({ name, slug, icon: RoomIcon, description }) => (
+                    <NavLink
+                      key={slug}
+                      to={`/shop?room=${encodeURIComponent(slug)}`}
+                      onClick={() => {
+                        closeMobileMenu();
+                        window.scrollTo({ top: 0, behavior: "instant" });
+                      }}
+                      className={
+                        `group flex items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
+                          isRoomActive && activeRoom === slug
+                            ? "border-[#ed720a] bg-[#ed720a] text-white shadow-sm"
+                            : "border-orange-100 bg-white text-[#351d0e] hover:border-orange-200 hover:bg-orange-50"
+                        }`
+                      }
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                          isRoomActive && activeRoom === slug ? "bg-white/15 text-white" : "bg-[#f7eee3] text-[#c96518]"
+                        }`}>
+                          <RoomIcon size={20} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate">{name}</span>
+                          <span className={`block text-[11px] font-normal ${
+                            isRoomActive && activeRoom === slug ? "text-white/75" : "text-[#8b735e]"
+                          }`}>
+                            {description}
+                          </span>
+                        </span>
+                      </div>
+                      <FiChevronRight size={14} className="shrink-0 opacity-60 transition-transform group-hover:translate-x-0.5" />
+                    </NavLink>
+                  ))}
+                </div>
+              </>
+            )}
+
             {/* PAGES SCREEN */}
             {mobilePages && (
               <>
