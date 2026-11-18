@@ -5,13 +5,11 @@ import {
   CheckCircle2,
   CreditCard,
   Banknote,
-  Headphones,
   Info,
   LoaderCircle,
   LocateFixed,
   LockKeyhole,
   MapPin,
-  RotateCcw,
   Search,
   ShieldCheck,
   ShoppingBag,
@@ -448,8 +446,8 @@ const Checkout = () => {
 
   return (
     <>
-      <PageHeader title="Complete Your Order" />
-      <main className="relative min-h-[65vh] overflow-hidden bg-[#fbf6f1] py-6 sm:py-8">
+      <PageHeader title="Checkout" />
+      <main className="relative min-h-[65vh] overflow-x-clip bg-[#fbf6f1] py-6 sm:py-8">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-24 bottom-8 h-64 w-64 rounded-full bg-[#f4d8bd]/35 blur-3xl" />
           <div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-[#ffdfc5]/40 blur-3xl" />
@@ -467,9 +465,12 @@ const Checkout = () => {
             </section>
           ) : (
             <>
-              <header className="mb-5 flex flex-col gap-3">
-                <p className="text-sm text-[#725d4b]">Review your details, choose a payment method and place your order.</p>
-                <ol aria-label="Checkout progress" className="flex w-full max-w-[500px] items-center justify-between gap-2 sm:gap-4">
+              <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h1 className="font-serif text-2xl font-bold leading-tight text-[#351d0e] sm:text-3xl">Complete Your Order</h1>
+                  <p className="mt-1 text-sm text-[#725d4b]">Review your details, choose a payment method and place your order.</p>
+                </div>
+                <ol aria-label="Checkout progress" className="flex w-full max-w-[500px] items-center justify-between gap-2 sm:gap-4 lg:ml-auto">
                   <li className="flex shrink-0 flex-col items-center gap-1 text-[11px] font-semibold text-[#a34720] sm:text-xs">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ef7412] text-white shadow-sm"><ShoppingBag size={16} /></span>
                     Cart
@@ -496,11 +497,11 @@ const Checkout = () => {
 
             <form onSubmit={handleSubmit} className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.62fr)_minmax(330px,0.95fr)]">
               <section className="overflow-hidden rounded-2xl border border-[#eadccd] bg-white/95 shadow-[0_8px_28px_rgba(74,38,19,0.07)]">
-                <fieldset className="border-b border-[#eee4d8] px-4 py-4 sm:px-6">
+                <fieldset className="border-b border-[#eee4d8] px-4 py-5 sm:px-6 sm:py-6">
                   <legend className="flex items-center gap-2 text-sm font-bold text-[#351d0e]">
                     <MapPin size={17} className="text-[#ef7412]" /> Delivery Option
                   </legend>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     {[
                       { value: "Delivery", label: "Delivery", description: "Deliver to my address", Icon: Truck },
                       { value: "Pickup", label: "Pickup", description: "I will collect my order", Icon: Store },
@@ -712,7 +713,7 @@ const Checkout = () => {
                 </div>
               </section>
 
-              <aside className="lg:sticky lg:top-5">
+              <aside className="self-start lg:sticky lg:top-5">
                 <section className="overflow-hidden rounded-2xl border border-[#eadccd] bg-white/95 shadow-[0_8px_28px_rgba(74,38,19,0.07)]">
                   <div className="flex items-center justify-between gap-3 border-b border-[#eee4d8] px-4 py-4 sm:px-5">
                     <div className="flex items-center gap-3">
