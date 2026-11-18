@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera,
   Check,
@@ -28,6 +28,7 @@ import { AuthContext } from "../PrivateRouter/AuthContext";
 import { resolveMediaUrl } from "../utils/media";
 import PageContainer from "./CommenComponents/PageContainer";
 import PageHeader from "./CommenComponents/PageHeader";
+import OrderDetailsModal from "./OrderDetailsModal";
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-[#ddd5cd] bg-white px-4 py-2.5 text-sm text-[#351d0e] outline-none transition placeholder:text-[#a99a8a] focus:border-primary focus:ring-4 focus:ring-orange-100";
@@ -77,20 +78,23 @@ function formatDate(value) {
 function statusClass(status) {
   if (status === "Delivered") return "bg-emerald-50 text-emerald-700";
   if (status === "Cancelled") return "bg-red-50 text-red-700";
-  if (status === "Shipping" || status === "Shipped") return "bg-blue-50 text-blue-700";
-  return "bg-amber-50 text-amber-800";
+  if (status === "Out for Delivery") return "bg-cyan-50 text-cyan-700";
+  if (status === "Shipping" || status === "Shipped") return "bg-amber-50 text-amber-700";
+  if (status === "Packing") return "bg-indigo-50 text-indigo-700";
+  if (status === "Order Placed") return "bg-blue-50 text-blue-700";
+  return "bg-gray-50 text-gray-700";
 }
 
-function orderFilterStatus(status) {
-  if (status === "Delivered" || status === "Cancelled" || status === "Shipping" || status === "Shipped") {
-    return status === "Shipping" ? "Shipped" : status;
-  }
+function orderFilterGroup(status) {
+  if (status === "Delivered" || status === "Cancelled") return status;
+  if (status === "Shipping" || status === "Shipped" || status === "Out for Delivery") return "Shipped";
   return "Processing";
 }
 
 function Account() {
   const { user, updateUser, logout } = useContext(AuthContext);
   const photoInputRef = useRef(null);
+  const addressModalRef = useRef(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [profile, setProfile] = useState({
     name: user?.name || user?.username || "",
@@ -107,6 +111,7 @@ function Account() {
     profile_image: user?.profile_image || "",
   });
   const [orders, setOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [addresses, setAddresses] = useState([]);
   const [selectedOrderFilter, setSelectedOrderFilter] = useState("All Orders");
   const [profileLoading, setProfileLoading] = useState(true);
@@ -148,6 +153,33 @@ function Account() {
   const [reloadAddresses, setReloadAddresses] = useState(0);
   const userId = user?.id;
   const userProfileImage = user?.profile_image;
+  const closeOrderDetails = useCallback(() => setSelectedOrder(null), []);
+
+  useEffect(() => {
+    if (!addressFormOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    addressModalRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [addressFormOpen]);
+
+  useEffect(() => {
+    if (!addressFormOpen || addressSaving) return undefined;
+
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setAddressFormOpen(false);
+        setAddressFormError("");
+      }
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [addressFormOpen, addressSaving]);
 
   useEffect(() => {
     let active = true;
@@ -237,7 +269,7 @@ function Account() {
   }, [user?.id, reloadAddresses]);
 
   const visibleOrders = useMemo(() => orders.filter(
-    (order) => selectedOrderFilter === "All Orders" || orderFilterStatus(order.status) === selectedOrderFilter,
+    (order) => selectedOrderFilter === "All Orders" || orderFilterGroup(order.status) === selectedOrderFilter,
   ), [orders, selectedOrderFilter]);
 
   async function saveProfile(event) {
@@ -437,13 +469,13 @@ function Account() {
 
   return (
     <>
-      <PageHeader title="My Account"/>
-      <main className="min-h-[65vh] bg-[#fffaf5] text-[#351d0e]">
+      <PageHeader title="My Account" />
+      <main className="min-h-[65vh] bg-[linear-gradient(180deg,#fffaf5_0%,#fff7ef_100%)] text-[#351d0e]">
         <PageContainer>
-        <div className="grid gap-4 pb-8 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-5 lg:pb-10">
-          <aside className="h-fit overflow-hidden rounded-2xl border border-[#f1e7dd] bg-[#fff7ef] p-3 shadow-sm sm:p-4">
-            <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f5dfc8] text-lg font-bold text-[#a34720]">
+        <div className="grid gap-5 py-7 sm:py-9 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6 lg:py-12">
+          <aside className="h-fit overflow-hidden rounded-2xl border border-[#f1e7dd] bg-white p-3 shadow-[0_10px_30px_rgba(53,29,14,0.07)] sm:p-4 lg:sticky lg:top-28 lg:self-start">
+            <div className="flex items-center gap-3 rounded-xl bg-gradient-to-br from-[#fff1e2] to-[#fffaf5] px-3 py-3">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f5dfc8] text-lg font-bold text-[#a34720] ring-2 ring-white shadow-sm">
                 {profile.profile_image ? (
                   <img src={resolveMediaUrl(profile.profile_image)} alt="" className="h-full w-full object-cover" />
                 ) : initials || <UserRound size={25} />}
@@ -453,7 +485,7 @@ function Account() {
                 <span className="mt-0.5 block truncate text-xs text-[#725d4b]">{profile.email || user?.email}</span>
               </span>
             </div>
-            <nav aria-label="Account sections" role="tablist" className="mt-3 flex gap-1 overflow-x-auto lg:flex-col">
+            <nav aria-label="Account sections" role="tablist" className="mt-4 flex gap-1.5 overflow-x-auto lg:flex-col">
               {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -463,10 +495,10 @@ function Account() {
                   aria-selected={activeTab === id}
                   aria-controls={`account-panel-${id}`}
                   onClick={() => setActiveTab(id)}
-                  className={`inline-flex min-h-10 shrink-0 items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-left text-xs font-bold transition sm:text-sm lg:w-full ${
+                  className={`inline-flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition sm:text-sm lg:w-full ${
                     activeTab === id
-                      ? "border-[#f07816] bg-[#ffe8cf] text-[#351d0e]"
-                      : "border-transparent text-[#5b4839] hover:bg-white/70"
+                      ? "bg-[#fff0df] text-[#351d0e] shadow-sm ring-1 ring-inset ring-[#f6d2b2]"
+                      : "text-[#5b4839] hover:bg-[#fffaf5]"
                   }`}
                 >
                   <Icon size={18} className="shrink-0 text-[#a34720]" />
@@ -483,7 +515,7 @@ function Account() {
             id={`account-panel-${activeTab}`}
             role="tabpanel"
             aria-labelledby={`account-tab-${activeTab}`}
-            className="min-h-[320px] rounded-2xl border border-[#eee4d8] bg-white p-5 shadow-[0_8px_24px_rgba(53,29,14,0.06)] sm:p-6 lg:p-7"
+            className="min-h-[320px] rounded-2xl border border-[#eee4d8] bg-white p-5 shadow-[0_12px_32px_rgba(53,29,14,0.07)] sm:p-7 lg:p-8"
           >
             {activeTab === "profile" && (
               <>
@@ -752,7 +784,7 @@ function Account() {
                   <div className="space-y-3">
                     {visibleOrders.map((order) => {
                       const firstItem = Array.isArray(order.items) ? order.items[0] : null;
-                      const status = orderFilterStatus(order.status);
+                      const status = order.status || "Order Placed";
                       return (
                       <article key={order.order_id || order.id} className="rounded-xl border border-[#eee4d8] p-4 transition hover:border-[#edc9a9]">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -794,9 +826,13 @@ function Account() {
                           </div>
                         </div>
                         <div className="mt-3 flex justify-end border-t border-[#f1e7dd] pt-3">
-                          <Link to="/ordersmain" className="text-xs font-bold text-[#a34720] hover:underline">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrder(order)}
+                            className="text-xs font-bold text-[#a34720] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                          >
                             View Details
-                          </Link>
+                          </button>
                         </div>
                       </article>
                       );
@@ -828,153 +864,187 @@ function Account() {
                 </div>
 
                 {addressFormOpen && (
-                  <form onSubmit={saveAddress} className="mb-5 rounded-xl border border-[#edc9a9] bg-[#fffaf5] p-4 sm:p-5">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <h3 className="font-bold">{editingAddressId ? "Edit Address" : "Add New Address"}</h3>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAddressFormOpen(false);
-                          setAddressFormError("");
-                        }}
-                        aria-label="Close address form"
-                        className="rounded-md p-1 text-[#806d5d] hover:bg-[#f5e9dd]"
-                      >
-                        <X size={18} />
-                      </button>
-                    </div>
-                    <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                      <label className="block text-xs font-bold">
-                        Address label
-                        <input
-                          className={inputClass}
-                          value={addressDraft.label}
-                          maxLength={40}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, label: event.target.value }))}
-                          placeholder="Home, Office..."
-                          required
-                        />
-                      </label>
-                      <label className="block text-xs font-bold">
-                        Full name
-                        <input
-                          className={inputClass}
-                          value={addressDraft.customer_name}
-                          maxLength={120}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, customer_name: event.target.value }))}
-                          autoComplete="name"
-                          required
-                        />
-                      </label>
-                      <label className="block text-xs font-bold">
-                        Phone number
-                        <input
-                          className={inputClass}
-                          type="tel"
-                          value={addressDraft.customer_phone}
-                          maxLength={32}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, customer_phone: event.target.value }))}
-                          autoComplete="tel"
-                          required
-                        />
-                      </label>
-                      <label className="block text-xs font-bold sm:col-span-2">
-                        Street address
-                        <input
-                          className={inputClass}
-                          value={addressDraft.street_address}
-                          maxLength={255}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, street_address: event.target.value }))}
-                          autoComplete="street-address"
-                          required
-                        />
-                      </label>
-                      <label className="block text-xs font-bold">
-                        City
-                        <input
-                          className={inputClass}
-                          value={addressDraft.city}
-                          maxLength={191}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, city: event.target.value }))}
-                          autoComplete="address-level2"
-                          required
-                        />
-                      </label>
-                      <label className="block text-xs font-bold">
-                        District <span className="font-normal text-[#8b735e]">(optional)</span>
-                        <input
-                          className={inputClass}
-                          value={addressDraft.district}
-                          maxLength={191}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, district: event.target.value }))}
-                        />
-                      </label>
-                      <label className="block text-xs font-bold">
-                        State
-                        <input
-                          className={inputClass}
-                          value={addressDraft.state}
-                          maxLength={191}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, state: event.target.value }))}
-                          autoComplete="address-level1"
-                          required
-                        />
-                      </label>
-                      <label className="block text-xs font-bold">
-                        Country
-                        <input
-                          className={inputClass}
-                          value={addressDraft.country}
-                          maxLength={191}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, country: event.target.value }))}
-                          autoComplete="country-name"
-                          required
-                        />
-                      </label>
-                      <label className="block text-xs font-bold">
-                        PIN code
-                        <input
-                          className={inputClass}
-                          value={addressDraft.zip_code}
-                          maxLength={32}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, zip_code: event.target.value }))}
-                          autoComplete="postal-code"
-                          required
-                        />
-                      </label>
-                      <label className="flex items-center gap-2 self-end pb-2 text-xs font-semibold text-[#5b4839]">
-                        <input
-                          type="checkbox"
-                          checked={addressDraft.is_default}
-                          onChange={(event) => setAddressDraft((current) => ({ ...current, is_default: event.target.checked }))}
-                          className="h-4 w-4 accent-[#e87500]"
-                        />
-                        Set as default address
-                      </label>
-                    </div>
-                    {addressFormError && <p role="alert" className="mt-3 text-sm text-red-700">{addressFormError}</p>}
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button
-                        type="submit"
-                        disabled={addressSaving}
-                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-dark disabled:opacity-60"
-                      >
-                        {addressSaving ? <LoaderCircle size={15} className="animate-spin" /> : <Check size={15} />}
-                        {addressSaving ? "Saving..." : "Save Address"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAddressFormOpen(false);
-                          setAddressFormError("");
-                        }}
-                        disabled={addressSaving}
-                        className="rounded-lg border border-[#edc9a9] px-4 py-2.5 text-xs font-bold text-[#5b3821] hover:bg-white disabled:opacity-60"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+                  <div
+                    className="fixed inset-0 z-[120] flex items-center justify-center bg-[#21140d]/55 p-3 backdrop-blur-sm sm:p-6"
+                    onClick={(event) => {
+                      if (event.target === event.currentTarget && !addressSaving) {
+                        setAddressFormOpen(false);
+                        setAddressFormError("");
+                      }
+                    }}
+                  >
+                    <section
+                      ref={addressModalRef}
+                      role="dialog"
+                      aria-modal="true"
+                      aria-labelledby="address-dialog-title"
+                      tabIndex={-1}
+                      className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl outline-none"
+                    >
+                      <div className="flex items-center justify-between gap-4 border-b border-[#f1e7dd] bg-gradient-to-r from-[#fff5eb] to-white px-5 py-4 sm:px-6">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff0df] text-[#e87500]">
+                            <MapPin size={21} />
+                          </span>
+                          <div>
+                            <h3 id="address-dialog-title" className="text-lg font-extrabold text-[#351d0e]">
+                              {editingAddressId ? "Edit Address" : "Add New Address"}
+                            </h3>
+                            <p className="mt-0.5 text-xs text-[#806d5d]">Enter the delivery details for this address.</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAddressFormOpen(false);
+                            setAddressFormError("");
+                          }}
+                          disabled={addressSaving}
+                          aria-label="Close address form"
+                          className="rounded-lg p-2 text-[#806d5d] transition hover:bg-[#f5e9dd] hover:text-[#351d0e] disabled:opacity-50"
+                        >
+                          <X size={19} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={saveAddress} className="flex min-h-0 flex-1 flex-col">
+                        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+                          <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                            <label className="block text-xs font-bold">
+                              Address label
+                              <input
+                                className={inputClass}
+                                value={addressDraft.label}
+                                maxLength={40}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, label: event.target.value }))}
+                                placeholder="Home, Office..."
+                                required
+                              />
+                            </label>
+                            <label className="block text-xs font-bold">
+                              Full name
+                              <input
+                                className={inputClass}
+                                value={addressDraft.customer_name}
+                                maxLength={120}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, customer_name: event.target.value }))}
+                                autoComplete="name"
+                                required
+                              />
+                            </label>
+                            <label className="block text-xs font-bold">
+                              Phone number
+                              <input
+                                className={inputClass}
+                                type="tel"
+                                value={addressDraft.customer_phone}
+                                maxLength={32}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, customer_phone: event.target.value }))}
+                                autoComplete="tel"
+                                required
+                              />
+                            </label>
+                            <label className="block text-xs font-bold sm:col-span-2">
+                              Street address
+                              <input
+                                className={inputClass}
+                                value={addressDraft.street_address}
+                                maxLength={255}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, street_address: event.target.value }))}
+                                autoComplete="street-address"
+                                required
+                              />
+                            </label>
+                            <label className="block text-xs font-bold">
+                              City
+                              <input
+                                className={inputClass}
+                                value={addressDraft.city}
+                                maxLength={191}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, city: event.target.value }))}
+                                autoComplete="address-level2"
+                                required
+                              />
+                            </label>
+                            <label className="block text-xs font-bold">
+                              District <span className="font-normal text-[#8b735e]">(optional)</span>
+                              <input
+                                className={inputClass}
+                                value={addressDraft.district}
+                                maxLength={191}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, district: event.target.value }))}
+                              />
+                            </label>
+                            <label className="block text-xs font-bold">
+                              State
+                              <input
+                                className={inputClass}
+                                value={addressDraft.state}
+                                maxLength={191}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, state: event.target.value }))}
+                                autoComplete="address-level1"
+                                required
+                              />
+                            </label>
+                            <label className="block text-xs font-bold">
+                              Country
+                              <input
+                                className={inputClass}
+                                value={addressDraft.country}
+                                maxLength={191}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, country: event.target.value }))}
+                                autoComplete="country-name"
+                                required
+                              />
+                            </label>
+                            <label className="block text-xs font-bold">
+                              PIN code
+                              <input
+                                className={inputClass}
+                                value={addressDraft.zip_code}
+                                maxLength={32}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, zip_code: event.target.value }))}
+                                autoComplete="postal-code"
+                                required
+                              />
+                            </label>
+                            <label className="flex items-center gap-2 self-end pb-2 text-xs font-semibold text-[#5b4839]">
+                              <input
+                                type="checkbox"
+                                checked={addressDraft.is_default}
+                                onChange={(event) => setAddressDraft((current) => ({ ...current, is_default: event.target.checked }))}
+                                className="h-4 w-4 accent-[#e87500]"
+                              />
+                              Set as default address
+                            </label>
+                          </div>
+                          {addressFormError && <p role="alert" className="mt-3 text-sm text-red-700">{addressFormError}</p>}
+                        </div>
+
+                        <div className="flex flex-wrap justify-end gap-2 border-t border-[#f1e7dd] bg-[#fffdfa] px-5 py-4 sm:px-6">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddressFormOpen(false);
+                              setAddressFormError("");
+                            }}
+                            disabled={addressSaving}
+                            className="rounded-lg border border-[#edc9a9] px-4 py-2.5 text-xs font-bold text-[#5b3821] transition hover:bg-white disabled:opacity-60"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={addressSaving}
+                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white transition hover:bg-primary-dark disabled:opacity-60"
+                          >
+                            {addressSaving ? <LoaderCircle size={15} className="animate-spin" /> : <Check size={15} />}
+                            {addressSaving ? "Saving..." : "Save Address"}
+                          </button>
+                        </div>
+                      </form>
+                    </section>
+                  </div>
                 )}
 
                 {addressesError ? (
@@ -1097,6 +1167,7 @@ function Account() {
         </div>
         </PageContainer>
       </main>
+      {selectedOrder && <OrderDetailsModal order={selectedOrder} onClose={closeOrderDetails} />}
     </>
   );
 }
