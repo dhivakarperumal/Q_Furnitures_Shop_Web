@@ -17,11 +17,11 @@ const Home = () => (
     <HomeCategories />
     <FeaturedProducts />
     <OfferBanners />
-    <TopRatedProducts />
-    <CustomFurnitureBanner />
     <FeaturedCombos />
-    <OfferProducts />
+    <CustomFurnitureBanner />
+    <TopRatedProducts />
     <ShopByRoom />
+    <OfferProducts />
     <FestiveSaleBanner />
     <HomeReviews />
   </main>
