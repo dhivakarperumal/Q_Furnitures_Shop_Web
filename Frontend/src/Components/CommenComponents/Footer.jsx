@@ -24,8 +24,8 @@ const Footer = () => {
   const storeAddress = import.meta.env.VITE_STORE_ADDRESS
     || "No. 123, Anna Salai, Chennai - 600002, Tamil Nadu, India";
   const facebookUrl = import.meta.env.VITE_FACEBOOK_URL;
-  const instagramUrl = import.meta.env.VITE_INSTAGRAM_URL;
-  const youtubeUrl = import.meta.env.VITE_YOUTUBE_URL;
+  const instagramUrl = import.meta.env.VITE_INSTAGRAM_URL || "https://www.instagram.com/";
+  const youtubeUrl = import.meta.env.VITE_YOUTUBE_URL || "https://www.youtube.com/";
   const pinterestUrl = import.meta.env.VITE_PINTEREST_URL;
   const whatsappNumber = (import.meta.env.VITE_WHATSAPP_NUMBER || "919876543210").replace(/\D/g, "");
   const mapEmbedUrl = import.meta.env.VITE_STORE_MAP_EMBED_URL
@@ -146,16 +146,12 @@ const Footer = () => {
                   <FaFacebook size={16} />
                 </a>
               )}
-              {instagramUrl && (
-                <a href={instagramUrl} target="_blank" rel="noreferrer" aria-label="Instagram" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-primary hover:bg-primary hover:text-white">
-                  <FaInstagram size={16} />
-                </a>
-              )}
-              {youtubeUrl && (
-                <a href={youtubeUrl} target="_blank" rel="noreferrer" aria-label="YouTube" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-primary hover:bg-primary hover:text-white">
-                  <FaYoutube size={16} />
-                </a>
-              )}
+              <a href={instagramUrl} target="_blank" rel="noreferrer" aria-label="Instagram" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-primary hover:bg-primary hover:text-white">
+                <FaInstagram size={16} />
+              </a>
+              <a href={youtubeUrl} target="_blank" rel="noreferrer" aria-label="YouTube" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-primary hover:bg-primary hover:text-white">
+                <FaYoutube size={16} />
+              </a>
               {pinterestUrl && (
                 <a href={pinterestUrl} target="_blank" rel="noreferrer" aria-label="Pinterest" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-primary hover:bg-primary hover:text-white">
                   <FaPinterestP size={16} />
