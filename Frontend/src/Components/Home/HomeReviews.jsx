@@ -9,6 +9,9 @@ const HomeReviews = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const sliderRef = useRef(null);
+  const loopedReviews = Array.from({ length: reviews.length > 1 ? 3 : 1 }, (_, loopIndex) =>
+    reviews.map((review) => ({ review, loopIndex })),
+  ).flat();
 
   useEffect(() => {
     let active = true;
@@ -45,6 +48,23 @@ const HomeReviews = () => {
     });
   };
 
+  const handleReviewScroll = () => {
+    const slider = sliderRef.current;
+    const firstClone = slider?.children.item(reviews.length);
+    if (!slider || !firstClone) return;
+
+    const loopBoundary = slider.scrollLeft +
+      firstClone.getBoundingClientRect().left -
+      slider.getBoundingClientRect().left;
+    if (slider.scrollLeft < loopBoundary) return;
+
+    slider.style.scrollBehavior = "auto";
+    slider.scrollLeft -= loopBoundary;
+    window.requestAnimationFrame(() => {
+      slider.style.scrollBehavior = "";
+    });
+  };
+
   useEffect(() => {
     if (
       loading ||
@@ -57,18 +77,12 @@ const HomeReviews = () => {
 
     const timer = window.setInterval(() => {
       const slider = sliderRef.current;
-      const firstCard = slider?.firstElementChild;
-      if (!slider || !firstCard) return;
-
-      const maxScroll = slider.scrollWidth - slider.clientWidth;
-      if (slider.scrollLeft >= maxScroll - 2) {
-        slider.scrollTo({ left: 0, behavior: "smooth" });
-        return;
-      }
+      const currentCard = slider?.firstElementChild;
+      if (!slider || !currentCard) return;
 
       const gap = Number.parseFloat(window.getComputedStyle(slider).columnGap) || 0;
       slider.scrollBy({
-        left: firstCard.getBoundingClientRect().width + gap,
+        left: currentCard.getBoundingClientRect().width + gap,
         behavior: "smooth",
       });
     }, 4000);
@@ -122,11 +136,16 @@ const HomeReviews = () => {
         ) : (
           <div
             ref={sliderRef}
+            onScroll={handleReviewScroll}
             className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3"
             aria-label="Customer reviews"
           >
-            {reviews.map((review) => (
-              <div key={review.id} className="w-[min(85vw,360px)] shrink-0 snap-start sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:w-[calc((100%-3rem)/4)]">
+            {loopedReviews.map(({ review, loopIndex }) => (
+              <div
+                key={`${loopIndex}-${review.id}`}
+                aria-hidden={loopIndex > 0}
+                className="w-[min(85vw,360px)] shrink-0 snap-start sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:w-[calc((100%-3rem)/4)]"
+              >
                 <article className="flex h-full flex-col rounded-2xl border border-[#eee4d8] bg-[#fcfaf7] p-5 sm:p-6">
                   <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5 stars`}>
                     {Array.from({ length: 5 }, (_, index) => (

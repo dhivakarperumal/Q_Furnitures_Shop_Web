@@ -55,6 +55,33 @@ const HomeCategories = () => {
     };
   }, [requestCategories]);
 
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider || loading || error || categories.length < 2) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      const maxScroll = slider.scrollWidth - slider.clientWidth;
+      if (maxScroll <= 0) return;
+
+      if (slider.scrollLeft >= maxScroll - 2) {
+        slider.style.scrollBehavior = "auto";
+        slider.scrollLeft = 0;
+        slider.style.scrollBehavior = "";
+        return;
+      }
+
+      const firstCategory = slider.firstElementChild;
+      if (!firstCategory) return;
+      const gap = Number.parseFloat(window.getComputedStyle(slider).columnGap) || 0;
+      slider.scrollBy({
+        left: firstCategory.getBoundingClientRect().width + gap,
+        behavior: "smooth",
+      });
+    }, 3500);
+
+    return () => window.clearInterval(intervalId);
+  }, [categories.length, error, loading]);
+
   const retryCategories = () => {
     setLoading(true);
     setError("");
@@ -132,7 +159,10 @@ const HomeCategories = () => {
               const image = getCategoryImage(category.images);
 
               return (
-                <article key={category.catId || category.id || category.name} className="w-28 shrink-0 snap-start sm:w-32 lg:w-36">
+                <article
+                  key={category.catId || category.id || category.name}
+                  className="basis-[calc((100%_-_24px)/3)] shrink-0 snap-start sm:basis-[calc((100%_-_80px)/6)] lg:basis-[calc((100%_-_144px)/10)]"
+                >
                   <Link
                     to={`/shop?category=${encodeURIComponent(category.name)}`}
                     className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
