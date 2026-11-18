@@ -249,9 +249,9 @@ const Navbar = () => {
             type="button"
             onClick={() => mobileMenu ? closeMobileMenu() : setMobileMenu(true)}
             aria-label={mobileMenu ? "Close menu" : "Open menu"}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark lg:hidden"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark sm:h-9 sm:w-9 lg:hidden"
           >
-            {mobileMenu ? <X size={22} /> : <Menu size={22} />}
+            {mobileMenu ? <X size={18} /> : <Menu size={18} />}
           </button>
 
           <Link
@@ -262,7 +262,7 @@ const Navbar = () => {
             <img
               src="/images/logo.png"
               alt="Q Living Furniture"
-              className="h-auto max-h-11 w-24 object-contain sm:max-h-12 sm:w-40 xl:w-44"
+              className="h-auto max-h-11 w-20 object-contain sm:max-h-12 sm:w-40 xl:w-44"
             />
           </Link>
 
@@ -628,7 +628,7 @@ const Navbar = () => {
               aria-label="Open wishlist"
               className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
             >
-              <Heart size={19} />
+              <Heart size={16} />
               {wishlist.length > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
                   {wishlist.length > 9 ? "9+" : wishlist.length}
@@ -642,7 +642,7 @@ const Navbar = () => {
               aria-label="Open cart"
               className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
             >
-              <ShoppingCart size={19} />
+              <ShoppingCart size={16} />
               {cart.length > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
                   {cart.length > 9 ? "9+" : cart.length}
@@ -654,7 +654,7 @@ const Navbar = () => {
               <Link
                 to="/account"
                 aria-label="My account"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] sm:hidden"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7e4ca] text-xs font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] sm:hidden"
               >
                 {profileInitial}
               </Link>
@@ -736,7 +736,7 @@ const Navbar = () => {
                       placeholder="Search furniture"
                       className="h-14 w-full rounded-2xl border border-[#f0e5da] bg-white pl-12 pr-4 text-sm font-medium text-[#351d0e] outline-none transition placeholder:text-[#8b735e] focus:border-primary"
                     />
-                    <Search size={19} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
+                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
                   </form>
 
                   <NavLink
@@ -748,7 +748,7 @@ const Navbar = () => {
                       }`
                     }
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiHome size={18} /></span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiHome size={16} /></span>
                     Home
                   </NavLink>
 
@@ -763,7 +763,7 @@ const Navbar = () => {
                       }`
                     }
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiShoppingBag size={18} /></span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiShoppingBag size={16} /></span>
                     Shop
                   </NavLink>
 
@@ -775,8 +775,8 @@ const Navbar = () => {
                         : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
                     }`}
                   >
-                    <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiGrid size={18} /></span>Categories</span>
-                    <FiChevronRight size={17} className="text-primary" />
+                    <span className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiGrid size={16} /></span>Categories</span>
+                    <FiChevronRight size={15} className="text-primary" />
                   </button>
 
                   <NavLink
@@ -788,7 +788,7 @@ const Navbar = () => {
                       }`
                     }
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiTag size={18} /></span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiTag size={16} /></span>
                     Combo Offers
                   </NavLink>
 
@@ -797,7 +797,7 @@ const Navbar = () => {
                     onClick={closeMobileMenu}
                     className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-[#f0e5da] bg-white px-4 py-3 text-sm font-semibold text-[#351d0e] transition hover:border-primary/40"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={18} /></span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={16} /></span>
                     Interior Ideas
                   </Link>
 
@@ -809,8 +809,8 @@ const Navbar = () => {
                         : "border-[#f0e5da] bg-white text-[#351d0e] hover:border-primary/40"
                     }`}
                   >
-                    <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={18} /></span>Pages</span>
-                    <FiChevronRight size={17} className="text-primary" />
+                    <span className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={16} /></span>Pages</span>
+                    <FiChevronRight size={15} className="text-primary" />
                   </button>
 
                   <div className="pt-2">
@@ -827,7 +827,7 @@ const Navbar = () => {
                             }`
                           }
                         >
-                          <RoomIcon size={16} className="shrink-0 text-primary" />
+                          <RoomIcon size={14} className="shrink-0 text-primary" />
                           <span className="truncate">{name}</span>
                         </NavLink>
                       ))}
@@ -847,7 +847,7 @@ const Navbar = () => {
                   {/* Back button */}
                   <button
                     onClick={() => setMobileCategory(false)}
-                    className="text-xl"
+                    className="text-lg"
                   >
                     ←
                   </button>
@@ -855,7 +855,7 @@ const Navbar = () => {
                   <h2 className="text-sm font-semibold">Categories</h2>
 
                   <X
-                    size={24}
+                    size={20}
                     className="cursor-pointer"
                     onClick={closeMobileMenu}
                   />
@@ -888,12 +888,12 @@ const Navbar = () => {
                             {image ? (
                               <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
                             ) : (
-                              <FiTag size={18} />
+                              <FiTag size={16} />
                             )}
                           </span>
                           <span className="truncate">{cat.name}</span>
                         </div>
-                        <FiChevronRight size={16} className="shrink-0 opacity-60 transition-transform group-hover:translate-x-0.5" />
+                        <FiChevronRight size={14} className="shrink-0 opacity-60 transition-transform group-hover:translate-x-0.5" />
                       </NavLink>
                     );
                   })}
@@ -908,15 +908,15 @@ const Navbar = () => {
 
                   <button
                     onClick={() => setMobilePages(false)}
-                    className="text-xl"
+                    className="text-lg"
                   >
                     ←
                   </button>
 
-                  <h2 className="text-lg font-semibold">Pages</h2>
+                  <h2 className="text-base font-semibold">Pages</h2>
 
                   <X
-                    size={24}
+                    size={20}
                     className="cursor-pointer"
                     onClick={closeMobileMenu}
                   />
@@ -930,7 +930,7 @@ const Navbar = () => {
                     onClick={closeMobileMenu}
                     className={mobileNavClass}
                   >
-                    <FiFileText size={16} />
+                    <FiFileText size={14} />
                     About Us
                   </NavLink>
 
@@ -939,7 +939,7 @@ const Navbar = () => {
                     onClick={closeMobileMenu}
                     className={mobileNavClass}
                   >
-                    <FiFileText size={16} />
+                    <FiFileText size={14} />
                     Privacy Policy
                   </NavLink>
 
@@ -949,7 +949,7 @@ const Navbar = () => {
                     onClick={closeMobileMenu}
                     className={mobileNavClass}
                   >
-                    <FiPhone size={16} />
+                    <FiPhone size={14} />
                     Contact Us
                   </NavLink>
 
