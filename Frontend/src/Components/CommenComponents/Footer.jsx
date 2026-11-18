@@ -181,9 +181,12 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-2 border-t border-white/10 py-5 text-center text-xs text-white/55 sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-2 border-t border-white/10 py-4 text-center text-xs text-white/55 sm:flex-row">
           <p>© {new Date().getFullYear()} Q Furnitures. All Rights Reserved.</p>
-          <p>Furniture for every kind of home.</p>
+          <div className="flex flex-col items-center gap-1 sm:flex-row sm:gap-4">
+            <p>Furniture for every kind of home.</p>
+            <p>Designed by <span className="font-semibold text-white/75">Q-Techx Solutions</span></p>
+          </div>
         </div>
       </PageContainer>
     </footer>
