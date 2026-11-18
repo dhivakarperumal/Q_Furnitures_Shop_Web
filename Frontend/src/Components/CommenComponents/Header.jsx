@@ -23,7 +23,7 @@ const Header = () => {
 
   useEffect(() => {
     let active = true;
-    api.get("/offers/header")
+    api.get("/offers")
       .then(({ data }) => {
         if (active) setHeaderOffers(Array.isArray(data.offers) ? data.offers : []);
       })

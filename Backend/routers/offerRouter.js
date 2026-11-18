@@ -65,7 +65,7 @@ function normalizeOffer(input) {
 function createOfferRouter(offerService) {
   const router = express.Router();
 
-  router.get("/header", async (request, response, next) => {
+  router.get("/", async (request, response, next) => {
     try {
       return response.json({ offers: await offerService.listHeaderOffers() });
     } catch (error) {
@@ -75,7 +75,7 @@ function createOfferRouter(offerService) {
 
   router.use(requireAuthentication, requireAdmin);
 
-  router.get("/", async (request, response, next) => {
+  router.get("/admin", async (request, response, next) => {
     try {
       return response.json({ offers: await offerService.list() });
     } catch (error) {

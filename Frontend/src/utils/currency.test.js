@@ -19,6 +19,19 @@ test("formats Indian currency with compact thousand, lakh, and crore units", () 
   }
 });
 
+test("formats full Indian currency amounts when compact notation is disabled", () => {
+  const cases = [
+    [1_000, "₹1,000"],
+    [150_000, "₹1,50,000"],
+    [10_000_000, "₹1,00,00,000"],
+    [-10_000, "-₹10,000"],
+  ];
+
+  for (const [value, expected] of cases) {
+    assert.equal(formatCurrency(value, { compact: false }), expected);
+  }
+});
+
 test("normalizes numeric and already-formatted amount strings", () => {
   assert.equal(formatCurrency("10000"), "₹10K");
   assert.equal(formatCurrency("10K"), "₹10K");

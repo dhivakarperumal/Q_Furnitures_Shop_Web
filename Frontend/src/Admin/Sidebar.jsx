@@ -28,6 +28,7 @@ import {
   XCircle,
   Handshake,
   Image,
+  BarChart3,
 } from "lucide-react";
 
 import { useAuth } from "../PrivateRouter/AuthContext";
@@ -63,6 +64,7 @@ const navItems = [
 
   { path: "/admin/orders/billing", label: "Billing", icon: ReceiptText },
   { path: "/admin/users/all", label: "Customers", icon: UsersRound },
+  { path: "/admin/reports", label: "Reports", icon: BarChart3 },
   {
     label: "Dealers",
     icon: Handshake,

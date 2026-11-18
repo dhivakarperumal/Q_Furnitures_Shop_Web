@@ -131,6 +131,29 @@
   }
 }
 
+.header-offer-track {
+  animation: header-offer-scroll 28s linear infinite;
+}
+
+.header-offer-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes header-offer-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-offer-track {
+    animation: none;
+  }
+
+  .header-offer-track > :not(:first-child) {
+    display: none;
+  }
+}
 
 .loader {
   --c: no-repeat linear-gradient(#c77dff 0 0);
