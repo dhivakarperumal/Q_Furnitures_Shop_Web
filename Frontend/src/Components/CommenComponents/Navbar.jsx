@@ -15,7 +15,7 @@ import {
 import PageContainer from "./PageContainer";
 import api from "../../api";
 import { FiHome, FiShoppingBag, FiGrid, FiFileText, FiPhone, FiChevronDown, FiMoon, FiCoffee, FiMonitor, FiUser, FiLogOut, FiSun, FiSmile } from "react-icons/fi";
-import { FiChevronRight, FiTag } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiTag } from "react-icons/fi";
 import CartDrawer from "./CartDrawer";
 import WishlistDrawer from "./WishlistDrawer";
 import { resolveMediaUrl } from "../../utils/media";
@@ -840,29 +840,22 @@ const Navbar = () => {
             {/* CATEGORY SCREEN */}
             {mobileCategory && (
               <>
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
-
-                  {/* Back button */}
+                <div className="mb-5 flex items-center gap-3 border-b border-[#f0dfce] pb-4 pt-2">
                   <button
+                    type="button"
                     onClick={() => setMobileCategory(false)}
-                    className="text-lg"
+                    aria-label="Back to mobile menu"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#f0dfce] bg-white text-[#8b5a35] transition hover:bg-[#fff0df]"
                   >
-                    ←
+                    <FiChevronLeft size={20} />
                   </button>
-
-                  <h2 className="text-sm font-semibold">Categories</h2>
-
-                  <X
-                    size={20}
-                    className="cursor-pointer"
-                    onClick={closeMobileMenu}
-                  />
-
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c66a22]">Explore</p>
+                    <h2 className="mt-0.5 text-lg font-bold text-[#351d0e]">Collections</h2>
+                  </div>
                 </div>
 
-                {/* Category List */}
-                <div className="flex flex-col p-5 space-y-3">
+                <div className="flex flex-col space-y-3 pb-5">
 
                   {categories.map((cat) => {
                     const image = getCategoryImage(cat.images);
@@ -904,26 +897,22 @@ const Navbar = () => {
             {/* SHOP BY ROOM SCREEN */}
             {mobileRoom && (
               <>
-                <div className="flex items-center justify-between bg-orange-600 px-6 py-4 text-white">
+                <div className="mb-5 flex items-center gap-3 border-b border-[#f0dfce] pb-4 pt-2">
                   <button
                     type="button"
                     onClick={() => setMobileRoom(false)}
                     aria-label="Back to mobile menu"
-                    className="text-lg"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#f0dfce] bg-white text-[#8b5a35] transition hover:bg-[#fff0df]"
                   >
-                    ←
+                    <FiChevronLeft size={20} />
                   </button>
-
-                  <h2 className="text-sm font-semibold">Shop by room</h2>
-
-                  <X
-                    size={20}
-                    className="cursor-pointer"
-                    onClick={closeMobileMenu}
-                  />
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c66a22]">Explore</p>
+                    <h2 className="mt-0.5 text-lg font-bold text-[#351d0e]">Shop by room</h2>
+                  </div>
                 </div>
 
-                <div className="flex flex-col space-y-3 p-5">
+                <div className="flex flex-col space-y-3 pb-5">
                   {roomLinks.map(({ name, slug, icon: RoomIcon, description }) => (
                     <NavLink
                       key={slug}
@@ -965,26 +954,22 @@ const Navbar = () => {
             {/* PAGES SCREEN */}
             {mobilePages && (
               <>
-                <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
-
+                <div className="mb-5 flex items-center gap-3 border-b border-[#f0dfce] pb-4 pt-2">
                   <button
+                    type="button"
                     onClick={() => setMobilePages(false)}
-                    className="text-lg"
+                    aria-label="Back to mobile menu"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#f0dfce] bg-white text-[#8b5a35] transition hover:bg-[#fff0df]"
                   >
-                    ←
+                    <FiChevronLeft size={20} />
                   </button>
-
-                  <h2 className="text-base font-semibold">Pages</h2>
-
-                  <X
-                    size={20}
-                    className="cursor-pointer"
-                    onClick={closeMobileMenu}
-                  />
-
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c66a22]">Explore</p>
+                    <h2 className="mt-0.5 text-lg font-bold text-[#351d0e]">Pages</h2>
+                  </div>
                 </div>
 
-                <div className="flex flex-col p-5 space-y-3">
+                <div className="flex flex-col space-y-3 pb-5">
 
                   <NavLink
                     to="/about"
