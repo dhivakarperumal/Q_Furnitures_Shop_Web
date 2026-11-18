@@ -97,6 +97,14 @@ function normalizeOrder(body) {
   if (orderType.toLowerCase() !== "shop") {
     throw requestError(400, "Only shop orders can be created from this page.");
   }
+  const fulfillmentType = readText(body.fulfillment_type, "Fulfillment type", {
+    fallback: "Delivery",
+    max: 16,
+  });
+  if (!["Delivery", "Pickup"].includes(fulfillmentType)) {
+    throw requestError(400, "Fulfillment type must be Delivery or Pickup.");
+  }
+  const requiresDeliveryAddress = fulfillmentType === "Delivery";
 
   const paymentMethod = readText(body.payment_method, "Payment method", { fallback: "Cash" });
   if (!PAYMENT_METHODS.has(paymentMethod)) {
@@ -189,14 +197,17 @@ function normalizeOrder(body) {
     customerName: readText(body.customer_name, "Customer name", { required: true }),
     customerEmail: email || null,
     customerPhone: readText(body.customer_phone, "Customer phone", { required: true, max: 32 }),
-    address: readText(body.address, "Address", { max: 2000 }),
-    streetAddress: readText(body.street_address || body.address, "Street address", { required: true, max: 255 }),
-    city: readText(body.city, "City", { required: true }),
-    district: readText(body.district, "District"),
-    state: readText(body.state, "State", { required: true }),
-    country: readText(body.country, "Country", { fallback: "India" }),
-    zipCode: readText(body.zip_code, "ZIP code", { required: true, max: 32 }),
+    address: requiresDeliveryAddress ? readText(body.address, "Address", { max: 2000 }) : "",
+    streetAddress: requiresDeliveryAddress
+      ? readText(body.street_address || body.address, "Street address", { required: true, max: 255 })
+      : "",
+    city: requiresDeliveryAddress ? readText(body.city, "City", { required: true }) : "",
+    district: requiresDeliveryAddress ? readText(body.district, "District") : "",
+    state: requiresDeliveryAddress ? readText(body.state, "State", { required: true }) : "",
+    country: requiresDeliveryAddress ? readText(body.country, "Country", { fallback: "India" }) : "",
+    zipCode: requiresDeliveryAddress ? readText(body.zip_code, "ZIP code", { required: true, max: 32 }) : "",
     orderType: "Shop",
+    fulfillmentType,
     paymentMethod,
     discountType,
     discountValue,
@@ -604,16 +615,17 @@ function createOrderService(pool) {
 
         const [result] = await connection.execute(
           `INSERT INTO orders
-           (user_id, customer_name, customer_email, customer_phone, order_type, payment_method,
+           (user_id, customer_name, customer_email, customer_phone, order_type, fulfillment_type, payment_method,
             payment_status, status, subtotal, discount_type, discount_value, discount_amount,
              gst_rate, tax_mode, gst_amount, total_amount, razorpay_order_id, razorpay_payment_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             order.userId,
             order.customerName,
             order.customerEmail,
             order.customerPhone,
             order.orderType,
+            order.fulfillmentType,
             order.paymentMethod,
             paymentStatus,
             order.status,
@@ -635,26 +647,28 @@ function createOrderService(pool) {
           [orderId, result.insertId],
         );
 
-        await connection.execute(
-          `INSERT INTO \`address\`
-           (order_id, user_id, customer_name, customer_email, customer_phone, address,
-            street_address, city, district, state, country, zip_code)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            result.insertId,
-            order.userId,
-            order.customerName,
-            order.customerEmail,
-            order.customerPhone,
-            order.address || order.streetAddress,
-            order.streetAddress,
-            order.city,
-            order.district || null,
-            order.state,
-            order.country,
-            order.zipCode,
-          ],
-        );
+        if (order.fulfillmentType === "Delivery") {
+          await connection.execute(
+            `INSERT INTO \`address\`
+             (order_id, user_id, customer_name, customer_email, customer_phone, address,
+              street_address, city, district, state, country, zip_code)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              result.insertId,
+              order.userId,
+              order.customerName,
+              order.customerEmail,
+              order.customerPhone,
+              order.address || order.streetAddress,
+              order.streetAddress,
+              order.city,
+              order.district || null,
+              order.state,
+              order.country,
+              order.zipCode,
+            ],
+          );
+        }
 
         for (const item of orderItems) {
           await connection.execute(
@@ -683,6 +697,7 @@ function createOrderService(pool) {
           id: result.insertId,
           order_id: orderId,
           order_type: order.orderType,
+          fulfillment_type: order.fulfillmentType,
           status: order.status,
           payment_status: paymentStatus,
           payment_method: order.paymentMethod,

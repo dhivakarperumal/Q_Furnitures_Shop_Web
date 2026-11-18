@@ -14,6 +14,7 @@ import {
   Search,
   ShieldCheck,
   ShoppingBag,
+  Store,
   Truck,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -70,6 +71,7 @@ const Checkout = () => {
     customer_name: user?.name || user?.username || "",
     customer_email: user?.email || "",
     customer_phone: user?.phone || "",
+    fulfillment_type: "Delivery",
     street_address: "",
     city: "",
     district: "",
@@ -324,11 +326,23 @@ const Checkout = () => {
     toast.success("Your order has been placed.");
   };
 
+  const getCheckoutPayload = () => ({
+    ...form,
+    ...(form.fulfillment_type === "Pickup" ? {
+      street_address: "",
+      city: "",
+      district: "",
+      state: "",
+      country: "",
+      zip_code: "",
+    } : {}),
+  });
+
   const verifyRazorpayPayment = async (paymentResponse) => {
     setSubmitting(true);
     try {
       const { data } = await api.post("/orders/checkout/verify-payment", {
-        ...form,
+        ...getCheckoutPayload(),
         ...paymentResponse,
       });
       await finishOrder(data);
@@ -350,14 +364,15 @@ const Checkout = () => {
 
     setSubmitting(true);
     let paymentModalOpened = false;
+    const checkoutPayload = getCheckoutPayload();
     try {
       if (form.payment_method === "Cash") {
-        const { data } = await api.post("/orders/checkout", form);
+        const { data } = await api.post("/orders/checkout", checkoutPayload);
         await finishOrder(data);
         return;
       }
 
-      const { data: paymentOrder } = await api.post("/orders/checkout/payment-order", form);
+      const { data: paymentOrder } = await api.post("/orders/checkout/payment-order", checkoutPayload);
       if (!await loadRazorpay()) {
         throw new Error("Could not load Razorpay checkout. Please try again.");
       }
@@ -417,7 +432,7 @@ const Checkout = () => {
               </p>
               <div className="mt-8 flex items-center justify-center gap-2 text-xs font-bold text-[#278044]">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#eaf5ed]"><Check size={15} /></span>
-                Payment and delivery details are securely processed
+                Your {form.fulfillment_type === "Pickup" ? "pickup" : "delivery"} details are securely processed
               </div>
               <Link to="/shop" className="mt-7 inline-flex rounded-lg bg-[#351d0e] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a34720]">
                 Continue shopping
@@ -454,8 +469,10 @@ const Checkout = () => {
                 </li>
                 <li aria-hidden="true" className="mb-5 h-px flex-1 bg-[#a34720]/40 sm:w-7 sm:flex-none" />
                 <li aria-current="step" className="flex flex-col items-center gap-1 text-[11px] font-bold text-[#a34720] sm:text-xs">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#351d0e] text-white shadow-sm"><MapPin size={15} /></span>
-                  Delivery
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#351d0e] text-white shadow-sm">
+                    {form.fulfillment_type === "Pickup" ? <Store size={15} /> : <MapPin size={15} />}
+                  </span>
+                  {form.fulfillment_type}
                 </li>
                 <li aria-hidden="true" className="mb-5 h-px flex-1 bg-[#e5d8ca] sm:w-7 sm:flex-none" />
                 <li className="flex flex-col items-center gap-1 text-[11px] text-[#8b735e] sm:text-xs">
@@ -472,26 +489,70 @@ const Checkout = () => {
 
             <form onSubmit={handleSubmit} className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
               <section className="overflow-hidden rounded-2xl border border-[#e5d8ca] bg-white shadow-sm">
+                <fieldset className="border-b border-[#eee4d8] px-4 py-4 sm:px-7">
+                  <legend className="text-sm font-bold text-[#351d0e]">How would you like to receive your order?</legend>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {[
+                      { value: "Delivery", label: "Delivery", description: "Deliver to my address", Icon: Truck },
+                      { value: "Pickup", label: "Pickup", description: "I will collect my order", Icon: Store },
+                    ].map(({ value, label, description, Icon }) => (
+                      <label
+                        key={value}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${
+                          form.fulfillment_type === value
+                            ? "border-[#a34720] bg-[#a34720]/5 ring-2 ring-[#a34720]/10"
+                            : "border-[#e5d8ca] hover:border-[#a34720]/50"
+                        } ${submitting ? "cursor-not-allowed opacity-60" : ""}`}
+                      >
+                        <input
+                          type="radio"
+                          name="fulfillment_type"
+                          value={value}
+                          checked={form.fulfillment_type === value}
+                          onChange={updateForm}
+                          disabled={submitting}
+                          className="accent-[#a34720]"
+                        />
+                        <Icon size={19} className="shrink-0 text-[#a34720]" />
+                        <span>
+                          <span className="block text-sm font-bold text-[#351d0e]">{label}</span>
+                          <span className="mt-0.5 block text-xs text-[#8b735e]">{description}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eee4d8] bg-gradient-to-r from-[#f7efe5] to-white px-5 py-4 sm:px-7">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#351d0e] text-white"><Truck size={20} /></span>
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#351d0e] text-white">
+                      {form.fulfillment_type === "Pickup" ? <Store size={20} /> : <Truck size={20} />}
+                    </span>
                     <div>
-                      <h2 className="text-lg font-semibold text-[#351d0e]">Delivery address</h2>
-                      <p className="text-xs text-[#8b735e] sm:text-sm">Where should we deliver your furniture?</p>
+                      <h2 className="text-lg font-semibold text-[#351d0e]">
+                        {form.fulfillment_type === "Pickup" ? "Pickup contact details" : "Delivery address"}
+                      </h2>
+                      <p className="text-xs text-[#8b735e] sm:text-sm">
+                        {form.fulfillment_type === "Pickup"
+                          ? "Share your contact details so we can coordinate your pickup."
+                          : "Where should we deliver your furniture?"}
+                      </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={useCurrentLocation}
-                    disabled={locating || submitting}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#a34720] px-3 py-2.5 text-sm font-semibold text-[#a34720] transition hover:bg-[#a34720]/5 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {locating ? <LoaderCircle className="animate-spin" size={16} /> : <LocateFixed size={16} />}
-                    <span>{locating ? "Finding..." : "Use current location"}</span>
-                  </button>
+                  {form.fulfillment_type === "Delivery" && (
+                    <button
+                      type="button"
+                      onClick={useCurrentLocation}
+                      disabled={locating || submitting}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#a34720] px-3 py-2.5 text-sm font-semibold text-[#a34720] transition hover:bg-[#a34720]/5 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {locating ? <LoaderCircle className="animate-spin" size={16} /> : <LocateFixed size={16} />}
+                      <span>{locating ? "Finding..." : "Use current location"}</span>
+                    </button>
+                  )}
                 </div>
                 <div className="p-4 sm:p-6 lg:p-7">
-                  <section className="mb-5">
+                  {form.fulfillment_type === "Delivery" && (
+                    <section className="mb-5">
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <h3 className="flex items-center gap-2 text-sm font-bold text-[#351d0e]">
                         <MapPin size={16} className="text-[#a34720]" /> Saved addresses
@@ -558,7 +619,8 @@ const Checkout = () => {
                         ))}
                       </div>
                     )}
-                  </section>
+                    </section>
+                  )}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <label className={`${labelClass} sm:col-span-2`}>
                       Full name *
@@ -572,30 +634,34 @@ const Checkout = () => {
                       Email address
                       <input className={fieldClass} name="customer_email" value={form.customer_email} onChange={updateForm} type="email" autoComplete="email" maxLength={191} />
                     </label>
-                    <label className={`${labelClass} sm:col-span-2`}>
-                      Street address *
-                      <textarea className={fieldClass} name="street_address" value={form.street_address} onChange={updateForm} autoComplete="street-address" rows={3} required maxLength={255} />
-                    </label>
-                    <label className={labelClass}>
-                      City *
-                      <input className={fieldClass} name="city" value={form.city} onChange={updateForm} autoComplete="address-level2" required maxLength={191} />
-                    </label>
-                    <label className={labelClass}>
-                      District
-                      <input className={fieldClass} name="district" value={form.district} onChange={updateForm} maxLength={191} />
-                    </label>
-                    <label className={labelClass}>
-                      State *
-                      <input className={fieldClass} name="state" value={form.state} onChange={updateForm} autoComplete="address-level1" required maxLength={191} />
-                    </label>
-                    <label className={labelClass}>
-                      PIN code *
-                      <input className={fieldClass} name="zip_code" value={form.zip_code} onChange={updateForm} autoComplete="postal-code" required maxLength={32} />
-                    </label>
-                    <label className={labelClass}>
-                      Country *
-                      <input className={fieldClass} name="country" value={form.country} onChange={updateForm} autoComplete="country-name" required maxLength={191} />
-                    </label>
+                    {form.fulfillment_type === "Delivery" && (
+                      <>
+                        <label className={`${labelClass} sm:col-span-2`}>
+                          Street address *
+                          <textarea className={fieldClass} name="street_address" value={form.street_address} onChange={updateForm} autoComplete="street-address" rows={3} required maxLength={255} />
+                        </label>
+                        <label className={labelClass}>
+                          City *
+                          <input className={fieldClass} name="city" value={form.city} onChange={updateForm} autoComplete="address-level2" required maxLength={191} />
+                        </label>
+                        <label className={labelClass}>
+                          District
+                          <input className={fieldClass} name="district" value={form.district} onChange={updateForm} maxLength={191} />
+                        </label>
+                        <label className={labelClass}>
+                          State *
+                          <input className={fieldClass} name="state" value={form.state} onChange={updateForm} autoComplete="address-level1" required maxLength={191} />
+                        </label>
+                        <label className={labelClass}>
+                          PIN code *
+                          <input className={fieldClass} name="zip_code" value={form.zip_code} onChange={updateForm} autoComplete="postal-code" required maxLength={32} />
+                        </label>
+                        <label className={labelClass}>
+                          Country *
+                          <input className={fieldClass} name="country" value={form.country} onChange={updateForm} autoComplete="country-name" required maxLength={191} />
+                        </label>
+                      </>
+                    )}
                   </div>
                 </div>
               </section>
@@ -651,8 +717,10 @@ const Checkout = () => {
                         <span>{taxSettings ? formatCheckoutAmount(gstAmount) : taxSettingsLoading ? "Loading..." : "Unavailable"}</span>
                       </div>
                       <div className="flex justify-between text-[#725d4b]">
-                        <span>Delivery charges</span>
-                        <span className="rounded-full bg-[#eaf5ed] px-2 py-0.5 text-[10px] font-bold uppercase text-[#278044]">Free</span>
+                        <span>{form.fulfillment_type === "Pickup" ? "Pickup charges" : "Delivery charges"}</span>
+                        <span className="rounded-full bg-[#eaf5ed] px-2 py-0.5 text-[10px] font-bold uppercase text-[#278044]">
+                          {form.fulfillment_type === "Pickup" ? "None" : "Free"}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-[#f7efe5] to-[#f3e6d8] px-3 py-2.5 font-bold text-[#351d0e]">
                         <span>Total amount</span><span className="text-lg">{taxSettings ? formatCheckoutAmount(total) : "Unavailable"}</span>

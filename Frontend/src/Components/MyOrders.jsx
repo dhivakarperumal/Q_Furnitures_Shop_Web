@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, CalendarDays, CreditCard, MapPin, PackageCheck, ShoppingBag } from "lucide-react";
+import { ArrowLeft, CalendarDays, CreditCard, MapPin, PackageCheck, ShoppingBag, Store } from "lucide-react";
 import api from "../api";
 import PageContainer from "./CommenComponents/PageContainer";
 import PageHeader from "./CommenComponents/PageHeader";
@@ -153,13 +153,19 @@ function MyOrders() {
                           <span><span className="font-semibold text-[#351d0e]">Payment</span> · {order.payment_method || "Not specified"}{order.payment_status ? ` · ${order.payment_status}` : ""}</span>
                         </p>
                         <p className="flex items-start gap-2 text-sm text-[#725d4b]">
-                          <MapPin size={16} className="mt-0.5 shrink-0 text-[#a34720]" />
+                          {order.fulfillment_type === "Pickup"
+                            ? <Store size={16} className="mt-0.5 shrink-0 text-[#a34720]" />
+                            : <MapPin size={16} className="mt-0.5 shrink-0 text-[#a34720]" />}
                           <span className="min-w-0">
-                            <span className="font-semibold text-[#351d0e]">Delivery</span>
+                            <span className="font-semibold text-[#351d0e]">
+                              {order.fulfillment_type === "Pickup" ? "Pickup" : "Delivery"}
+                            </span>
                             <span className="mt-1 block break-words">
-                              {[address.street_address || address.address, address.city, address.district, address.state, address.zip_code]
-                                .filter(Boolean)
-                                .join(", ") || "Address unavailable"}
+                              {order.fulfillment_type === "Pickup"
+                                ? "Pickup selected"
+                                : [address.street_address || address.address, address.city, address.district, address.state, address.zip_code]
+                                  .filter(Boolean)
+                                  .join(", ") || "Address unavailable"}
                             </span>
                           </span>
                         </p>

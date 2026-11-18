@@ -22,6 +22,7 @@ function checkoutPayload(body, userId, cartItems, paymentMethod, taxSettings) {
     ...body,
     user_id: userId,
     order_type: "Shop",
+    fulfillment_type: body.fulfillment_type == null ? "Delivery" : body.fulfillment_type,
     status: "Order Placed",
     discount_type: "percentage",
     discount_value: 0,
@@ -127,6 +128,7 @@ function createOrderRouter(orderService, cartService, razorpayService, taxSettin
         cart_hash: cartHash,
         gst_rate: String(appliedTaxSettings.gst_rate),
         tax_mode: appliedTaxSettings.tax_mode,
+        fulfillment_type: orderData.fulfillment_type,
       });
 
       return response.status(201).json({
@@ -169,6 +171,7 @@ function createOrderRouter(orderService, cartService, razorpayService, taxSettin
 
       const cartItems = await cartService.list(userId);
       let appliedTaxSettings;
+      let fulfillmentType;
       const { payment, order: gatewayOrder } = await razorpayService.verifyPayment({
         orderId: request.body.razorpay_order_id,
         paymentId,
@@ -182,13 +185,16 @@ function createOrderRouter(orderService, cartService, razorpayService, taxSettin
           }
           const gstRate = Number(gatewayOrder.notes?.gst_rate);
           const taxMode = gatewayOrder.notes?.tax_mode;
+          const paymentFulfillmentType = gatewayOrder.notes?.fulfillment_type;
           if (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100 ||
-              !["Tax Exclusive", "Tax Inclusive"].includes(taxMode)) {
+              !["Tax Exclusive", "Tax Inclusive"].includes(taxMode) ||
+              !["Delivery", "Pickup"].includes(paymentFulfillmentType)) {
             const error = new Error("The payment order has invalid tax settings. Please contact support.");
             error.status = 409;
             throw error;
           }
           appliedTaxSettings = { gst_rate: gstRate, tax_mode: taxMode };
+          fulfillmentType = paymentFulfillmentType;
           const totals = calculateCartTotals(cartItems, gstRate, taxMode);
           return Math.round(totals.totalAmount * 100);
         },
@@ -199,7 +205,13 @@ function createOrderRouter(orderService, cartService, razorpayService, taxSettin
         return response.status(409).json({ message: "The cart changed after payment was started. Please contact support." });
       }
 
-      const orderData = checkoutPayload(request.body, userId, cartItems, "Online", appliedTaxSettings);
+      const orderData = checkoutPayload(
+        { ...request.body, fulfillment_type: fulfillmentType },
+        userId,
+        cartItems,
+        "Online",
+        appliedTaxSettings,
+      );
       normalizeOrder(orderData);
       const paymentMethod = ["upi", "card"].includes(String(payment.method).toLowerCase())
         ? String(payment.method).toLowerCase() === "upi" ? "UPI" : "Card"

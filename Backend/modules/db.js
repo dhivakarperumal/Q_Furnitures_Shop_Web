@@ -852,6 +852,7 @@ async function initializeDatabase(pool) {
       customer_email VARCHAR(191) NULL,
       customer_phone VARCHAR(32) NOT NULL,
       order_type VARCHAR(32) NOT NULL DEFAULT 'Shop',
+      fulfillment_type VARCHAR(16) NOT NULL DEFAULT 'Delivery',
       payment_method VARCHAR(32) NOT NULL,
       payment_status VARCHAR(32) NOT NULL DEFAULT 'Pending',
       status VARCHAR(32) NOT NULL DEFAULT 'Order Placed',
@@ -1020,6 +1021,7 @@ async function initializeDatabase(pool) {
   const existingOrderColumns = new Set(orderColumns.map((column) => column.COLUMN_NAME));
   const orderMigrations = [
     ["order_id", "ALTER TABLE orders ADD COLUMN order_id VARCHAR(32) NULL"],
+    ["fulfillment_type", "ALTER TABLE orders ADD COLUMN fulfillment_type VARCHAR(16) NOT NULL DEFAULT 'Delivery'"],
     ["subtotal", "ALTER TABLE orders ADD COLUMN subtotal DECIMAL(12,2) NOT NULL DEFAULT 0"],
     ["discount_type", "ALTER TABLE orders ADD COLUMN discount_type VARCHAR(16) NOT NULL DEFAULT 'percentage'"],
     ["discount_value", "ALTER TABLE orders ADD COLUMN discount_value DECIMAL(12,2) NOT NULL DEFAULT 0"],
