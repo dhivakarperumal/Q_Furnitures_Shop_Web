@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
     FiActivity,
     FiAlertCircle,
@@ -755,8 +756,8 @@ function Reports() {
                 </section>
             </div>
 
-            {sourceModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onMouseDown={(event) => {
+            {sourceModal && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md" role="presentation" onMouseDown={(event) => {
                     if (event.target === event.currentTarget) setSourceModal("");
                 }}>
                     <form onSubmit={submitSource} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl">
@@ -845,11 +846,12 @@ function Reports() {
                             </button>
                         </div>
                     </form>
-                </div>
+                </div>,
+                document.body,
             )}
 
-            {detailRow && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onMouseDown={(event) => {
+            {detailRow && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md" role="presentation" onMouseDown={(event) => {
                     if (event.target === event.currentTarget) setDetailRow(null);
                 }}>
                     <section className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl" role="dialog" aria-modal="true" aria-label="Report row details">
@@ -864,7 +866,8 @@ function Reports() {
                             </div>)}
                         </dl>
                     </section>
-                </div>
+                </div>,
+                document.body,
             )}
         </div>
     );
