@@ -86,12 +86,12 @@ const Footer = () => {
 
           <div className="lg:col-span-2">
             <h2 className="mb-5 text-sm font-bold uppercase tracking-[0.16em] text-amber-300">Quick Links</h2>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-4 text-sm">
               {quickLinks.map(({ label, to, icon: Icon }) => (
                 <li key={to}>
                   <Link to={to} className="group flex items-center gap-2 text-white/75 transition hover:text-white">
                     <Icon size={15} className="text-primary-light" />
-                    <span className="border-b border-transparent pb-0.5 group-hover:border-amber-300">{label}</span>
+                    <span className="border-b border-transparent group-hover:border-amber-300">{label}</span>
                   </Link>
                 </li>
               ))}
@@ -100,7 +100,7 @@ const Footer = () => {
 
           <div className="lg:col-span-2">
             <h2 className="mb-5 text-sm font-bold uppercase tracking-[0.16em] text-amber-300">Categories</h2>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-4 text-sm">
               {categories.slice(0, 6).map((category) => {
                 const name = category.name || category.category_name || category.categoryName;
                 if (!name) return null;
