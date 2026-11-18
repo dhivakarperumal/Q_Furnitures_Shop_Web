@@ -101,7 +101,7 @@ const Shop = () => {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [listView, setListView] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(true);
   const [sortOpen, setSortOpen] = useState(false);
   const [priceEdit, setPriceEdit] = useState(null);
   const sortDropdownRef = useRef(null);
