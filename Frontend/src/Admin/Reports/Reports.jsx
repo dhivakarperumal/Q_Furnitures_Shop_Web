@@ -23,7 +23,7 @@ const Reports = () => {
         const fetchReports = async () => {
             if (!reportsCache) setLoading(true);
             try {
-                const res = await api.get('/reports');
+                const res = await api.get("/dashboard", { params: { range: "all" } });
                 setReportsData(res.data);
                 setReportsCache(res.data);
             } catch (error) {
@@ -36,11 +36,32 @@ const Reports = () => {
         fetchReports();
     }, []);
 
+    const revenue = Number(reportsData?.stats?.find((stat) => stat.label === "Revenue")?.value || 0);
+    const orderCount = Number(reportsData?.stats?.find((stat) => stat.label === "Orders")?.value || 0);
+    const activeCustomerCount = Number(reportsData?.stats?.find((stat) => stat.label === "Customers")?.value || 0);
+    const cancelledOrderCount = Number(reportsData?.orderStatusCounts?.Cancelled || 0);
+    const reportStats = [
+        { label: "Total Revenue", value: formatCurrency(revenue), trend: "All recorded orders", color: "text-blue-600" },
+        { label: "Total Orders", value: orderCount, trend: "All recorded orders", color: "text-emerald-600" },
+        { label: "Active Customers", value: activeCustomerCount, trend: "Active accounts", color: "text-orange-600" },
+        {
+            label: "Cancel Rate",
+            value: `${orderCount ? ((cancelledOrderCount / orderCount) * 100).toFixed(1) : "0.0"}%`,
+            trend: `${cancelledOrderCount} cancelled`,
+            color: "text-rose-600",
+        },
+    ];
+    const monthlySales = (reportsData?.revenueTrends || []).slice(-12);
+    const statusDistribution = Object.entries(reportsData?.orderStatusCounts || {})
+        .map(([label, count]) => ({ label, count: Number(count) || 0 }))
+        .filter((status) => status.count > 0);
+    const statusTotal = statusDistribution.reduce((total, status) => total + status.count, 0);
+
     const getStatIcon = (label) => {
         switch (label) {
-            case "Gross Profit": return <FiTrendingUp />;
-            case "New Customers": return <FiActivity />;
-            case "Avg. Order Value": return <FiPieChart />;
+            case "Total Revenue": return <FiTrendingUp />;
+            case "Total Orders": return <FiActivity />;
+            case "Active Customers": return <FiPieChart />;
             case "Cancel Rate": return <FiBarChart2 />;
             default: return <FiBarChart2 />;
         }
@@ -75,7 +96,7 @@ const Reports = () => {
 
             {/* Top Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {reportsData?.stats?.map((stat, i) => (
+                {reportStats.map((stat, i) => (
                     <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0 ${[
                             "bg-gradient-to-br from-blue-500 to-indigo-600",
@@ -96,42 +117,32 @@ const Reports = () => {
                 ))}
             </div>
 
-            {/* Main Charts Placeholder */}
+            {/* Reports */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h3 className="text-xl font-bold text-slate-800">Sales Comparison</h3>
-                            <p className="text-sm text-gray-400 font-medium">Monthly performance vs last year</p>
+                            <h3 className="text-xl font-bold text-slate-800">Monthly Sales</h3>
+                            <p className="text-sm text-gray-400 font-medium">Revenue by month</p>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
                                 <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-                                <span className="text-xs font-bold text-gray-400">Current</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 bg-gray-200 rounded-full"></span>
-                                <span className="text-xs font-bold text-gray-400">Previous</span>
+                                <span className="text-xs font-bold text-gray-400">Revenue</span>
                             </div>
                         </div>
                     </div>
                     {/* Chart */}
                     <div className="h-64 flex items-end justify-between gap-4">
-                        {reportsData?.monthlySales?.map((h, i) => {
-                            // Find max value to normalize heights dynamically
-                            const maxVal = Math.max(...(reportsData?.monthlySales || [1]));
-                            const heightPct = maxVal > 0 ? (h / maxVal) * 100 : 0;
-                            // Dummy previous month logic for comparison visually
-                            const prevH = reportsData?.monthlySales[i === 0 ? 11 : i - 1] || 0;
-                            const prevPct = maxVal > 0 ? (prevH / maxVal) * 100 : 0;
-
+                        {monthlySales.map((entry, i) => {
+                            const maxVal = Math.max(...monthlySales.map((month) => Number(month.revenue) || 0), 1);
+                            const revenuePct = (Number(entry.revenue) / maxVal) * 100;
                             return (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-2 group-hover:cursor-pointer" title={`Sales: ${formatCurrency(h)}`}>
+                                <div key={`${entry.month}-${i}`} className="flex-1 flex flex-col items-center gap-2 group-hover:cursor-pointer" title={`${entry.month}: ${formatCurrency(entry.revenue)}`}>
                                     <div className="w-full flex items-end gap-1 h-48">
-                                        <div className="flex-1 bg-gray-100 rounded-t-lg transition-all" style={{ height: `${prevPct}%` }}></div>
-                                        <div className="flex-1 bg-blue-500 rounded-t-lg transition-all" style={{ height: `${heightPct}%` }}></div>
+                                        <div className="w-full bg-blue-500 rounded-t-lg transition-all" style={{ height: `${revenuePct}%` }}></div>
                                     </div>
-                                    <span className="text-[10px] font-bold text-gray-300">M{i + 1}</span>
+                                    <span className="text-[10px] font-bold text-gray-500">{String(entry.month).split(" ")[0]}</span>
                                 </div>
                             );
                         })}
@@ -139,21 +150,24 @@ const Reports = () => {
                 </div>
 
                 <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">Category Distribution</h3>
-                    <p className="text-sm text-gray-400 font-medium mb-8">Sales percentage by saree types</p>
+                    <h3 className="text-xl font-bold text-slate-800 mb-2">Order Status Distribution</h3>
+                    <p className="text-sm text-gray-400 font-medium mb-8">Share of orders by status</p>
 
                     <div className="space-y-6">
-                        {reportsData?.categoryDistribution?.map((cat, i) => (
+                        {statusDistribution.map((status, i) => (
                             <div key={i} className="space-y-2">
                                 <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest">
-                                    <span className="text-gray-400">{cat.label}</span>
-                                    <span className="text-slate-700">{cat.percent}%</span>
+                                    <span className="text-gray-400">{status.label}</span>
+                                    <span className="text-slate-700">{((status.count / statusTotal) * 100).toFixed(1)}%</span>
                                 </div>
                                 <div className="h-2.5 w-full bg-gray-50 rounded-full overflow-hidden border border-gray-100">
-                                    <div className={`${cat.color} h-full rounded-full transition-all duration-1000`} style={{ width: `${cat.percent}%` }}></div>
+                                    <div className={`h-full rounded-full transition-all duration-1000 ${["bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-violet-500", "bg-cyan-500", "bg-rose-500"][i % 6]}`} style={{ width: `${(status.count / statusTotal) * 100}%` }}></div>
                                 </div>
                             </div>
                         ))}
+                        {statusDistribution.length === 0 && (
+                            <p className="text-sm font-medium text-gray-400">No order data available yet.</p>
+                        )}
                     </div>
                 </div>
             </div>
