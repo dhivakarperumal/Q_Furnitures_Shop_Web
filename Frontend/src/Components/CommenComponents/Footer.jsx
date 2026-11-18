@@ -75,7 +75,7 @@ const Footer = () => {
                 className="h-12 w-auto max-w-[150px] object-contain"
               />
             </Link>
-            <p className="max-w-sm text-sm leading-7 text-white/70">
+            <p className="max-w-sm text-justify text-sm leading-7 text-white/70">
               Thoughtfully selected furniture for every room, designed to bring comfort,
               style, and lasting quality to your home.
             </p>
