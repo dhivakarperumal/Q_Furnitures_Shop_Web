@@ -5,7 +5,7 @@ import {
   CheckCircle2,
   ArrowRight,
   CalendarDays,
-  CreditCard,
+  LayoutGrid,
   Building2,
   Eye,
   EyeOff,
@@ -18,11 +18,14 @@ import {
   PackageCheck,
   Pencil,
   Plus,
+  RefreshCw,
   ShoppingBag,
+  Truck,
   Trash2,
   UserRound,
   Upload,
   X,
+  XCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -47,7 +50,13 @@ const tabs = [
 
 const accountHeroImage = resolveMediaUrl("/uploads/banners/1a4fd15f-b369-42f2-9d40-47fcb5d305a2.png");
 const MAX_BIRTH_DATE = new Date().toISOString().slice(0, 10);
-const ORDER_FILTERS = ["All Orders", "Processing", "Shipped", "Delivered", "Cancelled"];
+const ORDER_FILTERS = [
+  { label: "All Orders", icon: LayoutGrid },
+  { label: "Processing", icon: RefreshCw },
+  { label: "Shipped", icon: Truck },
+  { label: "Delivered", icon: CheckCircle2 },
+  { label: "Cancelled", icon: XCircle },
+];
 const PASSWORD_REQUIREMENTS = [
   { label: "At least 8 characters", test: (value) => value.length >= 8 },
   { label: "One uppercase letter", test: (value) => /[A-Z]/.test(value) },
@@ -70,13 +79,6 @@ function formatAmount(value) {
     currency: "INR",
     maximumFractionDigits: 2,
   }).format(Number.isFinite(amount) ? amount : 0);
-}
-
-function formatDate(value) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "Date unavailable"
-    : date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function statusClass(status) {
@@ -275,6 +277,19 @@ function Account() {
   const visibleOrders = useMemo(() => orders.filter(
     (order) => selectedOrderFilter === "All Orders" || orderFilterGroup(order.status) === selectedOrderFilter,
   ), [orders, selectedOrderFilter]);
+  const orderCounts = useMemo(() => {
+    const counts = {
+      "All Orders": orders.length,
+      Processing: 0,
+      Shipped: 0,
+      Delivered: 0,
+      Cancelled: 0,
+    };
+    orders.forEach((order) => {
+      counts[orderFilterGroup(order.status)] += 1;
+    });
+    return counts;
+  }, [orders]);
 
   async function saveProfile(event) {
     event.preventDefault();
@@ -742,23 +757,25 @@ function Account() {
                     <p className="text-sm text-[#806d5d]">Check the status and summary of your recent orders.</p>
                   </div>
                 </div>
-                <div role="tablist" aria-label="Filter orders" className="mb-5 flex flex-wrap gap-2 border-b border-[#eee4d8] pb-2">
-                  {ORDER_FILTERS.map((filter) => (
+                <div role="tablist" aria-label="Filter orders" className="mb-5 flex flex-wrap items-center gap-2 border-b border-[#eee4d8] pb-2 sm:flex-nowrap sm:overflow-x-auto">
+                  {ORDER_FILTERS.map(({ label, icon: Icon }) => (
                     <button
-                      key={filter}
+                      key={label}
                       type="button"
                       role="tab"
-                      aria-selected={selectedOrderFilter === filter}
-                      onClick={() => setSelectedOrderFilter(filter)}
-                      className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition sm:text-sm ${
-                        selectedOrderFilter === filter
-                          ? "bg-[#fff0df] text-[#a34720]"
-                          : "text-[#806d5d] hover:bg-[#fcf7f1]"
+                      aria-selected={selectedOrderFilter === label}
+                      onClick={() => setSelectedOrderFilter(label)}
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-xl border px-1.5 py-2 text-[10px] font-bold transition xl:px-2.5 xl:py-2.5 xl:text-xs ${
+                        selectedOrderFilter === label
+                          ? "border-[#f07816] bg-[#f07816] text-white shadow-sm"
+                          : "border-[#f1e7dd] bg-[#fff7ef] text-[#351d0e] shadow-[0_2px_5px_rgba(53,29,14,0.06)] hover:border-[#edc9a9] hover:bg-[#fff0df]"
                       }`}
                     >
-                      {filter}
+                      <Icon size={14} className="shrink-0" />
+                      <span>{label} ({orderCounts[label]})</span>
                     </button>
                   ))}
+                  <span aria-hidden="true" className="hidden h-px min-w-4 flex-1 bg-[#f07816] sm:block" />
                 </div>
                 {ordersLoading ? (
                   <div className="flex items-center gap-2 py-8 text-sm text-[#806d5d]">
@@ -793,59 +810,53 @@ function Account() {
                       return (
                       <article
                         key={orderNumber}
-                        className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-x-3 gap-y-4 overflow-hidden rounded-2xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white p-3 shadow-[0_8px_24px_rgba(53,29,14,0.05)] transition hover:border-[#edc9a9] sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:gap-4 sm:p-4 lg:grid-cols-[112px_minmax(0,1fr)_1px_minmax(200px,0.7fr)] lg:gap-5 lg:px-5 lg:py-4"
+                        className="grid grid-cols-[56px_minmax(0,1fr)_36px] items-center gap-x-3 gap-y-2 overflow-hidden rounded-xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white px-2 py-1 shadow-[0_5px_16px_rgba(53,29,14,0.05)] transition hover:border-[#edc9a9] hover:border-l-[#f07816] sm:grid-cols-[56px_minmax(0,1fr)_minmax(155px,0.65fr)_40px] sm:gap-x-3 sm:gap-y-0 sm:py-1 lg:grid-cols-[64px_minmax(0,1fr)_minmax(175px,0.65fr)_44px] lg:gap-x-4 lg:px-3 lg:py-1.5"
                       >
-                        <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#f1e7dd] bg-[#fffaf5] p-1 shadow-sm sm:h-20 sm:w-20 lg:h-28 lg:w-28">
-                            {firstItem?.image ? (
-                              <img
-                                src={resolveMediaUrl(firstItem.image)}
-                                alt={firstItem.product_name || firstItem.name || "Ordered furniture"}
-                                className="h-full w-full object-contain p-1"
-                              />
-                            ) : <PackageCheck size={25} className="text-[#a34720]" />}
+                        <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#f1e7dd] bg-[#fffaf5] p-1 shadow-sm lg:h-16 lg:w-16">
+                          {firstItem?.image ? (
+                            <img
+                              src={resolveMediaUrl(firstItem.image)}
+                              alt={firstItem.product_name || firstItem.name || "Ordered furniture"}
+                              className="h-full w-full object-contain p-1"
+                            />
+                          ) : <PackageCheck size={25} className="text-[#a34720]" />}
                         </span>
                         <div className="min-w-0">
-                          <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-lg bg-[#fff0df] px-2.5 py-1.5 text-xs font-extrabold text-[#a34720] sm:text-sm">
-                            <CalendarDays size={15} className="shrink-0" />
+                          <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-md bg-[#fff0df] px-2 py-0.5 text-[10px] font-extrabold leading-tight text-[#a34720] sm:text-xs">
+                            <CalendarDays size={13} className="shrink-0" />
                             <span className="truncate">{orderNumber}</span>
                           </span>
-                          <h3 className="mt-2 line-clamp-2 text-base font-extrabold leading-snug text-[#351d0e] sm:text-lg">
-                              {firstItem?.product_name || firstItem?.name || "Furniture order"}
-                              {Number(firstItem?.quantity) > 1 ? ` × ${firstItem.quantity}` : ""}
+                          <h3 className="mt-0.5 line-clamp-2 text-xs font-extrabold leading-tight text-[#351d0e] sm:line-clamp-1 sm:text-[13px]">
+                            {firstItem?.product_name || firstItem?.name || "Furniture order"}
+                            {Number(firstItem?.quantity) > 1 ? ` × ${firstItem.quantity}` : ""}
                           </h3>
                           {Array.isArray(order.items) && order.items.length > 1 && (
-                            <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[#806d5d]">
-                              <Layers size={14} />
-                              + {order.items.length - 1} more item(s)
+                            <p className="mt-0 inline-flex max-w-full items-center gap-1 text-[10px] leading-tight text-[#806d5d]">
+                              <Layers size={12} />
+                              <span className="min-w-0 break-words">+ {order.items.length - 1} more item(s)</span>
                             </p>
                           )}
-                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#806d5d]">
-                            <span>Placed {formatDate(order.created_at)}</span>
-                            <span className="inline-flex items-center gap-1">
-                              <CreditCard size={12} /> {order.payment_method || "Payment not specified"}
-                            </span>
-                          </div>
                         </div>
-                        <div className="col-span-2 flex min-w-0 items-center justify-between gap-3 border-t border-[#eee4d8] pt-3 sm:col-span-3 lg:col-span-1 lg:border-l lg:border-t-0 lg:py-1 lg:pl-5 lg:pt-0">
-                          <div className="min-w-0">
-                            <span className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${statusClass(status)}`}>
-                              <PackageCheck size={15} className="shrink-0" />
+                        <div className="col-span-3 flex min-w-0 items-center justify-between gap-2 border-t border-[#eee4d8] pt-2.5 sm:col-span-1 sm:flex-col sm:items-start sm:justify-center sm:border-l sm:border-t-0 sm:py-0 sm:pl-3 sm:pt-0 lg:pl-4">
+                          <span className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight ${statusClass(status)}`}>
+                              <PackageCheck size={13} className="shrink-0" />
                               <span className="truncate">{status}</span>
-                            </span>
-                            <p className="mt-2 text-xs text-[#806d5d]">Total Amount</p>
-                            <p className="mt-0.5 text-lg font-extrabold leading-tight text-[#351d0e] sm:text-2xl">
+                          </span>
+                          <div className="flex flex-col items-end gap-0 text-right sm:mt-0.5 sm:block sm:text-left">
+                            <p className="text-[10px] leading-none text-[#806d5d]">Total Amount</p>
+                            <p className="text-base font-extrabold leading-none text-[#351d0e] sm:text-lg">
                               {formatAmount(order.total_amount)}
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedOrder(order)}
-                            aria-label={`View details for order ${orderNumber}`}
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:h-12 sm:w-12 lg:h-14 lg:w-14"
-                          >
-                            <ArrowRight size={22} />
-                          </button>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedOrder(order)}
+                          aria-label={`View details for order ${orderNumber}`}
+                          className="col-start-3 row-start-1 flex h-9 w-9 items-center justify-center rounded-full border border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:col-start-auto sm:row-start-auto sm:h-10 sm:w-10 lg:h-11 lg:w-11"
+                        >
+                          <ArrowRight size={19} />
+                        </button>
                       </article>
                       );
                     })}
