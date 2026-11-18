@@ -2,14 +2,19 @@ import {
   Armchair,
   ArrowRight,
   BadgeCheck,
+  Crown,
   Eye,
   Headphones,
   HeartHandshake,
+  House,
+  Laptop,
   PackageCheck,
   Ruler,
   Sparkles,
+  Store,
   Target,
   Truck,
+  Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { resolveMediaUrl } from "../../utils/media";
@@ -50,6 +55,34 @@ const steps = [
   ["Settle in", "Make yourself comfortable and enjoy your space.", HeartHandshake],
 ];
 
+const journey = [
+  {
+    year: "2018",
+    description: "Established in 2018 with strong Indian family roots and values.",
+    icon: House,
+  },
+  {
+    year: "2020",
+    description: "Opened our first retail store with in-house manufacturing.",
+    icon: Store,
+  },
+  {
+    year: "2022",
+    description: "Brought our website and online shopping to customers.",
+    icon: Laptop,
+  },
+  {
+    year: "2024",
+    description: "A growing community of homes and happy customers.",
+    icon: Users,
+  },
+  {
+    year: "Today",
+    description: "Contemporary furniture for homes across India.",
+    icon: Crown,
+  },
+];
+
 const About = () => (
   <>
   <PageHeader title="About Us"  />
@@ -58,7 +91,7 @@ const About = () => (
       <PageContainer>
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="max-w-2xl">
-            <p className="text-xs font-bold tracking-wide text-[#d9650b] sm:text-sm">About Dhiva Furniture</p>
+            <p className="text-xs font-bold tracking-wide text-[#d9650b] sm:text-sm">About Q Living Furniture</p>
             <h2 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
               Furniture for <span className="text-[#ef7412]">Better Living</span>
             </h2>
@@ -144,13 +177,44 @@ const About = () => (
       </PageContainer>
     </section>
 
+    <section className="py-12 sm:py-14 lg:py-16">
+      <PageContainer>
+        <div className="grid items-stretch gap-7 md:grid-cols-[0.7fr_2.3fr] md:gap-8">
+          <div className="flex items-center">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a06e46]">Our journey</p>
+              <h2 className="mt-2 text-3xl font-extrabold leading-[1.05] tracking-tight text-[#351d0e] sm:text-4xl">
+                The Q Living <span className="text-[#ef7412]">Furniture</span><br />Journey
+              </h2>
+              <span className="mt-4 block h-1 w-12 rounded-full bg-[#f07816]" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 border-t border-[#e8ddd1] pt-6 sm:grid-cols-3 md:grid-cols-5 md:border-l md:border-t-0 md:pl-7 md:pt-0">
+            {journey.map(({ year, description, icon: Icon }, index) => (
+              <article key={year} className="relative flex min-h-[150px] flex-col text-center md:min-h-[190px]">
+                {index > 0 && (
+                  <span className="absolute left-[-50%] top-[39px] hidden h-px w-full bg-[#ef7412]/25 md:block" />
+                )}
+                <span className="relative z-10 mx-auto flex h-20 w-20 items-center justify-center rounded-2xl border border-[#f2dfcf] bg-[#fffaf4] text-[#ef7412] shadow-[0_8px_24px_rgba(53,29,14,0.06)]">
+                  <Icon size={36} strokeWidth={1.7} />
+                </span>
+                <h3 className="mt-4 text-lg font-extrabold text-[#ef7412]">{year}</h3>
+                <p className="mx-auto mt-1 max-w-[150px] text-xs leading-5 text-[#806d5d]">{description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </PageContainer>
+    </section>
+
     <section className="py-14 sm:py-18 lg:py-20">
       <PageContainer>
         <div className="grid gap-8 lg:grid-cols-[0.75fr_1.6fr] lg:items-center lg:gap-12">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a06e46]">The Dhiva difference</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a06e46]">The Q Living difference</p>
             <h2 className="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-[#351d0e] sm:text-4xl">
-              Why Choose <span className="text-[#ef7412]">Dhiva Furniture?</span>
+              Why Choose <span className="text-[#ef7412]">Q Living Furniture?</span>
             </h2>
             <span className="mt-3 block h-1 w-12 rounded-full bg-[#f07816]" />
             <p className="mt-4 max-w-sm text-sm leading-7 text-[#725d4b]">
