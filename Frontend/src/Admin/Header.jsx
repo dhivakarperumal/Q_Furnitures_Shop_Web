@@ -14,6 +14,7 @@ import {
   X,
   AlertTriangle,
   TrendingDown,
+  ArrowLeft,
 } from "lucide-react";
 
 import { useAuth } from "../PrivateRouter/AuthContext";
@@ -425,6 +426,17 @@ const Header = ({ onMenuClick, onSearchQueryChange }) => {
           >
             <Menu className="w-6 h-6" />
           </button>
+
+          {isShopCreatePage && (
+            <Link
+              to="/admin/orders/billing"
+              aria-label="Back to Billing"
+              title="Back to Billing"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-200 bg-white text-primary-dark shadow-sm transition hover:bg-orange-50 hover:shadow-md"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          )}
 
           {isShopCreatePage && (
             <Link
