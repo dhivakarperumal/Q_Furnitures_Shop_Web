@@ -637,53 +637,7 @@ const Navbar = () => {
             aria-label="Mobile navigation"
             className="absolute bottom-0 right-0 top-0 flex h-full w-[min(94vw,380px)] flex-col border-l border-[#f0dfce] bg-[#fffaf5] shadow-2xl"
           >
-            <div className="flex shrink-0 items-center gap-2 border-b border-[#f0e5da] bg-white px-3 py-3">
-              <Link to="/" onClick={closeMobileMenu} aria-label="Q Living Furniture home" className="mr-auto flex min-w-0 items-center">
-                <img src="/images/logo.png" alt="Q Living Furniture" className="h-10 w-32 object-contain" />
-              </Link>
-              <button
-                type="button"
-                onClick={(event) => {
-                  openWishlist(event);
-                  closeMobileMenu();
-                }}
-                aria-label="Open wishlist"
-                className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#f1e3d4] text-[#351d0e] transition hover:bg-[#fff0df]"
-              >
-                <Heart size={18} />
-                {wishlist.length > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-[9px] font-bold text-white">{wishlist.length}</span>}
-              </button>
-              <button
-                type="button"
-                onClick={(event) => {
-                  openCart(event);
-                  closeMobileMenu();
-                }}
-                aria-label="Open cart"
-                className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#f1e3d4] text-[#351d0e] transition hover:bg-[#fff0df]"
-              >
-                <ShoppingCart size={18} />
-                {cart.length > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-[9px] font-bold text-white">{cart.length}</span>}
-              </button>
-              <Link
-                to={user ? "/account" : "/login"}
-                onClick={closeMobileMenu}
-                aria-label={user ? "My account" : "Sign in"}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#f1e3d4] bg-white text-sm font-bold text-[#351d0e] transition hover:bg-[#fff0df]"
-              >
-                {user ? profileInitial : <User size={18} />}
-              </Link>
-              <button
-                type="button"
-                onClick={closeMobileMenu}
-                aria-label="Close menu"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark"
-              >
-                <X size={19} />
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+            <div className="absolute inset-0 min-h-0 overflow-y-auto px-3 py-4">
 
             {/* MENU SCREEN */}
             {!mobileCategory && !mobilePages && (
