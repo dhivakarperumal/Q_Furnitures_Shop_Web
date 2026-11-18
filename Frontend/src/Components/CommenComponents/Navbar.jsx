@@ -412,7 +412,6 @@ const Navbar = () => {
                 Hot
               </span>
             </NavLink>
-            <Link to="/about" className={navClass({ isActive: false })}>Interior Ideas</Link>
             <div className="relative" ref={pagesRef}>
               <button
                 type="button"
@@ -810,15 +809,6 @@ const Navbar = () => {
                     <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiTag size={16} /></span>
                     Combo Offers
                   </NavLink>
-
-                  <Link
-                    to="/about"
-                    onClick={closeMobileMenu}
-                    className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-[#f0e5da] bg-white px-4 py-3 text-sm font-semibold text-[#351d0e] transition hover:border-primary/40"
-                  >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0df] text-primary"><FiFileText size={16} /></span>
-                    Interior Ideas
-                  </Link>
 
                   <button
                     onClick={() => setMobilePages(true)}
