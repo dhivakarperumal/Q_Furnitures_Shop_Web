@@ -3,7 +3,6 @@ import {
   Camera,
   Check,
   CheckCircle2,
-  ArrowRight,
   CalendarDays,
   LayoutGrid,
   Building2,
@@ -840,7 +839,7 @@ function Account() {
                               </p>
                             )}
                           </div>
-                          <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_52px] items-center gap-3 border-t border-[#eee4d8] pt-3 sm:col-span-1 sm:grid-cols-1 sm:border-l sm:border-t-0 sm:border-[#eee4d8] sm:px-3 sm:pt-0">
+                          <div className="col-span-2 flex items-center border-t border-[#eee4d8] pt-3 sm:col-span-1 sm:border-l sm:border-t-0 sm:border-[#eee4d8] sm:px-3 sm:pt-0">
                             <div className="min-w-0">
                               <span className={`inline-flex max-w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-extrabold ${statusClass(status)}`}>
                                 <PackageCheck size={15} className="shrink-0" />
@@ -853,14 +852,6 @@ function Account() {
                                 </p>
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedOrder(order)}
-                              aria-label={`View details for order ${orderNumber}`}
-                              className="flex h-12 w-12 items-center justify-center justify-self-end rounded-full border-2 border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:row-start-1 sm:self-start"
-                            >
-                              <ArrowRight size={23} />
-                            </button>
                           </div>
                         </article>
                       );
