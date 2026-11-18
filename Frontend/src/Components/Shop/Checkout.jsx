@@ -454,7 +454,7 @@ const Checkout = () => {
           <div className="absolute -left-24 bottom-8 h-64 w-64 rounded-full bg-[#f4d8bd]/35 blur-3xl" />
           <div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-[#ffdfc5]/40 blur-3xl" />
         </div>
-        <PageContainer className="relative z-10 !max-w-[1060px]">
+        <PageContainer>
           {loadingCart ? (
             <div className="mt-6 rounded-xl border border-[#e5d8ca] bg-white p-8 text-center text-sm text-[#8b735e]">Loading your cart...</div>
           ) : cart.length === 0 ? (
@@ -818,24 +818,6 @@ const Checkout = () => {
               </aside>
             </form>
 
-            <section aria-label="Store service benefits" className="mt-5 grid grid-cols-2 gap-2 rounded-2xl border border-white/80 bg-white/80 p-3 shadow-[0_8px_24px_rgba(74,38,19,0.06)] sm:grid-cols-4 sm:rounded-full sm:px-5">
-              {[
-                { icon: ShieldCheck, title: "Secure Payments", detail: "Safe and encrypted transactions" },
-                { icon: Truck, title: "Reliable Delivery", detail: "On-time, careful furniture delivery" },
-                { icon: Headphones, title: "Customer Support", detail: "Need help? We’re here for you" },
-                { icon: RotateCcw, title: "Easy Returns", detail: "Hassle-free returns within 7 days" },
-              ].map(({ icon: Icon, title, detail }, index) => (
-                <div key={title} className={`flex items-center gap-2.5 px-2 py-2 ${index < 3 ? "sm:border-r sm:border-[#eadccd]" : ""}`}>
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff0df] text-[#ef7412]">
-                    <Icon size={20} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-xs font-bold text-[#351d0e]">{title}</span>
-                    <span className="mt-0.5 block text-[10px] leading-snug text-[#8b735e]">{detail}</span>
-                  </span>
-                </div>
-              ))}
-            </section>
             </>
           )}
         </PageContainer>
