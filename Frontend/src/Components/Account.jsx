@@ -3,12 +3,15 @@ import {
   Camera,
   Check,
   CheckCircle2,
+  ArrowRight,
+  CalendarDays,
   CreditCard,
   Building2,
   Eye,
   EyeOff,
   Home,
   KeyRound,
+  Layers,
   LoaderCircle,
   LogOut,
   MapPin,
@@ -786,21 +789,13 @@ function Account() {
                     {visibleOrders.map((order) => {
                       const firstItem = Array.isArray(order.items) ? order.items[0] : null;
                       const status = order.status || "Order Placed";
+                      const orderNumber = order.order_id || `ORD${String(order.id).padStart(4, "0")}`;
                       return (
-                      <article key={order.order_id || order.id} className="rounded-xl border border-[#eee4d8] p-4 transition hover:border-[#edc9a9]">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <h3 className="font-bold">{order.order_id || `ORD${String(order.id).padStart(4, "0")}`}</h3>
-                            <p className="mt-1 text-xs text-[#806d5d]">
-                              Placed {formatDate(order.created_at)} · {Array.isArray(order.items) ? order.items.length : 0} item(s)
-                            </p>
-                          </div>
-                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass(status)}`}>
-                            {status}
-                          </span>
-                        </div>
-                        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-[#f1e7dd] pt-4">
-                          <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#fff7ef]">
+                      <article
+                        key={orderNumber}
+                        className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-x-3 gap-y-4 overflow-hidden rounded-2xl border border-[#f1e7dd] border-l-4 border-l-[#f07816] bg-white p-3 shadow-[0_8px_24px_rgba(53,29,14,0.05)] transition hover:border-[#edc9a9] sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:gap-4 sm:p-4 lg:grid-cols-[112px_minmax(0,1fr)_1px_minmax(200px,0.7fr)] lg:gap-5 lg:px-5 lg:py-4"
+                      >
+                        <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#f1e7dd] bg-[#fffaf5] p-1 shadow-sm sm:h-20 sm:w-20 lg:h-28 lg:w-28">
                             {firstItem?.image ? (
                               <img
                                 src={resolveMediaUrl(firstItem.image)}
@@ -808,31 +803,47 @@ function Account() {
                                 className="h-full w-full object-contain p-1"
                               />
                             ) : <PackageCheck size={25} className="text-[#a34720]" />}
+                        </span>
+                        <div className="min-w-0">
+                          <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-lg bg-[#fff0df] px-2.5 py-1.5 text-xs font-extrabold text-[#a34720] sm:text-sm">
+                            <CalendarDays size={15} className="shrink-0" />
+                            <span className="truncate">{orderNumber}</span>
                           </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-bold">
+                          <h3 className="mt-2 line-clamp-2 text-base font-extrabold leading-snug text-[#351d0e] sm:text-lg">
                               {firstItem?.product_name || firstItem?.name || "Furniture order"}
                               {Number(firstItem?.quantity) > 1 ? ` × ${firstItem.quantity}` : ""}
+                          </h3>
+                          {Array.isArray(order.items) && order.items.length > 1 && (
+                            <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[#806d5d]">
+                              <Layers size={14} />
+                              + {order.items.length - 1} more item(s)
                             </p>
-                            {Array.isArray(order.items) && order.items.length > 1 && (
-                              <p className="mt-1 text-xs text-[#806d5d]">+ {order.items.length - 1} more item(s)</p>
-                            )}
-                            <p className="mt-1 inline-flex items-center gap-1 text-xs text-[#806d5d]">
-                              <CreditCard size={13} /> {order.payment_method || "Payment not specified"}
-                            </p>
-                          </div>
-                          <div className="ml-auto text-right">
-                            <p className="text-[11px] text-[#806d5d]">Order total</p>
-                            <p className="mt-1 font-extrabold">{formatAmount(order.total_amount)}</p>
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#806d5d]">
+                            <span>Placed {formatDate(order.created_at)}</span>
+                            <span className="inline-flex items-center gap-1">
+                              <CreditCard size={12} /> {order.payment_method || "Payment not specified"}
+                            </span>
                           </div>
                         </div>
-                        <div className="mt-3 flex justify-end border-t border-[#f1e7dd] pt-3">
+                        <div className="col-span-2 flex min-w-0 items-center justify-between gap-3 border-t border-[#eee4d8] pt-3 sm:col-span-3 lg:col-span-1 lg:border-l lg:border-t-0 lg:py-1 lg:pl-5 lg:pt-0">
+                          <div className="min-w-0">
+                            <span className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${statusClass(status)}`}>
+                              <PackageCheck size={15} className="shrink-0" />
+                              <span className="truncate">{status}</span>
+                            </span>
+                            <p className="mt-2 text-xs text-[#806d5d]">Total Amount</p>
+                            <p className="mt-0.5 text-lg font-extrabold leading-tight text-[#351d0e] sm:text-2xl">
+                              {formatAmount(order.total_amount)}
+                            </p>
+                          </div>
                           <button
                             type="button"
                             onClick={() => setSelectedOrder(order)}
-                            className="text-xs font-bold text-[#a34720] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                            aria-label={`View details for order ${orderNumber}`}
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#f07816] text-[#f07816] transition hover:bg-[#f07816] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500] sm:h-12 sm:w-12 lg:h-14 lg:w-14"
                           >
-                            View Details
+                            <ArrowRight size={22} />
                           </button>
                         </div>
                       </article>
