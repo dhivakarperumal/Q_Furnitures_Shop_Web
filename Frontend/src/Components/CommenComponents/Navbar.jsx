@@ -249,7 +249,7 @@ const Navbar = () => {
             type="button"
             onClick={() => mobileMenu ? closeMobileMenu() : setMobileMenu(true)}
             aria-label={mobileMenu ? "Close menu" : "Open menu"}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark lg:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-dark lg:hidden"
           >
             {mobileMenu ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -262,7 +262,7 @@ const Navbar = () => {
             <img
               src="/images/logo.png"
               alt="Q Living Furniture"
-              className="h-auto max-h-11 w-32 object-contain sm:max-h-12 sm:w-40 xl:w-44"
+              className="h-auto max-h-11 w-24 object-contain sm:max-h-12 sm:w-40 xl:w-44"
             />
           </Link>
 
@@ -462,7 +462,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 text-[#351d0e] sm:gap-2 lg:gap-3 lg:border-l lg:border-[#dfcbb5] lg:pl-3">
+          <div className="flex shrink-0 items-center gap-0.5 text-[#351d0e] sm:gap-2 lg:gap-3 lg:border-l lg:border-[#dfcbb5] lg:pl-3">
             <div className="hidden items-center gap-1 sm:flex xl:gap-2">
             <div className="relative">
               <button
@@ -626,7 +626,7 @@ const Navbar = () => {
               type="button"
               onClick={openWishlist}
               aria-label="Open wishlist"
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
+              className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
             >
               <Heart size={19} />
               {wishlist.length > 0 && (
@@ -640,7 +640,7 @@ const Navbar = () => {
               type="button"
               onClick={openCart}
               aria-label="Open cart"
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
+              className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#e87500]/35 bg-white text-[#351d0e] transition hover:bg-[#fff0df] hover:text-[#e87500] sm:hidden"
             >
               <ShoppingCart size={19} />
               {cart.length > 0 && (
@@ -654,7 +654,7 @@ const Navbar = () => {
               <Link
                 to="/account"
                 aria-label="My account"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] sm:hidden"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7e4ca] text-sm font-bold text-[#351d0e] transition hover:bg-[#f1d3ac] sm:hidden"
               >
                 {profileInitial}
               </Link>
