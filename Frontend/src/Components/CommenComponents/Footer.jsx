@@ -105,10 +105,10 @@ const Footer = () => {
                   <li key={category.catId || category.id || name}>
                     <Link
                       to={`/shop?category=${encodeURIComponent(name)}`}
-                      className="group flex items-center justify-between gap-2 text-white/75 transition hover:text-white"
+                      className="group flex items-center gap-2 text-white/75 transition hover:text-white"
                     >
+                      <ChevronRight size={14} className="shrink-0 text-primary-light" />
                       <span>{name}</span>
-                      <ChevronRight size={14} className="shrink-0 text-primary-light transition group-hover:translate-x-1" />
                     </Link>
                   </li>
                 );
