@@ -448,12 +448,13 @@ const Checkout = () => {
 
   return (
     <>
+      <PageHeader title="Complete Your Order" />
       <main className="relative min-h-[65vh] overflow-hidden bg-[#fbf6f1] py-6 sm:py-8">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-24 bottom-8 h-64 w-64 rounded-full bg-[#f4d8bd]/35 blur-3xl" />
           <div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-[#ffdfc5]/40 blur-3xl" />
         </div>
-        <div className="relative z-10 mx-auto w-full max-w-[1060px] px-[6%] sm:px-[5%] lg:px-[3%]">
+        <PageContainer className="relative z-10 !max-w-[1060px]">
           {loadingCart ? (
             <div className="mt-6 rounded-xl border border-[#e5d8ca] bg-white p-8 text-center text-sm text-[#8b735e]">Loading your cart...</div>
           ) : cart.length === 0 ? (
@@ -466,12 +467,9 @@ const Checkout = () => {
             </section>
           ) : (
             <>
-              <header className="mb-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                <div className="border-l-[3px] border-[#ef7412] pl-4">
-                  <h1 className="font-serif text-3xl font-bold leading-tight text-[#351d0e] sm:text-4xl">Complete Your Order</h1>
-                  <p className="mt-1 text-sm text-[#725d4b]">Review your details, choose a payment method and place your order.</p>
-                </div>
-                <ol aria-label="Checkout progress" className="flex w-full max-w-[500px] items-center justify-between gap-2 self-end sm:gap-4 lg:w-auto lg:flex-1">
+              <header className="mb-5 flex flex-col gap-3">
+                <p className="text-sm text-[#725d4b]">Review your details, choose a payment method and place your order.</p>
+                <ol aria-label="Checkout progress" className="flex w-full max-w-[500px] items-center justify-between gap-2 sm:gap-4">
                   <li className="flex shrink-0 flex-col items-center gap-1 text-[11px] font-semibold text-[#a34720] sm:text-xs">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ef7412] text-white shadow-sm"><ShoppingBag size={16} /></span>
                     Cart
@@ -840,7 +838,7 @@ const Checkout = () => {
             </section>
             </>
           )}
-        </div>
+        </PageContainer>
       </main>
     </>
   );
