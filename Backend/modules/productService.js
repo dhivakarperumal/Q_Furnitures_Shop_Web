@@ -332,6 +332,13 @@ function createProductService(pool) {
       }
       if (status === "Low Stock") {
         filters.push("COALESCE(ps.available_stock, p.total_stock) > 0 AND COALESCE(ps.available_stock, p.total_stock) <= COALESCE(ps.minimum_stock, 5)");
+      } else if (status === "Out of Stock") {
+        filters.push("COALESCE(ps.available_stock, p.total_stock) <= 0");
+      } else if (status === "In Stock") {
+        filters.push("COALESCE(ps.available_stock, p.total_stock) > 0");
+      } else if (["Active", "Inactive", "Draft"].includes(status)) {
+        filters.push("p.status = ?");
+        parameters.push(status);
       }
       if (category) {
         filters.push("p.category = ?");

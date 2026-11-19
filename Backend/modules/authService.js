@@ -3,7 +3,7 @@ const { randomBytes, randomUUID } = require("node:crypto");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 
-const USER_COLUMNS = "id, user_id, username, email, phone, date_of_birth, profile_image, role, status, created_at, updated_at";
+const USER_COLUMNS = "id, user_id, username, email, phone, date_of_birth, profile_image, google_id, auth_provider, role, status, created_at, updated_at";
 const AUTH_USER_COLUMNS = `${USER_COLUMNS}, password_hash`;
 
 function toPublicUser(user) {
@@ -16,6 +16,8 @@ function toPublicUser(user) {
     phone: user.phone,
     date_of_birth: user.date_of_birth || null,
     profile_image: user.profile_image || null,
+    google_id: user.google_id || null,
+    auth_provider: user.auth_provider || 'password',
     role: user.role,
     status: user.status,
     created_at: user.created_at,
@@ -228,8 +230,8 @@ function createAuthService(pool) {
 
       const email = payload.email.toLowerCase();
       const [users] = await pool.execute(
-        `SELECT ${USER_COLUMNS} FROM users WHERE email = ? LIMIT 1`,
-        [email],
+        `SELECT ${USER_COLUMNS} FROM users WHERE google_id = ? OR email = ? LIMIT 1`,
+        [payload.sub, email],
       );
       let user = users[0];
 
@@ -240,8 +242,9 @@ function createAuthService(pool) {
 
         try {
           await pool.execute(
-            "INSERT INTO users (user_id, username, email, phone, password_hash, status) VALUES (?, ?, ?, NULL, ?, 'active')",
-            [userId, username || email, email, passwordHash],
+            `INSERT INTO users (user_id, username, email, phone, profile_image, google_id, auth_provider, password_hash, status)
+             VALUES (?, ?, ?, NULL, ?, ?, 'google', ?, 'active')`,
+            [userId, username || email, email, payload.picture || null, payload.sub, passwordHash],
           );
           const [createdUsers] = await pool.execute(
             `SELECT ${USER_COLUMNS} FROM users WHERE user_id = ?`,
@@ -262,6 +265,21 @@ function createAuthService(pool) {
           }
           user = existingUsers[0];
         }
+      }
+      else {
+        await pool.execute(
+          `UPDATE users
+           SET google_id = COALESCE(google_id, ?),
+               profile_image = COALESCE(profile_image, ?),
+               auth_provider = CASE WHEN auth_provider = 'password' THEN 'google' ELSE auth_provider END
+           WHERE id = ?`,
+          [payload.sub, payload.picture || null, user.id],
+        );
+        const [linkedUsers] = await pool.execute(
+          `SELECT ${USER_COLUMNS} FROM users WHERE id = ? LIMIT 1`,
+          [user.id],
+        );
+        user = linkedUsers[0] || user;
       }
 
       const safeUser = toPublicUser(user);

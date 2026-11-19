@@ -55,7 +55,12 @@ function createAuthController(authService) {
     },
 
     async googleLogin(request, response, next) {
-      const credential = typeof request.body?.credential === "string" ? request.body.credential : "";
+      const credential =
+        typeof request.body?.idToken === "string"
+          ? request.body.idToken
+          : typeof request.body?.credential === "string"
+            ? request.body.credential
+            : "";
       if (!credential) {
         return response.status(400).json({ message: "Google credential is required." });
       }

@@ -515,68 +515,6 @@ async function initializeDatabase(pool) {
       KEY products_name_idx (name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS combos (
-      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      legacy_product_id BIGINT UNSIGNED NULL,
-      combo_code VARCHAR(128) NULL,
-      name VARCHAR(191) NOT NULL,
-      category VARCHAR(191) NOT NULL,
-      subcategory VARCHAR(191) NULL,
-      mrp DECIMAL(12,2) NOT NULL,
-      offer DECIMAL(12,2) NOT NULL DEFAULT 0,
-      offer_type VARCHAR(32) NOT NULL DEFAULT 'Percentage',
-      offer_price DECIMAL(12,2) NOT NULL,
-      selling_price DECIMAL(12,2) NOT NULL,
-      total_stock INT NOT NULL DEFAULT 0,
-      rating DECIMAL(2,1) NOT NULL DEFAULT 5.0,
-      status VARCHAR(32) NOT NULL DEFAULT 'Active',
-      combo_data JSON NOT NULL,
-      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      UNIQUE KEY combos_legacy_product_unique (legacy_product_id),
-      UNIQUE KEY combos_combo_code_unique (combo_code),
-      KEY combos_status_idx (status),
-      KEY combos_name_idx (name)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS combo_favorites (
-      user_id VARCHAR(255) NOT NULL,
-      combo_id BIGINT UNSIGNED NOT NULL,
-      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (user_id, combo_id),
-      KEY combo_favorites_combo_idx (combo_id),
-      CONSTRAINT combo_favorites_user_fk
-        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-      CONSTRAINT combo_favorites_combo_fk
-        FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS combo_legacy_migrations (
-      legacy_product_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-      imported_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-  await pool.query(`
-    INSERT IGNORE INTO combo_legacy_migrations (legacy_product_id)
-    SELECT id FROM products
-    WHERE JSON_UNQUOTE(JSON_EXTRACT(product_data, '$.product_type')) = 'Combo Product'
-  `);
-  await pool.query(`
-    INSERT IGNORE INTO combos
-      (legacy_product_id, combo_code, name, category, subcategory, mrp, offer, offer_type,
-       offer_price, selling_price, total_stock, rating, status, combo_data)
-    SELECT p.id, p.product_code, p.name, p.category, p.subcategory, p.mrp, p.offer,
-           p.offer_type, p.offer_price, p.selling_price, p.total_stock, p.rating, p.status,
-           p.product_data
-    FROM products p
-    JOIN combo_legacy_migrations migration ON migration.legacy_product_id = p.id
-    WHERE NOT EXISTS (
-      SELECT 1 FROM combos existing_combo WHERE existing_combo.legacy_product_id = p.id
-    )
-  `);
   const [wishlistTableRows] = await pool.execute(
     `SELECT TABLE_NAME
      FROM INFORMATION_SCHEMA.TABLES
@@ -642,8 +580,7 @@ async function initializeDatabase(pool) {
       UNIQUE KEY user_cart_combo_unique (user_id, combo_id),
       KEY user_cart_user_created_idx (user_id, created_at),
       CONSTRAINT user_cart_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-      CONSTRAINT user_cart_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-      CONSTRAINT user_cart_combo_fk FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE CASCADE
+      CONSTRAINT user_cart_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   const [cartColumnRows] = await pool.execute(
@@ -674,17 +611,6 @@ async function initializeDatabase(pool) {
   );
   if (!cartIndexes.some((index) => index.INDEX_NAME === "user_cart_combo_unique")) {
     await pool.query("ALTER TABLE `cart` ADD UNIQUE KEY user_cart_combo_unique (user_id, combo_id)");
-  }
-  const [cartComboForeignKeys] = await pool.execute(
-    `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cart'
-       AND COLUMN_NAME = 'combo_id' AND REFERENCED_TABLE_NAME = 'combos'`,
-  );
-  if (!cartComboForeignKeys.length) {
-    await pool.query(
-      `ALTER TABLE \`cart\` ADD CONSTRAINT user_cart_combo_fk
-       FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE CASCADE`,
-    );
   }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS coupons (
@@ -752,9 +678,7 @@ async function initializeDatabase(pool) {
       CONSTRAINT reviews_reviewer_fk
         FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE SET NULL,
       CONSTRAINT reviews_product_fk
-        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
-      CONSTRAINT reviews_combo_fk
-        FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE SET NULL
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   const [comboReviewColumnRows] = await pool.execute(
@@ -771,16 +695,6 @@ async function initializeDatabase(pool) {
   );
   if (!comboReviewIndexRows.length) {
     await pool.query("CREATE UNIQUE INDEX reviews_customer_combo_unique ON reviews (reviewer_user_id, combo_id)");
-  }
-  const [comboReviewConstraintRows] = await pool.execute(
-    `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-     WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews'
-       AND CONSTRAINT_NAME = 'reviews_combo_fk'`,
-  );
-  if (!comboReviewConstraintRows.length) {
-    await pool.query(
-      "ALTER TABLE reviews ADD CONSTRAINT reviews_combo_fk FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE SET NULL",
-    );
   }
   const [reviewerColumnRows] = await pool.execute(
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
@@ -943,9 +857,7 @@ async function initializeDatabase(pool) {
       KEY order_items_product_idx (product_id),
       KEY order_items_combo_idx (combo_id),
       CONSTRAINT order_items_order_fk
-        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-      CONSTRAINT order_items_combo_fk
-        FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE SET NULL
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   const [orderItemColumnRows] = await pool.execute(
@@ -965,17 +877,6 @@ async function initializeDatabase(pool) {
   );
   if (!orderItemIndexes.some((index) => index.INDEX_NAME === "order_items_combo_idx")) {
     await pool.query("ALTER TABLE order_items ADD KEY order_items_combo_idx (combo_id)");
-  }
-  const [orderItemComboForeignKeys] = await pool.execute(
-    `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'order_items'
-       AND COLUMN_NAME = 'combo_id' AND REFERENCED_TABLE_NAME = 'combos'`,
-  );
-  if (!orderItemComboForeignKeys.length) {
-    await pool.query(
-      `ALTER TABLE order_items ADD CONSTRAINT order_items_combo_fk
-       FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE SET NULL`,
-    );
   }
   await migrateLegacyOrderDetails(pool);
   await pool.query(
@@ -1606,6 +1507,8 @@ async function initializeDatabase(pool) {
     ["updated_at", "ALTER TABLE users ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
     ["date_of_birth", "ALTER TABLE users ADD COLUMN date_of_birth DATE NULL"],
     ["profile_image", "ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) NULL"],
+    ["google_id", "ALTER TABLE users ADD COLUMN google_id VARCHAR(255) NULL"],
+    ["auth_provider", "ALTER TABLE users ADD COLUMN auth_provider VARCHAR(32) NOT NULL DEFAULT 'password'"],
   ];
 
   for (const [column, statement] of migrations) {
@@ -1755,6 +1658,8 @@ async function initializeDatabase(pool) {
       connection.release();
     }
   }
+
+  await pool.query("DROP TABLE IF EXISTS `combos`");
 }
 
 module.exports = { createPool, initializeDatabase };

@@ -2,7 +2,7 @@ import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./PrivateRouter/AuthContext.jsx";
 import { StoreProvider } from "./PrivateRouter/StoreContext.jsx";
@@ -32,8 +32,6 @@ const Dashboard = React.lazy(() => import("./Admin/Dashboard.jsx"));
 const Category = React.lazy(() => import("./Admin/Categories/Category.jsx"));
 const AllProducts = React.lazy(() => import("./Admin/Products/AllProducts.jsx"));
 const AddProducts = React.lazy(() => import("./Admin/Products/AddProducts.jsx"));
-const Combos = React.lazy(() => import("./Admin/Combos/Combos.jsx"));
-const AddCombo = React.lazy(() => import("./Admin/Combos/AddCombo.jsx"));
 const ProductDetail = React.lazy(() => import("./Admin/Products/ProductDetail.jsx"));
 const Users = React.lazy(() => import("./Admin/Customers/Users.jsx"));
 const Billing = React.lazy(() => import("./Admin/Billings/Billing.jsx"));
@@ -113,9 +111,8 @@ const router = createBrowserRouter([
       { path: "products/category", element: <Category /> },
       { path: "products/all", element: <AllProducts /> },
       { path: "products/add", element: <AddProducts /> },
-      { path: "combos", element: <Combos /> },
-      { path: "combos/add", element: <AddCombo /> },
-      { path: "combos/edit/:id", element: <AddCombo /> },
+      { path: "combos", element: <Navigate to="/admin/products/all" replace /> },
+      { path: "combos/*", element: <Navigate to="/admin/products/all" replace /> },
       { path: "products/stock", element: <StockDetails /> },
       { path: "products/stock/add", element: <AddStock /> },
       { path: "products/:id", element: <ProductDetail /> },

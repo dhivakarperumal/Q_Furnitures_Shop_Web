@@ -10,6 +10,7 @@ function createAuthRouter(authController) {
         register: "POST /api/auth/register",
         login: "POST /api/auth/login",
         googleLogin: "POST /api/auth/google-login",
+        google: "POST /api/auth/google",
         listUsers: "GET /api/auth/users (admin Bearer token required)",
       },
     });
@@ -17,6 +18,7 @@ function createAuthRouter(authController) {
   router.post("/register", authController.register);
   router.post("/login", authController.login);
   router.post("/google-login", authController.googleLogin);
+  router.post("/google", authController.googleLogin);
 
   return router;
 }
