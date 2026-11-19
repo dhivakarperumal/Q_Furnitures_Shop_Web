@@ -23,6 +23,24 @@ function parseArray(value) {
   }
 }
 
+function getIncludedProductImage(product, variantIndex) {
+  const variant = parseArray(product.variants)[Number(variantIndex)] || {};
+  const variantImages = parseArray(variant.images);
+  const images = parseArray(product.images);
+  return resolveMediaUrl(
+    variantImages[0] || variant.image || images[Number(product.main_image_index) || 0] ||
+    images[0] || product.image || "",
+  );
+}
+
+function getIncludedProductPrice(product, variantIndex) {
+  const variant = parseArray(product.variants)[Number(variantIndex)] || {};
+  return Number(
+    variant.selling_price ?? variant.offer_price ?? product.selling_price ??
+    product.offer_price ?? product.mrp,
+  ) || 0;
+}
+
 function formatPrice(value) {
   return `₹${(Number(value) || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 }
@@ -32,18 +50,37 @@ function ComboDetails() {
   const navigate = useNavigate();
   const [combo, setCombo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [includedProducts, setIncludedProducts] = useState([]);
+  const [includedProductsLoading, setIncludedProductsLoading] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setIncludedProducts([]);
 
     api.get(`/combos/${id}`)
-      .then(({ data }) => {
-        if (active) {
-          setCombo(data);
-          setActiveImage(0);
-        }
+      .then(async ({ data }) => {
+        if (!active) return;
+        setCombo(data);
+        setActiveImage(0);
+        const items = parseArray(data.combo_items);
+        setIncludedProductsLoading(items.length > 0);
+
+        const productResults = await Promise.all(items.map(async (item) => {
+          try {
+            const response = await api.get(`/products/${item.product_id}`);
+            return { item, product: response.data, error: "" };
+          } catch (requestError) {
+            console.error(`Included product ${item.product_id} request failed:`, requestError);
+            return {
+              item,
+              product: null,
+              error: requestError.response?.data?.message || "Product details could not be loaded.",
+            };
+          }
+        }));
+        if (active) setIncludedProducts(productResults);
       })
       .catch((requestError) => {
         console.error("Combo details request failed:", requestError);
@@ -53,7 +90,10 @@ function ComboDetails() {
         }
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setIncludedProductsLoading(false);
+        }
       });
 
     return () => {
@@ -239,21 +279,69 @@ function ComboDetails() {
               <Package size={18} className="text-orange-500" />
               <h2 className="text-xs font-bold uppercase tracking-widest text-slate-800">Included products</h2>
             </div>
-            {items.length ? (
-              <div className="grid gap-3 sm:grid-cols-2">
+            {includedProductsLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2">
                 {items.map((item, index) => (
-                  <div key={`${item.product_id}-${index}`} className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-slate-700">Product #{item.product_id}</p>
-                      <p className="mt-1 text-xs font-medium text-slate-500">
-                        {[item.variant_color, item.variant_size, item.variant_material].filter(Boolean).join(" · ") || "Standard variant"}
-                      </p>
-                    </div>
-                    <span className="shrink-0 rounded-xl bg-white px-3 py-2 text-xs font-black text-slate-600 shadow-sm">
-                      Qty {item.quantity || 1}
-                    </span>
-                  </div>
+                  <div key={`${item.product_id}-${index}`} className="h-28 animate-pulse rounded-2xl bg-gray-50" />
                 ))}
+              </div>
+            ) : includedProducts.length ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {includedProducts.map(({ item, product, error }, index) => {
+                  const image = product ? getIncludedProductImage(product, item.variant_index) : "";
+                  const selectedPrice = product ? getIncludedProductPrice(product, item.variant_index) : 0;
+                  const variantDetails = [
+                    item.variant_color || item.color,
+                    item.variant_size || item.size,
+                    item.variant_material || item.material,
+                  ].filter(Boolean).join(" · ");
+
+                  return (
+                    <article key={`${item.product_id}-${index}`} className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50/60">
+                      <div className="flex gap-4 p-3 sm:p-4">
+                        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-white sm:h-28 sm:w-28">
+                          {image ? (
+                            <img src={image} alt={product.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-gray-300">
+                              <ImageOff size={24} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <p className="line-clamp-2 text-sm font-black text-slate-800">
+                            {product?.name || `Product #${item.product_id}`}
+                          </p>
+                          <p className="mt-1 truncate text-xs font-medium text-slate-500">
+                            {product?.product_code ? `SKU: ${product.product_code}` : `Product ID: ${item.product_id}`}
+                          </p>
+                          {product && (
+                            <>
+                              <p className="mt-1 truncate text-xs text-slate-500">
+                                {[product.category, product.brand].filter(Boolean).join(" · ") || "Furniture"}
+                              </p>
+                              <p className="mt-auto pt-2 text-base font-black text-blue-600">{formatPrice(selectedPrice)}</p>
+                            </>
+                          )}
+                        </div>
+                        <span className="h-fit shrink-0 rounded-xl bg-white px-3 py-2 text-xs font-black text-slate-600 shadow-sm">
+                          Qty {item.quantity || 1}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 bg-white/70 px-4 py-3">
+                        <p className="text-xs font-medium text-slate-500">
+                          {variantDetails || "Standard variant"}
+                        </p>
+                        {product && (
+                          <p className="text-xs font-semibold text-slate-500">
+                            Stock: {Number(product.available_stock ?? product.total_stock) || 0}
+                          </p>
+                        )}
+                        {error && <p role="status" className="w-full text-xs text-amber-700">{error}</p>}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-slate-500">No included products recorded.</p>
