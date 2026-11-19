@@ -174,7 +174,7 @@ function AddCombo() {
         const chunk = batch.slice(offset, offset + 5);
         const payload = new FormData();
         chunk.forEach((file) => payload.append("images", file));
-        const response = await api.post("/products/upload", payload, {
+        const response = await api.post("/combos/upload", payload, {
           headers: { "Content-Type": "multipart/form-data" },
           onUploadProgress: (event) => {
             if (event.total) {

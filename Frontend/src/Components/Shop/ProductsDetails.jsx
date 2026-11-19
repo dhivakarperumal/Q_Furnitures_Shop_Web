@@ -262,6 +262,9 @@ function ProductDetails() {
   ) || 0;
   const mrp = Number(variant?.mrp ?? product?.mrp) || 0;
   const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const averageReviewRating = reviews.length
+    ? reviews.reduce((total, review) => total + Number(review.rating || 0), 0) / reviews.length
+    : 0;
   const colorName = String(variant?.colorName || variant?.color || variant?.colour || "Default");
   const productId = product?.id ?? product?.product_id;
   const isCombo = product?.product_type === "Combo Product";
@@ -739,18 +742,31 @@ function ProductDetails() {
 
                 {activeTab === "reviews" && (
                   <div id="product-panel-reviews" role="tabpanel" aria-labelledby="product-tab-reviews" className="p-5 sm:p-8">
-                    <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                    <div className="flex flex-col gap-5 rounded-2xl bg-[#fcfaf7] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                       <div>
-                        <h2 className="text-xl font-semibold text-[#351d0e]">Customer reviews</h2>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a06e46]">Feedback from our customers</p>
+                        <h2 className="mt-1 text-2xl font-semibold text-[#351d0e]">Customer reviews</h2>
                         <p className="mt-1 text-sm text-[#8b735e]">Reviews shown here are for this product only.</p>
                       </div>
-                      {reviews.length > 0 && (
-                        <p className="text-sm font-semibold text-[#493522]">
-                          {(
-                            reviews.reduce((total, item) => total + Number(item.rating || 0), 0) / reviews.length
-                          ).toFixed(1)} / 5 average
-                        </p>
-                      )}
+                      <div className="flex items-center gap-3 rounded-xl border border-[#eee4d8] bg-white px-4 py-3">
+                        <span className="text-3xl font-bold leading-none text-[#351d0e]">
+                          {reviews.length ? averageReviewRating.toFixed(1) : "—"}
+                        </span>
+                        <span>
+                          <span className="flex items-center gap-0.5" aria-label={`${averageReviewRating.toFixed(1)} out of 5 stars`}>
+                            {Array.from({ length: 5 }, (_, index) => (
+                              <Star
+                                key={index}
+                                size={14}
+                                className={index < Math.round(averageReviewRating) ? "fill-[#d49a46] text-[#d49a46]" : "text-[#d9cfc4]"}
+                              />
+                            ))}
+                          </span>
+                          <span className="mt-1 block text-xs text-[#8b735e]">
+                            {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+                          </span>
+                        </span>
+                      </div>
                     </div>
 
                     {reviewsLoading ? (
@@ -764,35 +780,43 @@ function ProductDetails() {
                     ) : reviews.length ? (
                       <div className="mt-5 space-y-4">
                         {reviews.map((review) => (
-                          <article key={review.id} className="rounded-2xl border border-[#eee4d8] bg-[#fcfaf7] p-5">
+                          <article key={review.id} className="rounded-2xl border border-[#eee4d8] bg-white p-4 shadow-[0_6px_18px_rgba(53,29,14,0.04)] sm:p-5">
                             <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div>
-                                <p className="font-semibold text-[#351d0e]">{review.user_name}</p>
-                                {getReviewDate(review.created_at) && (
-                                  <p className="mt-1 text-xs text-[#9a8979]">{getReviewDate(review.created_at)}</p>
-                                )}
+                              <div className="flex min-w-0 items-center gap-3">
+                                <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0df] text-sm font-bold text-[#a34720]">
+                                  {String(review.user_name || "Customer").trim().charAt(0).toUpperCase()}
+                                </span>
+                                <span className="min-w-0">
+                                  <span className="block truncate font-semibold text-[#351d0e]">{review.user_name || "Customer"}</span>
+                                  {getReviewDate(review.created_at) && (
+                                    <span className="mt-1 block text-xs text-[#9a8979]">{getReviewDate(review.created_at)}</span>
+                                  )}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5 stars`}>
-                                {Array.from({ length: 5 }, (_, index) => (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff7e8] px-3 py-1.5 text-xs font-bold text-[#634d3b]" aria-label={`${review.rating} out of 5 stars`}>
+                                <span className="flex items-center gap-0.5">
+                                  {Array.from({ length: 5 }, (_, index) => (
                                   <Star
                                     key={index}
-                                    size={15}
+                                    size={13}
                                     className={index < Number(review.rating) ? "fill-[#d49a46] text-[#d49a46]" : "text-[#d9cfc4]"}
                                   />
-                                ))}
-                              </div>
+                                  ))}
+                                </span>
+                                {Number(review.rating).toFixed(1)}
+                              </span>
                             </div>
-                            <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#634d3b]">{review.comment}</p>
+                            <p className="mt-4 whitespace-pre-line rounded-xl bg-[#fcfaf7] p-4 text-sm leading-7 text-[#634d3b]">{review.comment}</p>
                             {review.review_image && (
                               <img
                                 src={resolveMediaUrl(review.review_image)}
                                 alt={`Photo for ${product.name} review`}
                                 loading="lazy"
-                                className="mt-4 max-h-56 rounded-xl object-cover"
+                                className="mt-4 max-h-64 max-w-full rounded-xl border border-[#eee4d8] bg-[#fcfaf7] object-contain p-1"
                               />
                             )}
                             {review.admin_reply && (
-                              <div className="mt-4 rounded-xl border-l-2 border-[#d49a46] bg-white px-4 py-3">
+                              <div className="mt-4 rounded-xl border border-[#f1e2cf] border-l-4 border-l-[#d49a46] bg-[#fffaf2] px-4 py-3">
                                 <p className="text-xs font-bold uppercase tracking-wide text-[#8b5a35]">Q Living reply</p>
                                 <p className="mt-1 text-sm leading-6 text-[#634d3b]">{review.admin_reply}</p>
                               </div>
@@ -806,8 +830,9 @@ function ProductDetails() {
                       </p>
                     )}
 
-                    <div className="mt-7 border-t border-[#eee4d8] pt-6">
-                      <h3 className="text-lg font-semibold text-[#351d0e]">Write a review</h3>
+                    <div className="mt-8 rounded-2xl bg-[#fcfaf7] p-5 sm:p-6">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a06e46]">Your feedback matters</p>
+                      <h3 className="mt-1 text-lg font-semibold text-[#351d0e]">Write a review</h3>
                       {myReviewError ? (
                         <p role="alert" className="mt-3 text-sm text-red-700">{myReviewError}</p>
                       ) : myReview ? (
