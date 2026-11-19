@@ -2,7 +2,7 @@ import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./PrivateRouter/AuthContext.jsx";
 import { StoreProvider } from "./PrivateRouter/StoreContext.jsx";
@@ -18,7 +18,7 @@ const Contact = React.lazy(() => import("./Components/Contact/Contact.jsx"));
 const Account = React.lazy(() => import("./Components/Account.jsx"));
 const Shop = React.lazy(() => import("./Components/Shop/Shop.jsx"));
 const ComboOffers = React.lazy(() => import("./Components/Shop/ComboOffers.jsx"));
-const ComboDetails = React.lazy(() => import("./Components/Shop/ComboDetails.jsx"));
+const ShopComboDetails = React.lazy(() => import("./Components/Shop/ComboDetails.jsx"));
 const ProductsDetails = React.lazy(() => import("./Components/Shop/ProductsDetails.jsx"));
 const Checkout = React.lazy(() => import("./Components/Shop/Checkout.jsx"));
 const MyOrders = React.lazy(() => import("./Components/MyOrders.jsx"));
@@ -33,6 +33,8 @@ const Dashboard = React.lazy(() => import("./Admin/Dashboard.jsx"));
 const Category = React.lazy(() => import("./Admin/Categories/Category.jsx"));
 const AllProducts = React.lazy(() => import("./Admin/Products/AllProducts.jsx"));
 const AddProducts = React.lazy(() => import("./Admin/Products/AddProducts.jsx"));
+const Combos = React.lazy(() => import("./Admin/Combos/Combos.jsx"));
+const AddCombo = React.lazy(() => import("./Admin/Combos/AddCombo.jsx"));
 const ProductDetail = React.lazy(() => import("./Admin/Products/ProductDetail.jsx"));
 const Users = React.lazy(() => import("./Admin/Customers/Users.jsx"));
 const Billing = React.lazy(() => import("./Admin/Billings/Billing.jsx"));
@@ -75,7 +77,7 @@ const router = createBrowserRouter([
       },
       { path: "shop", element: <Shop /> },
       { path: "combo", element: <ComboOffers /> },
-      { path: "combo/:id", element: <ComboDetails /> },
+      { path: "combo/:id", element: <ShopComboDetails /> },
       { path: "products/:id", element: <ProductsDetails /> },
       {
         path: "ordersmain",
@@ -113,8 +115,9 @@ const router = createBrowserRouter([
       { path: "products/category", element: <Category /> },
       { path: "products/all", element: <AllProducts /> },
       { path: "products/add", element: <AddProducts /> },
-      { path: "combos", element: <Navigate to="/admin/products/all" replace /> },
-      { path: "combos/*", element: <Navigate to="/admin/products/all" replace /> },
+      { path: "combos", element: <Combos /> },
+      { path: "combos/add", element: <AddCombo /> },
+      { path: "combos/edit/:id", element: <AddCombo /> },
       { path: "products/stock", element: <StockDetails /> },
       { path: "products/stock/add", element: <AddStock /> },
       { path: "products/:id", element: <ProductDetail /> },
