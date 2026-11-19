@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   CheckCircle2,
   CircleOff,
+  Eye,
   Grid2X2,
   LoaderCircle,
   Package,
@@ -294,6 +295,9 @@ function Combos() {
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
+                            <Link to={`/admin/combos/${combo.id}`} aria-label={`View ${combo.name}`} title="View details" className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-all hover:bg-sky-500 hover:text-white">
+                              <Eye size={14} />
+                            </Link>
                             <Link to={`/admin/combos/edit/${combo.id}`} aria-label={`Edit ${combo.name}`} title="Edit" className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-primary-dark transition-all hover:bg-primary hover:text-white">
                               <Pencil size={14} />
                             </Link>
@@ -339,6 +343,9 @@ function Combos() {
                       {image ? <img src={image} alt={combo.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" /> : <div className="flex h-full items-center justify-center text-orange-200"><Package size={54} strokeWidth={1.2} /></div>}
                       <span className={`absolute left-3 top-3 rounded-lg border px-2.5 py-1 text-[10px] font-bold backdrop-blur-md ${getStatusStyle(combo.status)}`}>{combo.status}</span>
                       <div className="absolute right-3 top-3 flex flex-col gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                        <Link to={`/admin/combos/${combo.id}`} aria-label={`View ${combo.name}`} title="View details" className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sky-600 shadow-md transition-all hover:bg-sky-500 hover:text-white">
+                          <Eye size={14} />
+                        </Link>
                         <Link to={`/admin/combos/edit/${combo.id}`} aria-label={`Edit ${combo.name}`} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-primary-dark shadow-md transition-all hover:bg-primary hover:text-white">
                           <Pencil size={14} />
                         </Link>
