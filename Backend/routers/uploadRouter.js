@@ -97,6 +97,7 @@ function createUploadRouter(authService) {
   const router = express.Router();
 
   router.post("/products/upload", requireAuthentication, requireAdmin, createUploadHandler({ field: "images", maxCount: 5, category: "products" }));
+  router.post("/combos/upload", requireAuthentication, requireAdmin, createUploadHandler({ field: "images", maxCount: 5, category: "combo" }));
   router.post("/reviews/upload", requireAuthentication, createUploadHandler({ field: "image", maxCount: 1, category: "reviews" }));
   router.post(
     "/uploads/banners",

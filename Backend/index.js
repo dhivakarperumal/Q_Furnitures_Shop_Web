@@ -59,6 +59,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 
 const pool = createPool();
 const app = express();
+let startupState = "initializing";
 const authService = createAuthService(pool);
 const userAddressService = createUserAddressService(pool);
 const authController = createAuthController(authService);
@@ -87,7 +88,15 @@ const cartController = createCartController(cartService);
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads"), { dotfiles: "deny", index: false }));
+app.get("/", (request, response) => {
+  response.type("html").send("<!doctype html><html><body>Backend is running.</body></html>");
+});
 app.get("/api/health", async (request, response) => {
+  if (startupState !== "ready") {
+    response.status(503).json({ status: startupState, database: "unavailable" });
+    return;
+  }
+
   try {
     await pool.query("SELECT 1");
     response.json({ status: "ok", database: "connected" });
@@ -95,6 +104,18 @@ app.get("/api/health", async (request, response) => {
     console.error("Database health check failed:", error);
     response.status(503).json({ status: "error", database: "unavailable" });
   }
+});
+app.use("/api", (request, response, next) => {
+  if (startupState === "ready") {
+    next();
+    return;
+  }
+
+  response.status(503).json({
+    message: startupState === "initializing"
+      ? "Backend is initializing."
+      : "Backend initialization failed.",
+  });
 });
 app.use("/api/auth", createAuthRouter(authController));
 app.use("/api/categories", createCategoryRouter(categoryService));
@@ -104,7 +125,7 @@ app.use("/api/favorites", createFavoriteRouter(favoriteController));
 app.use("/api/cart", createCartRouter(cartController));
 app.use("/api/coupons", createCouponRouter(couponService));
 app.use("/api/offers", createOfferRouter(offerService));
-app.use("/api/orders", createOrderRouter(orderService, cartService, razorpayService));
+app.use("/api/orders", createOrderRouter(orderService, cartService, razorpayService, storeTaxSettingsService));
 app.use("/api/dashboard", createDashboardRouter(dashboardService));
 app.use("/api/reports", createReportsRouter(reportsService));
 app.use("/api/banners", createPublicBannerRouter(bannerService));
@@ -130,19 +151,20 @@ app.use((error, request, response, next) => {
 });
 
 async function start() {
+  app.listen(port, () => {
+    console.log(`Backend listening on http://localhost:${port}`);
+  });
+
   try {
     await initializeDatabase(pool);
     await categoryService.seedDefaults();
     await categoryService.assignExistingToUser(categoryOwnerUserId);
     await productService.seedFurnitureProducts();
-
-    app.listen(port, () => {
-      console.log(`Backend listening on http://localhost:${port} (database connected)`);
-    });
+    startupState = "ready";
+    console.log("Backend initialization completed (database connected).");
   } catch (error) {
+    startupState = "failed";
     console.error("Could not initialize the configured MySQL database:", error);
-    await pool.end();
-    process.exitCode = 1;
   }
 }
 

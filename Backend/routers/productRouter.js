@@ -128,6 +128,23 @@ function parseId(value) {
 function createProductRouter(productService) {
   const router = express.Router();
 
+  router.get("/rooms", async (request, response, next) => {
+    try {
+      const ROOM_SLUGS = [
+        "living-room",
+        "bedroom",
+        "dining-room",
+        "home-office",
+        "kids-room",
+        "outdoor",
+      ];
+      const counts = await productService.getRoomCounts(ROOM_SLUGS);
+      return response.json(counts);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   router.get("/", async (request, response, next) => {
     try {
       const page = Math.max(1, Number.parseInt(request.query.page, 10) || 1);

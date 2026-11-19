@@ -64,7 +64,7 @@ function createRazorpayService({
       }
     },
 
-    async verifyPayment({ orderId, paymentId, signature, amount }) {
+    async verifyPayment({ orderId, paymentId, signature, amount, getExpectedAmount }) {
       if (typeof orderId !== "string" || !orderId ||
           typeof paymentId !== "string" || !paymentId ||
           typeof signature !== "string" || !signature) {
@@ -94,14 +94,16 @@ function createRazorpayService({
         throw reportGatewayError("verify the payment", error);
       }
 
-      if (payment.order_id !== orderId ||
-          Number(payment.amount) !== amount || payment.currency !== "INR" ||
-          Number(order.amount) !== amount || order.currency !== "INR") {
+      const expectedAmount = getExpectedAmount ? getExpectedAmount(order) : amount;
+      if (!Number.isSafeInteger(expectedAmount) || expectedAmount < 0 ||
+          payment.order_id !== orderId ||
+          Number(payment.amount) !== expectedAmount || payment.currency !== "INR" ||
+          Number(order.amount) !== expectedAmount || order.currency !== "INR") {
         throw paymentError(409, "Razorpay payment does not match this order or is not captured.");
       }
       if (payment.status === "authorized") {
         try {
-          payment = await razorpay.payments.capture(paymentId, amount, "INR");
+          payment = await razorpay.payments.capture(paymentId, expectedAmount, "INR");
         } catch (error) {
           throw reportGatewayError("capture the payment", error);
         }

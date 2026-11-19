@@ -424,6 +424,27 @@ function createProductService(pool) {
       };
     },
 
+    async getRoomCounts(slugs) {
+      // Uses the exact same search logic as the shop page:
+      // slug → "home-office" → "home office" → LIKE on name, product_code, category
+      const results = await Promise.all(
+        slugs.map(async (slug) => {
+          const term = `%${slug.replace(/-/g, " ")}%`;
+          const [rows] = await pool.execute(
+            `SELECT COUNT(*) AS productCount
+             FROM products p
+             LEFT JOIN product_stock ps ON ps.product_id = p.id
+             WHERE p.status = 'Active'
+               AND COALESCE(ps.available_stock, p.total_stock) > 0
+               AND (p.name LIKE ? OR p.product_code LIKE ? OR p.category LIKE ?)`,
+            [term, term, term],
+          );
+          return { slug, productCount: Number(rows[0]?.productCount || 0) };
+        }),
+      );
+      return results;
+    },
+
     async getById(id) {
       return getById(id);
     },

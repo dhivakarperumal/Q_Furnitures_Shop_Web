@@ -49,19 +49,19 @@ const CartDrawer = ({ isOpen, onClose }) => {
         aria-label="Shopping cart"
         className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-primary-dark bg-primary px-5 py-4 text-white">
           <div className="flex items-center gap-3">
-            <FiShoppingCart className="text-primary" size={22} />
+            <FiShoppingCart className="text-white" size={22} />
             <div>
-              <h2 className="text-lg font-bold text-gray-800">Your Cart</h2>
-              <p className="text-xs text-gray-500">{totalItems} {totalItems === 1 ? "item" : "items"}</p>
+              <h2 className="text-lg font-bold text-white">Your Cart</h2>
+              <p className="text-xs text-white/80">{totalItems} {totalItems === 1 ? "item" : "items"}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close cart"
-            className="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-primary"
+            className="rounded-full p-2 text-white transition hover:bg-white/20"
           >
             <FiX size={22} />
           </button>
@@ -111,7 +111,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                           Includes {item.combo_items.length} {item.combo_items.length === 1 ? "product" : "products"}
                         </p>
                       )}
-                      <p className="mt-1 text-sm font-semibold text-primary">₹{Number(item.price || 0).toFixed(2)}</p>
+                      <p className="mt-1 text-sm font-semibold text-[#351d0e]">₹{Number(item.price || 0).toFixed(2)}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                         {item.colorName && (
                           <span className="flex items-center gap-1.5">
@@ -163,7 +163,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
             </div>
             <div className="mb-4 flex justify-between text-lg font-bold text-gray-800">
               <span>Total Amount</span>
-              <span className="text-primary">₹{totalAmount.toFixed(2)}</span>
+              <span className="text-[#351d0e]">₹{totalAmount.toFixed(2)}</span>
             </div>
             <button
               type="button"

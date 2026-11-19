@@ -5,11 +5,15 @@ const { createStoreTaxSettingsService } = require("./storeTaxSettingsService");
 test("reads API-backed GST settings as normalized values", async () => {
   const service = createStoreTaxSettingsService({
     async execute() {
-      return [[{ gst_enabled: 0, gst_rate: "12.00" }], []];
+      return [[{ gst_enabled: 0, gst_rate: "12.00", tax_mode: "Tax Inclusive" }], []];
     },
   });
 
-  assert.deepEqual(await service.getSettings(), { gst_enabled: false, gst_rate: 12 });
+  assert.deepEqual(await service.getSettings(), {
+    gst_enabled: false,
+    gst_rate: 12,
+    tax_mode: "Tax Inclusive",
+  });
 });
 
 test("persists GST settings and returns the saved values", async () => {
@@ -22,11 +26,11 @@ test("persists GST settings and returns the saved values", async () => {
   });
 
   assert.deepEqual(
-    await service.updateSettings({ gstEnabled: true, gstRate: 5 }),
-    { gst_enabled: true, gst_rate: 5 },
+    await service.updateSettings({ gstEnabled: true, gstRate: 5, taxMode: "Tax Exclusive" }),
+    { gst_enabled: true, gst_rate: 5, tax_mode: "Tax Exclusive" },
   );
   assert.match(executed.sql, /INSERT INTO store_tax_settings/);
-  assert.deepEqual(executed.params, [1, 5]);
+  assert.deepEqual(executed.params, [1, 5, "Tax Exclusive"]);
 });
 
 test("reports a missing initialized GST settings row", async () => {

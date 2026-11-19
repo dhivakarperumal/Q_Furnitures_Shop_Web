@@ -88,6 +88,10 @@ const OrderDetail = () => {
         const gstAmount = Number(order.gst_amount || 0);
         const discountAmount = Number(order.discount_amount || 0);
         const gstRate = Number(order.gst_rate || 0);
+        const isPickup = order.fulfillment_type === "Pickup";
+        const fulfillmentDetails = isPickup
+            ? "Pickup selected"
+            : [order.street_address, order.city, order.state, order.zip_code].filter(Boolean).join(", ");
 
         const itemsHTML = items
             .map((i, index) => {
@@ -139,8 +143,8 @@ const OrderDetail = () => {
               <p style="margin:5px 0;"><strong>Name:</strong> ${order.customer_name || "Guest Customer"}</p>
               <p style="margin:5px 0;"><strong>Email:</strong> ${order.customer_email || "N/A"}</p>
               <p style="margin:5px 0;"><strong>Phone:</strong> ${order.customer_phone || "N/A"}</p>
-              <p style="margin:5px 0;"><strong>Address:</strong> ${order.street_address || ""}, ${order.city || ""}, ${order.state || ""}, ${order.zip_code || ""}</p>
-              <p style="margin:5px 0;"><strong>Country:</strong> ${order.country || "India"}</p>
+              <p style="margin:5px 0;"><strong>${isPickup ? "Fulfillment" : "Address"}:</strong> ${escapeHtml(fulfillmentDetails)}</p>
+              ${isPickup ? "" : `<p style="margin:5px 0;"><strong>Country:</strong> ${escapeHtml(order.country || "India")}</p>`}
             </div>
     
             <div style="flex:1; min-width:240px; font-size:14px;">
@@ -543,8 +547,10 @@ const OrderDetail = () => {
                                     <span>₹{formatCurrency(order.subtotal ?? order.total_amount)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-bold text-slate-500">
-                                    <span>GST ({formatCurrency(order.gst_rate)}% before discount)</span>
-                                    <span>+₹{formatCurrency(order.gst_amount)}</span>
+                                    <span>{order.tax_mode === "Tax Inclusive"
+                                        ? `GST included (${formatCurrency(order.gst_rate)}%)`
+                                        : `GST (${formatCurrency(order.gst_rate)}% before discount)`}</span>
+                                    <span>{order.tax_mode === "Tax Inclusive" ? "" : "+"}₹{formatCurrency(order.gst_amount)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-bold text-slate-500">
                                     <span>{getDiscountLabel(order)}</span>
@@ -668,18 +674,24 @@ const OrderDetail = () => {
                             <div className="flex items-start gap-4 group">
                                 <div className="w-12 h-12 bg-gray-50 text-gray-400 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm"><FiMapPin size={18} /></div>
                                 <div>
-                                    <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] mb-1">Shipping Vault</p>
-                                    <div className="text-sm font-black text-slate-600 leading-relaxed italic">
-                                        {order.street_address && <p>{order.street_address}</p>}
-                                        {(order.city || order.district) && (
-                                            <p>{[order.city, order.district].filter(Boolean).join(', ')}</p>
-                                        )}
-                                        {(order.state || order.zip_code) && (
-                                            <p>{[order.state, order.zip_code].filter(Boolean).join(' - ')}</p>
-                                        )}
-                                        {order.country && <p>{order.country}</p>}
-                                        {!order.street_address && order.address && <p>{order.address}</p>}
-                                    </div>
+                                    <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] mb-1">
+                                        {order.fulfillment_type === "Pickup" ? "Pickup" : "Shipping Vault"}
+                                    </p>
+                                    {order.fulfillment_type === "Pickup" ? (
+                                        <p className="text-sm font-black text-slate-600 leading-relaxed italic">Pickup selected. Coordinate collection with the customer.</p>
+                                    ) : (
+                                        <div className="text-sm font-black text-slate-600 leading-relaxed italic">
+                                            {order.street_address && <p>{order.street_address}</p>}
+                                            {(order.city || order.district) && (
+                                                <p>{[order.city, order.district].filter(Boolean).join(', ')}</p>
+                                            )}
+                                            {(order.state || order.zip_code) && (
+                                                <p>{[order.state, order.zip_code].filter(Boolean).join(' - ')}</p>
+                                            )}
+                                            {order.country && <p>{order.country}</p>}
+                                            {!order.street_address && order.address && <p>{order.address}</p>}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

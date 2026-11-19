@@ -71,6 +71,7 @@ function ComboDetails() {
   const [comboResult, setComboResult] = useState({ key: "", combo: null, error: "" });
   const [reloadKey, setReloadKey] = useState(0);
   const [activeImage, setActiveImage] = useState(0);
+  const [zoomPosition, setZoomPosition] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [componentResult, setComponentResult] = useState({ key: "", components: [], error: "" });
   const [relatedResult, setRelatedResult] = useState({ key: "", combos: [], error: "" });
@@ -88,6 +89,15 @@ function ComboDetails() {
   const comboLoading = comboResult.key !== requestKey;
   const combo = comboLoading ? null : comboResult.combo;
   const comboError = comboLoading ? "" : comboResult.error;
+
+  useEffect(() => {
+    setActiveImage(0);
+    setZoomPosition(null);
+  }, [id]);
+
+  useEffect(() => {
+    setZoomPosition(null);
+  }, [activeImage]);
 
   useEffect(() => {
     let active = true;
@@ -371,13 +381,28 @@ function ComboDetails() {
               </Link>
 
               <section className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
-                <div>
+                <div
+                  className={`relative ${zoomPosition ? "z-30" : ""}`}
+                  onPointerLeave={() => setZoomPosition(null)}
+                >
                   <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-[#f4ece2]">
                     {gallery.length ? (
                       <img
                         src={resolveMediaUrl(gallery[activeImageIndex] || gallery[0])}
                         alt={combo.name}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-contain"
+                        onPointerMove={(event) => {
+                          if (event.pointerType === "touch") return;
+                          const bounds = event.currentTarget.getBoundingClientRect();
+                          const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+                          const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+                          setZoomPosition({
+                            x,
+                            y,
+                            lensX: Math.max(0.2, Math.min(0.8, x)),
+                            lensY: Math.max(0.2, Math.min(0.8, y)),
+                          });
+                        }}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-[#c7b5a2]">
@@ -409,14 +434,39 @@ function ComboDetails() {
                         </button>
                       </>
                     )}
+                    {zoomPosition && gallery.length > 0 && (
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute h-2/5 w-2/5 -translate-x-1/2 -translate-y-1/2 border border-white/80 bg-white/20 shadow-[0_0_0_1px_rgba(53,29,14,0.25)]"
+                        style={{
+                          left: `${zoomPosition.lensX * 100}%`,
+                          top: `${zoomPosition.lensY * 100}%`,
+                        }}
+                      />
+                    )}
                   </div>
+                  {zoomPosition && gallery.length > 0 && (
+                    <div
+                      aria-hidden="true"
+                      className="absolute left-full top-0 z-40 ml-4 hidden aspect-[4/3] w-full overflow-hidden rounded-3xl border border-[#e8d8c7] bg-[#f4ece2] shadow-2xl lg:block"
+                      style={{
+                        backgroundImage: `url("${resolveMediaUrl(gallery[activeImageIndex] || gallery[0])}")`,
+                        backgroundPosition: `${zoomPosition.x * 100}% ${zoomPosition.y * 100}%`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundSize: "250% 250%",
+                      }}
+                    />
+                  )}
                   {gallery.length > 1 && (
                     <div className="mt-3 grid grid-cols-5 gap-3">
                       {gallery.map((image, index) => (
                         <button
                           key={`${image}-${index}`}
                           type="button"
-                          onClick={() => setActiveImage(index)}
+                          onClick={() => {
+                            setZoomPosition(null);
+                            setActiveImage(index);
+                          }}
                           aria-label={`Show combo image ${index + 1}`}
                           aria-pressed={activeImageIndex === index}
                           className={`aspect-square overflow-hidden rounded-xl border-2 transition ${activeImageIndex === index ? "border-[#a34720]" : "border-transparent hover:border-[#d9c4aa]"}`}
@@ -625,14 +675,31 @@ function ComboDetails() {
               </section>
 
               <section aria-labelledby="combo-reviews-heading" className="mt-10 overflow-hidden rounded-3xl border border-[#eee4d8] bg-white p-5 sm:p-8">
-                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                <div className="flex flex-col gap-5 rounded-2xl bg-[#fcfaf7] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                   <div>
-                    <h2 id="combo-reviews-heading" className="text-xl font-semibold text-[#351d0e]">Customer reviews</h2>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a06e46]">Feedback from our customers</p>
+                    <h2 id="combo-reviews-heading" className="mt-1 text-2xl font-semibold text-[#351d0e]">Customer reviews</h2>
                     <p className="mt-1 text-sm text-[#8b735e]">Reviews are for this combo and can be submitted once per account.</p>
                   </div>
-                  {reviews.length > 0 && (
-                    <p className="text-sm font-semibold text-[#493522]">{averageReviewRating.toFixed(1)} / 5 average</p>
-                  )}
+                  <div className="flex items-center gap-3 rounded-xl border border-[#eee4d8] bg-white px-4 py-3">
+                    <span className="text-3xl font-bold leading-none text-[#351d0e]">
+                      {reviews.length ? averageReviewRating.toFixed(1) : "—"}
+                    </span>
+                    <span>
+                      <span className="flex items-center gap-0.5" aria-label={`${averageReviewRating.toFixed(1)} out of 5 stars`}>
+                        {Array.from({ length: 5 }, (_, index) => (
+                          <Star
+                            key={index}
+                            size={14}
+                            className={index < Math.round(averageReviewRating) ? "fill-[#d49a46] text-[#d49a46]" : "text-[#d9cfc4]"}
+                          />
+                        ))}
+                      </span>
+                      <span className="mt-1 block text-xs text-[#8b735e]">
+                        {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+                      </span>
+                    </span>
+                  </div>
                 </div>
 
                 {reviewsLoading ? (
@@ -646,37 +713,45 @@ function ComboDetails() {
                 ) : reviews.length ? (
                   <div className="mt-5 space-y-4">
                     {reviews.map((review) => (
-                      <article key={review.id} className="rounded-2xl border border-[#eee4d8] bg-[#fcfaf7] p-5">
+                      <article key={review.id} className="rounded-2xl border border-[#eee4d8] bg-white p-4 shadow-[0_6px_18px_rgba(53,29,14,0.04)] sm:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-[#351d0e]">{review.user_name}</p>
-                            {review.created_at && (
-                              <p className="mt-1 text-xs text-[#9a8979]">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0df] text-sm font-bold text-[#a34720]">
+                              {String(review.user_name || "Customer").trim().charAt(0).toUpperCase()}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate font-semibold text-[#351d0e]">{review.user_name || "Customer"}</span>
+                              {review.created_at && (
+                                <span className="mt-1 block text-xs text-[#9a8979]">
                                 {new Date(review.created_at).toLocaleDateString()}
-                              </p>
-                            )}
+                                </span>
+                              )}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5 stars`}>
-                            {Array.from({ length: 5 }, (_, index) => (
-                              <Star
-                                key={index}
-                                size={15}
-                                className={index < Number(review.rating) ? "fill-[#d49a46] text-[#d49a46]" : "text-[#d9cfc4]"}
-                              />
-                            ))}
-                          </div>
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff7e8] px-3 py-1.5 text-xs font-bold text-[#634d3b]" aria-label={`${review.rating} out of 5 stars`}>
+                            <span className="flex items-center gap-0.5">
+                              {Array.from({ length: 5 }, (_, index) => (
+                                <Star
+                                  key={index}
+                                  size={13}
+                                  className={index < Number(review.rating) ? "fill-[#d49a46] text-[#d49a46]" : "text-[#d9cfc4]"}
+                                />
+                              ))}
+                            </span>
+                            {Number(review.rating).toFixed(1)}
+                          </span>
                         </div>
-                        <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#634d3b]">{review.comment}</p>
+                        <p className="mt-4 whitespace-pre-line rounded-xl bg-[#fcfaf7] p-4 text-sm leading-7 text-[#634d3b]">{review.comment}</p>
                         {review.review_image && (
                           <img
                             src={resolveMediaUrl(review.review_image)}
                             alt={`Photo for ${combo.name} review`}
                             loading="lazy"
-                            className="mt-4 max-h-56 rounded-xl object-cover"
+                            className="mt-4 max-h-64 max-w-full rounded-xl border border-[#eee4d8] bg-[#fcfaf7] object-contain p-1"
                           />
                         )}
                         {review.admin_reply && (
-                          <div className="mt-4 rounded-xl border-l-2 border-[#d49a46] bg-white px-4 py-3">
+                          <div className="mt-4 rounded-xl border border-[#f1e2cf] border-l-4 border-l-[#d49a46] bg-[#fffaf2] px-4 py-3">
                             <p className="text-xs font-bold uppercase tracking-wide text-[#8b5a35]">Q Living reply</p>
                             <p className="mt-1 text-sm leading-6 text-[#634d3b]">{review.admin_reply}</p>
                           </div>
@@ -690,8 +765,9 @@ function ComboDetails() {
                   </p>
                 )}
 
-                <div className="mt-7 border-t border-[#eee4d8] pt-6">
-                  <h3 className="text-lg font-semibold text-[#351d0e]">Write a review</h3>
+                <div className="mt-8 rounded-2xl bg-[#fcfaf7] p-5 sm:p-6">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a06e46]">Your feedback matters</p>
+                  <h3 className="mt-1 text-lg font-semibold text-[#351d0e]">Write a review</h3>
                   {myReviewError ? (
                     <p role="alert" className="mt-3 text-sm text-red-700">{myReviewError}</p>
                   ) : myReview ? (

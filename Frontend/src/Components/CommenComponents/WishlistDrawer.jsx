@@ -78,15 +78,15 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
         aria-label="Favorites"
         className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-primary-dark bg-primary px-5 py-4 text-white">
           <div className="flex items-center gap-3">
-            <FiHeart className="text-primary" size={22} />
+            <FiHeart className="text-white" size={22} />
             <div>
-              <h2 className="text-lg font-bold text-gray-800">Your Favorites</h2>
-              <p className="text-xs text-gray-500">{wishlist.length} {wishlist.length === 1 ? "item" : "items"}</p>
+              <h2 className="text-lg font-bold text-white">Your Favorites</h2>
+              <p className="text-xs text-white/80">{wishlist.length} {wishlist.length === 1 ? "item" : "items"}</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close favorites" className="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-primary">
+          <button type="button" onClick={onClose} aria-label="Close favorites" className="rounded-full p-2 text-white transition hover:bg-white/20">
             <FiX size={22} />
           </button>
         </div>
@@ -119,7 +119,7 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
                         <FiTrash2 size={16} />
                       </button>
                     </div>
-                    <p className="mt-1 text-sm font-semibold text-primary">₹{Number(item.price || 0).toFixed(2)}</p>
+                    <p className="mt-1 text-sm font-semibold text-[#351d0e]">₹{Number(item.price || 0).toFixed(2)}</p>
                     <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-500">
                       {item.colorName && <span>Color: {item.colorName}</span>}
                       {item.size && <span>Size: {item.size}</span>}
