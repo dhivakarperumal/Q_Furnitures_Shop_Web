@@ -168,7 +168,9 @@ async function start() {
   }
 }
 
-if (require.main === module) {
+const isPassengerProcess = Boolean(process.env.PASSENGER_APP_ENV || process.env.PASSENGER_APP_ROOT);
+
+if (require.main === module || isPassengerProcess) {
   start();
 }
 
