@@ -21,7 +21,7 @@ import { resolveMediaUrl } from "../../utils/media";
 
 const deriveUserStatus = (user) => {
     if (user?.deleted_at) {
-        return "Deleted";
+        return "Inactive";
     }
     if (user?.status) {
         return String(user.status).toLowerCase() === "inactive" ? "Inactive" : "Active";
@@ -37,6 +37,7 @@ const Users = ({ initialTab = "All" }) => {
     const [selectedRole, setSelectedRole] = useState("all");
     const [searchTerm, setSearchTerm] = useState("");
     const [viewMode, setViewMode] = useState("table"); // "table" | "card"
+    const [statusUpdatingId, setStatusUpdatingId] = useState(null);
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -138,6 +139,27 @@ const Users = ({ initialTab = "All" }) => {
             fetchUsers();
         } catch (error) {
             toast.error("Failed to delete user");
+        }
+    };
+
+    const handleStatusToggle = async (user) => {
+        const nextStatus = user.status === "Active" ? "inactive" : "active";
+        setStatusUpdatingId(user.id);
+        try {
+            await api.put(`/auth/users/${user.id}`, {
+                username: user.username || user.name,
+                name: user.name,
+                email: user.email,
+                phone: user.phone || "",
+                role: user.role || "customer",
+                status: nextStatus
+            });
+            toast.success(`Account set to ${nextStatus === "active" ? "Active" : "Inactive"}.`);
+            await fetchUsers();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to update account status.");
+        } finally {
+            setStatusUpdatingId(null);
         }
     };
 
@@ -416,9 +438,23 @@ const Users = ({ initialTab = "All" }) => {
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 text-center">
-                                                            <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${user.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                                                                {user.status || 'Active'}
-                                                            </span>
+                                                            <div className="inline-flex items-center gap-2">
+                                                                <span className={`min-w-16 rounded-full px-3 py-1 text-[11px] font-semibold ${user.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                                    {user.status || 'Active'}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    role="switch"
+                                                                    aria-checked={user.status === 'Active'}
+                                                                    aria-label={`${user.status === 'Active' ? 'Deactivate' : 'Activate'} ${user.name}`}
+                                                                    title={user.status === 'Active' ? 'Set inactive' : 'Set active'}
+                                                                    disabled={statusUpdatingId === user.id}
+                                                                    onClick={() => handleStatusToggle(user)}
+                                                                    className={`relative h-6 w-11 rounded-full transition-colors disabled:cursor-wait disabled:opacity-60 ${user.status === 'Active' ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                                                >
+                                                                    <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${user.status === 'Active' ? 'left-1 translate-x-5' : 'left-1'}`} />
+                                                                </button>
+                                                            </div>
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="text-[12px] font-semibold text-slate-700">{user.joined}</div>
@@ -509,9 +545,23 @@ const Users = ({ initialTab = "All" }) => {
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-medium text-gray-400">Status</p>
-                                                    <span className={`mt-0.5 inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${user.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>
-                                                        {user.status || "Active"}
-                                                    </span>
+                                                    <div className="mt-1 flex items-center gap-2">
+                                                        <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${user.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>
+                                                            {user.status || "Active"}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            role="switch"
+                                                            aria-checked={user.status === 'Active'}
+                                                            aria-label={`${user.status === 'Active' ? 'Deactivate' : 'Activate'} ${user.name}`}
+                                                            title={user.status === 'Active' ? 'Set inactive' : 'Set active'}
+                                                            disabled={statusUpdatingId === user.id}
+                                                            onClick={() => handleStatusToggle(user)}
+                                                            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-wait disabled:opacity-60 ${user.status === 'Active' ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                                        >
+                                                            <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${user.status === 'Active' ? 'left-1 translate-x-5' : 'left-1'}`} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
