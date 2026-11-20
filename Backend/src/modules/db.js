@@ -385,6 +385,7 @@ async function initializeDatabase(pool) {
       status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      deleted_at TIMESTAMP NULL,
       UNIQUE KEY users_email_unique (email),
       UNIQUE KEY users_phone_unique (phone)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -1623,6 +1624,7 @@ async function initializeDatabase(pool) {
     ["profile_image", "ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) NULL"],
     ["google_id", "ALTER TABLE users ADD COLUMN google_id VARCHAR(255) NULL"],
     ["auth_provider", "ALTER TABLE users ADD COLUMN auth_provider VARCHAR(32) NOT NULL DEFAULT 'password'"],
+    ["deleted_at", "ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP NULL"],
   ];
 
   for (const [column, statement] of migrations) {

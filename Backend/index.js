@@ -49,6 +49,7 @@ const createInvoiceProductRouter = require("./src/routers/invoiceProductRouter")
 const createFavoriteRouter = require("./src/routers/favoriteRouter");
 const createCartRouter = require("./src/routers/cartRouter");
 const { createUploadRouter } = require("./src/routers/uploadRouter");
+const { requireApiAuthentication } = require("./src/middleware/auth");
 
 const port = Number(process.env.PORT || 5000);
 const categoryOwnerUserId = "0af825ec-57bc-4be2-b60a-51c1d301071e";
@@ -118,6 +119,7 @@ app.use("/api", (request, response, next) => {
   });
 });
 app.use("/api/auth", createAuthRouter(authController));
+app.use("/api", requireApiAuthentication);
 app.use("/api/categories", createCategoryRouter(categoryService));
 app.use("/api/products", createProductRouter(productService));
 app.use("/api/combos", createComboRouter(comboService));

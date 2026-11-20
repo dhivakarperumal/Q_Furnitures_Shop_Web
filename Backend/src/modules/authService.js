@@ -3,7 +3,7 @@ const { randomBytes, randomUUID } = require("node:crypto");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 
-const USER_COLUMNS = "id, user_id, username, email, phone, date_of_birth, profile_image, google_id, auth_provider, role, status, created_at, updated_at";
+const USER_COLUMNS = "id, user_id, username, email, phone, date_of_birth, profile_image, google_id, auth_provider, role, status, created_at, updated_at, deleted_at";
 const AUTH_USER_COLUMNS = `${USER_COLUMNS}, password_hash`;
 
 function toPublicUser(user) {
@@ -22,6 +22,7 @@ function toPublicUser(user) {
     status: user.status,
     created_at: user.created_at,
     updated_at: user.updated_at,
+    deleted_at: user.deleted_at || null,
   };
 }
 
@@ -129,6 +130,63 @@ function createAuthService(pool) {
       const user = await getProfile(userId);
       if (!user) throw accountError(404, "Account was not found.");
       return user;
+    },
+
+    async updateUser(userId, input) {
+      if (!input || typeof input !== "object" || Array.isArray(input)) {
+        throw accountError(400, "User data must be an object.");
+      }
+      const username = typeof input.username === "string" ? input.username.trim() : "";
+      const name = typeof input.name === "string" ? input.name.trim() : "";
+      const displayName = name || username;
+      const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
+      const phone = typeof input.phone === "string" ? input.phone.trim() : "";
+      const role = typeof input.role === "string" ? input.role.trim().toLowerCase() : "customer";
+      const status = typeof input.status === "string" ? input.status.trim().toLowerCase() : null;
+
+      if (displayName.length < 2 || displayName.length > 120) {
+        throw accountError(400, "Name must be between 2 and 120 characters.");
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 191) {
+        throw accountError(400, "Enter a valid email address.");
+      }
+      if (phone && (phone.length < 6 || phone.length > 32)) {
+        throw accountError(400, "Phone number must be between 6 and 32 characters.");
+      }
+      if (!["customer", "admin", "dealer"].includes(role)) {
+        throw accountError(400, "Invalid user role.");
+      }
+      if (status !== null && !["active", "inactive"].includes(status)) {
+        throw accountError(400, "Status must be active or inactive.");
+      }
+
+      try {
+        const [result] = await pool.execute(
+          `UPDATE users
+           SET username = ?, email = ?, phone = ?, role = ?
+           ${status === null ? "" : ", status = ?, deleted_at = ?"}
+           WHERE id = ?`,
+          status === null
+            ? [displayName, email, phone || null, role, userId]
+            : [displayName, email, phone || null, role, status, status === "inactive" ? new Date() : null, userId],
+        );
+        if (result.affectedRows === 0) throw accountError(404, "User was not found.");
+      } catch (error) {
+        if (error.code === "ER_DUP_ENTRY") {
+          throw accountError(409, "That email or phone number is already in use.");
+        }
+        throw error;
+      }
+      return getProfile(userId);
+    },
+
+    async deleteUser(userId) {
+      const [result] = await pool.execute(
+        "UPDATE users SET status = 'inactive', deleted_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [userId],
+      );
+      if (result.affectedRows === 0) throw accountError(404, "User was not found.");
+      return getProfile(userId);
     },
 
     async changePassword(userId, currentPassword, newPassword) {

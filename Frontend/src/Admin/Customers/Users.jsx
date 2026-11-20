@@ -20,6 +20,9 @@ import { resolveMediaUrl } from "../../utils/media";
 
 
 const deriveUserStatus = (user) => {
+    if (user?.deleted_at) {
+        return "Deleted";
+    }
     if (user?.status) {
         return String(user.status).toLowerCase() === "inactive" ? "Inactive" : "Active";
     }
@@ -55,6 +58,7 @@ const Users = ({ initialTab = "All" }) => {
         email: "",
         phone: "",
         role: "user",
+        status: "active",
         password: ""
     });
     const [submitLoading, setSubmitLoading] = useState(false);
@@ -76,6 +80,7 @@ const Users = ({ initialTab = "All" }) => {
                 status: deriveUserStatus(u),
                 joined: u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A',
                 rawCreated_at: u.created_at,
+                deleted_at: u.deleted_at,
                 avatar: u.profile_image
                     ? resolveMediaUrl(u.profile_image)
                     : ""
@@ -113,7 +118,7 @@ const Users = ({ initialTab = "All" }) => {
                 toast.success("User registered successfully!");
             }
             setIsModalOpen(false);
-            setFormData({ username: "", name: "", email: "", phone: "", role: "user", password: "" });
+            setFormData({ username: "", name: "", email: "", phone: "", role: "user", status: "active", password: "" });
             setIsEditing(false);
             setEditUserId(null);
             fetchUsers();
@@ -126,10 +131,10 @@ const Users = ({ initialTab = "All" }) => {
     };
 
     const handleDeleteUser = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+        if (!window.confirm("Delete this account? It will be changed to Deleted/Inactive and can be restored later.")) return;
         try {
             await api.delete(`/auth/users/${id}`);
-            toast.success("User eliminated from system.");
+            toast.success("User account deleted and set to inactive.");
             fetchUsers();
         } catch (error) {
             toast.error("Failed to delete user");
@@ -159,6 +164,7 @@ const Users = ({ initialTab = "All" }) => {
             email: user.email,
             phone: user.phone || "",
             role: user.role,
+            status: user.status === "Inactive" || user.status === "Deleted" ? "inactive" : "active",
             password: "" // Don't show password on edit
         });
         setEditUserId(user.id);
@@ -659,6 +665,20 @@ const Users = ({ initialTab = "All" }) => {
                                         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                                     />
                                 </div>
+                                {isEditing && (
+                                    <div>
+                                        <label className="mb-2 block text-xs font-semibold text-slate-600">Account status</label>
+                                        <select
+                                            name="status"
+                                            value={formData.status}
+                                            onChange={handleInputChange}
+                                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                                        >
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive / Deleted</option>
+                                        </select>
+                                    </div>
+                                )}
                                 {!isEditing && (
                                     <div>
                                         <label className="mb-2 block text-xs font-semibold text-slate-600">Password *</label>
@@ -740,6 +760,14 @@ const Users = ({ initialTab = "All" }) => {
                                     <dt className="text-xs font-medium text-slate-500">Joined</dt>
                                     <dd className="mt-1 text-sm font-semibold text-slate-800">{viewingUser.joined}</dd>
                                 </div>
+                                {viewingUser.deleted_at && (
+                                    <div>
+                                        <dt className="text-xs font-medium text-slate-500">Deleted at</dt>
+                                        <dd className="mt-1 text-sm font-semibold text-slate-800">
+                                            {new Date(viewingUser.deleted_at).toLocaleString()}
+                                        </dd>
+                                    </div>
+                                )}
                             </dl>
                             <div className="flex justify-end gap-2 border-t border-slate-100 p-4">
                                 <button

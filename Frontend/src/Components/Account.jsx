@@ -132,6 +132,7 @@ function Account() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [addressSaving, setAddressSaving] = useState(false);
   const [addressActionId, setAddressActionId] = useState(null);
+  const [accountDeleting, setAccountDeleting] = useState(false);
   const [addressFormOpen, setAddressFormOpen] = useState(false);
   const [addressFormError, setAddressFormError] = useState("");
   const [editingAddressId, setEditingAddressId] = useState(null);
@@ -411,6 +412,20 @@ function Account() {
       toast.error(error.response?.data?.message || "Could not delete the address.");
     } finally {
       setAddressActionId(null);
+    }
+  }
+
+  async function deleteAccount() {
+    if (!window.confirm("Delete your account? You will be signed out and your account will become inactive.")) return;
+    setAccountDeleting(true);
+    try {
+      await api.delete("/users/me");
+      toast.success("Account deleted successfully.");
+      logout();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not delete your account.");
+    } finally {
+      setAccountDeleting(false);
     }
   }
 
@@ -1196,6 +1211,14 @@ function Account() {
                     className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#f07816] to-[#df5d00] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:brightness-105"
                   >
                     <LogOut size={16} /> Yes, Log Out
+                  </button>
+                  <button
+                    type="button"
+                    onClick={deleteAccount}
+                    disabled={accountDeleting}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 size={16} /> {accountDeleting ? "Deleting..." : "Delete Account"}
                   </button>
                   <button
                     type="button"

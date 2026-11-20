@@ -108,10 +108,47 @@ function createUserRouter(authService, userAddressService) {
     }
   });
 
+  router.delete("/me", requireAuthentication, async (request, response, next) => {
+    try {
+      await authService.deleteUser(request.auth.id);
+      return response.json({ message: "Account deleted successfully.", deleted: true });
+    } catch (error) {
+      if (error.status) return response.status(error.status).json({ message: error.message });
+      return next(error);
+    }
+  });
+
   router.get("/", requireAuthentication, requireAdmin, async (request, response, next) => {
     try {
       return response.json(await authService.listUsers());
     } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.put("/:id", requireAuthentication, requireAdmin, async (request, response, next) => {
+    try {
+      const id = Number(request.params.id);
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return response.status(400).json({ message: "User ID is invalid." });
+      }
+      return response.json({ user: await authService.updateUser(id, request.body) });
+    } catch (error) {
+      if (error.status) return response.status(error.status).json({ message: error.message });
+      return next(error);
+    }
+  });
+
+  router.delete("/:id", requireAuthentication, requireAdmin, async (request, response, next) => {
+    try {
+      const id = Number(request.params.id);
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return response.status(400).json({ message: "User ID is invalid." });
+      }
+      const user = await authService.deleteUser(id);
+      return response.json({ message: "User account deleted successfully.", user });
+    } catch (error) {
+      if (error.status) return response.status(error.status).json({ message: error.message });
       return next(error);
     }
   });
