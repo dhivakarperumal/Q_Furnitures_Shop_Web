@@ -221,7 +221,7 @@ function createOrderRouter(orderService, cartService, razorpayService, taxSettin
       }
 
       const orderData = checkoutPayload(
-        { ...request.body, fulfillment_type: fulfillmentType },
+        stripCheckoutMode({ ...request.body, fulfillment_type: fulfillmentType }),
         userId,
         cartItems,
         "Online",

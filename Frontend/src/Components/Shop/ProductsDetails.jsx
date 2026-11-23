@@ -304,7 +304,7 @@ function ProductDetails() {
     setQuantity(1);
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = () => {
     if (!user?.user_id) {
       toast.error("Please login to continue with your purchase");
       navigate("/login");
