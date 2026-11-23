@@ -72,7 +72,6 @@ function ComboDetails() {
   const [comboResult, setComboResult] = useState({ key: "", combo: null, error: "" });
   const [reloadKey, setReloadKey] = useState(0);
   const [activeImage, setActiveImage] = useState(0);
-  const [zoomPosition, setZoomPosition] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [componentResult, setComponentResult] = useState({ key: "", components: [], error: "" });
   const [relatedResult, setRelatedResult] = useState({ key: "", combos: [], error: "" });
@@ -93,11 +92,9 @@ function ComboDetails() {
 
   useEffect(() => {
     setActiveImage(0);
-    setZoomPosition(null);
   }, [id]);
 
   useEffect(() => {
-    setZoomPosition(null);
   }, [activeImage]);
 
   useEffect(() => {
@@ -390,28 +387,13 @@ function ComboDetails() {
               </Link>
 
               <section className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
-                <div
-                  className={`relative ${zoomPosition ? "z-30" : ""}`}
-                  onPointerLeave={() => setZoomPosition(null)}
-                >
+                <div className="relative">
                   <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-[#f4ece2]">
                     {gallery.length ? (
                       <img
                         src={resolveMediaUrl(gallery[activeImageIndex] || gallery[0])}
                         alt={combo.name}
                         className="h-full w-full object-contain"
-                        onPointerMove={(event) => {
-                          if (event.pointerType === "touch") return;
-                          const bounds = event.currentTarget.getBoundingClientRect();
-                          const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
-                          const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
-                          setZoomPosition({
-                            x,
-                            y,
-                            lensX: Math.max(0.2, Math.min(0.8, x)),
-                            lensY: Math.max(0.2, Math.min(0.8, y)),
-                          });
-                        }}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-[#c7b5a2]">
@@ -443,29 +425,7 @@ function ComboDetails() {
                         </button>
                       </>
                     )}
-                    {zoomPosition && gallery.length > 0 && (
-                      <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute h-2/5 w-2/5 -translate-x-1/2 -translate-y-1/2 border border-white/80 bg-white/20 shadow-[0_0_0_1px_rgba(53,29,14,0.25)]"
-                        style={{
-                          left: `${zoomPosition.lensX * 100}%`,
-                          top: `${zoomPosition.lensY * 100}%`,
-                        }}
-                      />
-                    )}
                   </div>
-                  {zoomPosition && gallery.length > 0 && (
-                    <div
-                      aria-hidden="true"
-                      className="absolute left-full top-0 z-40 ml-4 hidden aspect-[4/3] w-full overflow-hidden rounded-3xl border border-[#e8d8c7] bg-[#f4ece2] shadow-2xl lg:block"
-                      style={{
-                        backgroundImage: `url("${resolveMediaUrl(gallery[activeImageIndex] || gallery[0])}")`,
-                        backgroundPosition: `${zoomPosition.x * 100}% ${zoomPosition.y * 100}%`,
-                        backgroundRepeat: "no-repeat",
-                        backgroundSize: "250% 250%",
-                      }}
-                    />
-                  )}
                   {gallery.length > 1 && (
                     <div className="mt-3 grid grid-cols-5 gap-3">
                       {gallery.map((image, index) => (
@@ -473,14 +433,13 @@ function ComboDetails() {
                           key={`${image}-${index}`}
                           type="button"
                           onClick={() => {
-                            setZoomPosition(null);
                             setActiveImage(index);
                           }}
                           aria-label={`Show combo image ${index + 1}`}
                           aria-pressed={activeImageIndex === index}
                           className={`aspect-square overflow-hidden rounded-xl border-2 transition ${activeImageIndex === index ? "border-[#a34720]" : "border-transparent hover:border-[#d9c4aa]"}`}
                         >
-                          <img src={resolveMediaUrl(image)} alt="" className="h-full w-full object-cover" />
+                          <img src={resolveMediaUrl(image)} alt="" className="h-full w-full object-contain" />
                         </button>
                       ))}
                     </div>
