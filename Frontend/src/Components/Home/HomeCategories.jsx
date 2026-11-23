@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Armchair, ArrowLeft, ArrowRight } from "lucide-react";
+import { Armchair, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
@@ -95,47 +95,29 @@ const HomeCategories = () => {
       .finally(() => setLoading(false));
   };
 
-  const scrollCategories = (direction) => {
-    if (!sliderRef.current) return;
-    sliderRef.current.scrollBy({
-      left: direction * sliderRef.current.clientWidth * 0.8,
-      behavior: "smooth",
-    });
-  };
-
   return (
-    <section className="bg-white py-10 sm:py-14">
-      <PageContainer>
-        <div className="mb-5 flex items-center justify-between gap-4 sm:mb-7">
-          <h2 className="text-xl font-bold tracking-tight text-[#351d0e] sm:text-2xl">
+    <section className="relative overflow-hidden bg-gradient-to-r from-[#fffaf4] via-[#fffdf9] to-[#fff8ef] py-10 sm:py-14">
+      <div className="pointer-events-none absolute -bottom-16 -left-16 h-36 w-36 rounded-full bg-[#ffd0a7]/45" />
+      <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full border-[18px] border-[#ffd4b1]/45" />
+      <PageContainer className="relative">
+        <div className="mb-6 flex items-center justify-between gap-4 sm:mb-8">
+          <h2 className="relative pb-3 text-2xl font-black tracking-tight text-[#351d0e] after:absolute after:bottom-0 after:left-0 after:h-1 after:w-20 after:rounded-full after:bg-[#ff7a1a] sm:text-3xl">
             Shop by <span className="text-[#e87424]">Category</span>
           </h2>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => scrollCategories(-1)}
-              aria-label="Scroll to previous categories"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#eee4d8] bg-white text-[#634d3b] transition hover:border-[#351d0e] hover:bg-[#351d0e] hover:text-white"
-            >
-              <ArrowLeft size={17} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollCategories(1)}
-              aria-label="Scroll to more categories"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#eee4d8] bg-white text-[#634d3b] transition hover:border-[#351d0e] hover:bg-[#351d0e] hover:text-white"
-            >
-              <ArrowRight size={17} />
-            </button>
-          </div>
+          <Link
+            to="/shop"
+            className="group flex shrink-0 items-center gap-2 rounded-full border-2 border-[#ff7a1a] px-4 py-2 text-sm font-bold text-[#ff6a00] transition hover:bg-[#ff7a1a] hover:text-white sm:px-5 sm:py-2.5 sm:text-base"
+          >
+            See All
+            <ArrowRight size={18} className="transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
 
         {loading ? (
           <div className="flex gap-3 overflow-hidden sm:gap-4">
-            {Array.from({ length: 4 }, (_, index) => (
-              <div key={index} className="w-28 shrink-0 sm:w-32">
-                <div className="aspect-square animate-pulse rounded-full bg-[#f1e9df]" />
-                <div className="mx-auto mt-3 h-3 w-2/3 animate-pulse rounded bg-[#f1e9df]" />
+            {Array.from({ length: 8 }, (_, index) => (
+              <div key={index} className="w-[calc((100%-12px)/2)] shrink-0 sm:w-[calc((100%-48px)/4)] lg:w-[calc((100%-80px)/6)] xl:w-[calc((100%-112px)/8)]">
+                <div className="aspect-[4/5] animate-pulse rounded-[2rem] bg-[#f1e9df]" />
               </div>
             ))}
           </div>
@@ -153,7 +135,7 @@ const HomeCategories = () => {
         ) : categories.length ? (
           <div
             ref={sliderRef}
-            className="flex snap-x snap-mandatory justify-start gap-3 overflow-x-auto scroll-smooth pb-2 sm:gap-4 lg:justify-center"
+            className="flex snap-x snap-mandatory justify-start gap-3 overflow-x-auto scroll-smooth pb-2 sm:gap-4"
             aria-label="Furniture categories"
           >
             {categories.map((category) => {
@@ -162,27 +144,32 @@ const HomeCategories = () => {
               return (
                 <article
                   key={category.catId || category.id || category.name}
-                  className="basis-[calc((100%_-_24px)/3)] shrink-0 snap-start sm:basis-[calc((100%_-_80px)/6)] lg:basis-[calc((100%_-_144px)/10)]"
+                  className="basis-[calc((100%_-_12px)/2)] shrink-0 snap-start sm:basis-[calc((100%_-_48px)/4)] lg:basis-[calc((100%_-_80px)/6)] xl:basis-[calc((100%_-_112px)/8)]"
                 >
                   <Link
                     to={`/shop?category=${encodeURIComponent(category.name)}`}
-                    className="group block rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                    className="group block rounded-[2rem] border border-white/80 bg-gradient-to-b from-[#fff2e7] to-[#ffe2ca] px-2 pb-4 pt-3 shadow-[0_10px_28px_rgba(216,120,54,0.10)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_32px_rgba(216,120,54,0.18)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
                   >
-                    <div className="relative aspect-square overflow-hidden rounded-full bg-gradient-to-br from-[#f6eee5] to-[#eee1d3]">
-                      {image ? (
-                        <img
-                          src={image}
-                          alt=""
-                          loading="lazy"
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-[#a38365]">
-                          <Armchair size={46} strokeWidth={1.2} />
-                        </div>
-                      )}
+                    <div className="relative mx-auto aspect-square w-[82%] rounded-full border-[5px] border-white bg-[#fff7ee] p-1 shadow-[0_5px_14px_rgba(227,139,78,0.16)]">
+                      <div className="h-full w-full overflow-hidden rounded-full">
+                        {image ? (
+                          <img
+                            src={image}
+                            alt=""
+                            loading="lazy"
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-[#a38365]">
+                            <Armchair size={46} strokeWidth={1.2} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="absolute -bottom-3 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border-[3px] border-white bg-[#ff7a1a] text-white shadow-md">
+                        <Armchair size={20} strokeWidth={2} />
+                      </div>
                     </div>
-                    <h3 className="mt-2 line-clamp-1 text-center text-xs font-semibold text-[#351d0e] transition-colors group-hover:text-[#e87500] sm:text-sm">
+                    <h3 className="mt-6 line-clamp-2 text-center text-sm font-bold leading-tight text-[#351d0e] transition-colors group-hover:text-[#e87500] sm:text-base">
                       {category.name}
                     </h3>
                   </Link>
