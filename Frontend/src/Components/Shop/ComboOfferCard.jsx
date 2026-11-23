@@ -102,8 +102,19 @@ export default function ComboOfferCard({ combo }) {
               type="button"
               onClick={async () => {
                 if (availableStock <= 0) return;
-                if (!cartItem) await addComboToCart(combo);
-                navigate("/checkout");
+                navigate("/checkout", {
+                  state: {
+                    buyNowItem: {
+                      combo_id: combo.id,
+                      quantity: 1,
+                      name: combo.name,
+                      image,
+                      price,
+                      item_type: "combo",
+                      combo_items: Array.isArray(combo.combo_items) ? combo.combo_items : [],
+                    },
+                  },
+                });
               }}
               disabled={availableStock <= 0}
               className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#ff7a00] px-2 text-xs font-bold text-white transition hover:bg-[#e85d00] disabled:cursor-not-allowed disabled:bg-[#c7b5a2]"

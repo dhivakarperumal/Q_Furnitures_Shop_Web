@@ -64,6 +64,18 @@ function createOrderRouter(orderService, cartService, razorpayService, taxSettin
   const router = express.Router();
   const requireAdminAccess = [requireAuthentication, requireAdmin];
 
+  async function getCheckoutItems(request) {
+    if (Array.isArray(request.body?.buy_now_items)) {
+      return cartService.resolveBuyNowItems(request.auth.user_id, request.body.buy_now_items);
+    }
+    return cartService.list(request.auth.user_id);
+  }
+
+  function stripCheckoutMode(body) {
+    const { buy_now_items, ...checkoutBody } = body || {};
+    return checkoutBody;
+  }
+
   router.post("/checkout", requireAuthentication, async (request, response, next) => {
     try {
       if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) {
@@ -73,14 +85,14 @@ function createOrderRouter(orderService, cartService, razorpayService, taxSettin
         return response.status(401).json({ message: "Sign in with a valid user account to check out." });
       }
 
-      const cartItems = await cartService.list(request.auth.user_id);
+      const cartItems = await getCheckoutItems(request);
       if (!cartItems.length) {
         return response.status(400).json({ message: "Your cart is empty." });
       }
 
       const taxSettings = await taxSettingsService.getSettings();
       const orderData = checkoutPayload(
-        request.body,
+        stripCheckoutMode(request.body),
         request.auth.user_id,
         cartItems,
         request.body.payment_method,
@@ -109,13 +121,13 @@ function createOrderRouter(orderService, cartService, razorpayService, taxSettin
         return response.status(401).json({ message: "Sign in with a valid user account to check out." });
       }
 
-      const cartItems = await cartService.list(request.auth.user_id);
+      const cartItems = await getCheckoutItems(request);
       const taxSettings = await taxSettingsService.getSettings();
       const appliedTaxSettings = {
         gst_rate: taxSettings.gst_enabled ? taxSettings.gst_rate : 0,
         tax_mode: taxSettings.tax_mode,
       };
-      const orderData = checkoutPayload(request.body, request.auth.user_id, cartItems, "Online", appliedTaxSettings);
+      const orderData = checkoutPayload(stripCheckoutMode(request.body), request.auth.user_id, cartItems, "Online", appliedTaxSettings);
       normalizeOrder(orderData);
       const totals = calculateCartTotals(cartItems, appliedTaxSettings.gst_rate, appliedTaxSettings.tax_mode);
       const amount = Math.round(totals.totalAmount * 100);
@@ -169,7 +181,10 @@ function createOrderRouter(orderService, cartService, razorpayService, taxSettin
         return response.json(existingOrder);
       }
 
-      const cartItems = await cartService.list(userId);
+      const cartItems = await getCheckoutItems({
+        auth: { user_id: userId },
+        body: request.body,
+      });
       let appliedTaxSettings;
       let fulfillmentType;
       const { payment, order: gatewayOrder } = await razorpayService.verifyPayment({

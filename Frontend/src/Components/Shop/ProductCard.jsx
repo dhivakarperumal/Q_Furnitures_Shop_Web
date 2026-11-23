@@ -127,8 +127,21 @@ export default function ProductCard({ product, compact = false }) {
               type="button"
               onClick={async () => {
                 if (stock <= 0) return;
-                if (!cartItem) await addToCart(product);
-                navigate("/checkout");
+                navigate("/checkout", {
+                  state: {
+                    buyNowItem: {
+                      product_id: productId,
+                      quantity: 1,
+                      variant_color: defaultVariantColor,
+                      variant_size: defaultVariantSize,
+                      name: product.name,
+                      image,
+                      price,
+                      item_type: "product",
+                      combo_items: [],
+                    },
+                  },
+                });
               }}
               disabled={stock <= 0}
               className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#ff7a00] px-2 text-xs font-bold text-white transition hover:bg-[#e85d00] disabled:cursor-not-allowed disabled:bg-[#c7b5a2]"

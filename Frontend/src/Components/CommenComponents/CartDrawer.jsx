@@ -167,7 +167,10 @@ const CartDrawer = ({ isOpen, onClose }) => {
             </div>
             <button
               type="button"
-              onClick={() => goTo("/checkout")}
+              onClick={() => {
+                onClose();
+                navigate("/checkout", { state: { cartCheckout: true } });
+              }}
               className="w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:bg-primary-dark"
             >
               Checkout
