@@ -30,6 +30,16 @@ const CartDrawer = ({ isOpen, onClose }) => {
     navigate(path);
   };
 
+  const openItemDetails = (item) => {
+    if (item.item_type === "combo" && item.combo_id) {
+      goTo(`/combo/${item.combo_id}`);
+      return;
+    }
+    if (item.product_id) {
+      goTo(`/products/${item.product_id}`);
+    }
+  };
+
   return createPortal(
     <div
       className={`fixed inset-0 z-[60] overflow-hidden transition-opacity duration-300 ${isOpen ? "visible opacity-100" : "invisible opacity-0"}`}
@@ -89,14 +99,27 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 const itemSubtotal = Number(item.price || 0) * Number(item.quantity || 0);
                 return (
                   <div key={item.id} className="flex gap-3 rounded-lg border border-gray-200 p-3">
-                    <img
-                      src={item.image || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
-                      alt={item.name || "Product"}
-                      className="h-20 w-16 shrink-0 rounded-lg object-cover"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => openItemDetails(item)}
+                      aria-label={`View ${item.name || "item"} details`}
+                      className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    >
+                      <img
+                        src={item.image || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
+                        alt={item.name || "Product"}
+                        className="h-20 w-16 rounded-lg object-cover"
+                      />
+                    </button>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="truncate text-sm font-semibold text-gray-800">{item.name}</h3>
+                        <button
+                          type="button"
+                          onClick={() => openItemDetails(item)}
+                          className="min-w-0 truncate text-left text-sm font-semibold text-gray-800 transition hover:text-primary"
+                        >
+                          {item.name}
+                        </button>
                         <button
                           type="button"
                           onClick={() => removeFromCart(item.id)}

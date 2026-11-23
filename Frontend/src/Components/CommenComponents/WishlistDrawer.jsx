@@ -34,6 +34,16 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
     navigate(path);
   };
 
+  const openItemDetails = (item) => {
+    if (item.item_type === "combo" || item.combo_id) {
+      const comboId = item.combo_id ?? item.id;
+      if (comboId) goTo(`/combo/${comboId}`);
+      return;
+    }
+    const productId = item.product_id ?? item.productId ?? item.id;
+    if (productId) goTo(`/products/${productId}`);
+  };
+
   const handleAddToCart = async (item) => {
     const quantity = quantities[getFavoriteKey(item)] || 1;
     if (item.item_type === "combo") {
@@ -107,14 +117,27 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
             <div className="space-y-4">
               {wishlist.map((item) => (
                 <div key={getFavoriteKey(item)} className="flex gap-3 rounded-lg border border-gray-200 p-3">
-                  <img
-                    src={resolveImageUrl(item.image) || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
-                    alt={item.name || "Product"}
-                    className="h-20 w-16 shrink-0 rounded-lg object-cover"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => openItemDetails(item)}
+                    aria-label={`View ${item.name || "item"} details`}
+                    className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    <img
+                      src={resolveImageUrl(item.image) || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
+                      alt={item.name || "Product"}
+                      className="h-20 w-16 rounded-lg object-cover"
+                    />
+                  </button>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="truncate text-sm font-semibold text-gray-800">{item.name || "Product"}</h3>
+                      <button
+                        type="button"
+                        onClick={() => openItemDetails(item)}
+                        className="min-w-0 truncate text-left text-sm font-semibold text-gray-800 transition hover:text-primary"
+                      >
+                        {item.name || "Product"}
+                      </button>
                       <button type="button" onClick={() => toggleWishlist(item)} aria-label={`Remove ${item.name || "item"}`} className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500">
                         <FiTrash2 size={16} />
                       </button>
