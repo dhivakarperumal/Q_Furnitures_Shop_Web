@@ -26,7 +26,7 @@ export default function CustomFurnitureBanner() {
             </span>
           </div>
 
-          <div className="min-w-0 lg:pl-1">
+          <div className="min-w-0 lg:border-l lg:border-[#f3dfce] lg:pl-5">
             <h2 id="custom-furniture-title" className="text-[17px] font-extrabold leading-tight text-[#351d0e] sm:text-xl lg:text-[21px]">
               Custom Furniture
               <span className="block whitespace-nowrap text-[#e96b0b]">Tailored <span className="text-[#ff7a1a]">for You</span></span>
@@ -38,14 +38,19 @@ export default function CustomFurnitureBanner() {
           </div>
 
           <div className="col-span-2 flex flex-col items-center gap-2 border-t border-[#f3dfce] pt-2 sm:flex-row sm:justify-between sm:gap-3 lg:col-span-1 lg:flex-col lg:items-start lg:justify-center lg:border-l lg:border-t-0 lg:py-1 lg:pl-5">
-            <ul aria-label="Custom furniture options" className="flex flex-wrap justify-center gap-x-3 gap-y-1 sm:justify-start lg:flex-col lg:gap-2">
-              {["Custom sizes", "Material choices", "Personalized design"].map((benefit) => (
-                <li key={benefit} className="inline-flex items-center gap-1 whitespace-nowrap text-[9px] font-semibold text-[#594333] sm:text-[10px] lg:text-xs">
-                  <Check size={13} strokeWidth={2.5} className="shrink-0 text-[#e87500]" aria-hidden="true" />
-                  {benefit}
-                </li>
-              ))}
-            </ul>
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-3 lg:flex-col lg:items-start lg:gap-2">
+              <h3 className="whitespace-nowrap text-[11px] font-bold text-[#351d0e] sm:text-xs">
+                Make it your own
+              </h3>
+              <ul aria-label="Custom furniture options" className="flex flex-wrap justify-center gap-x-3 gap-y-1 sm:justify-start lg:flex-col lg:gap-2">
+                {["Custom sizes", "Material choices", "Personalized design"].map((benefit) => (
+                  <li key={benefit} className="inline-flex items-center gap-1 whitespace-nowrap text-[9px] font-semibold text-[#594333] sm:text-[10px] lg:text-xs">
+                    <Check size={13} strokeWidth={2.5} className="shrink-0 text-[#e87500]" aria-hidden="true" />
+                    {benefit}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
             <Link
               to="/contactus"
