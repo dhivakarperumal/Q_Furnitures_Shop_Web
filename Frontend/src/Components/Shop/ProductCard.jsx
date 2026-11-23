@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { Armchair, Heart, Minus, Plus, ShoppingBag, ShoppingCart, Star } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
 import { resolveMediaUrl } from "../../utils/media";
 import { getProductStock } from "../../utils/stock";
@@ -26,8 +26,7 @@ function formatPrice(value) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
   }).format(Number(value) || 0);
 }
 
@@ -36,6 +35,7 @@ function getComboItemCount(product) {
 }
 
 export default function ProductCard({ product, compact = false }) {
+  const navigate = useNavigate();
   const { cart, wishlist, addToCart, updateCartQuantity, toggleWishlist } = useContext(StoreContext);
   const productId = product.id ?? product.product_id;
   const image = getProductImage(product);
@@ -68,7 +68,7 @@ export default function ProductCard({ product, compact = false }) {
               src={image}
               alt={product.name}
               loading="lazy"
-              className="h-full w-full object-contain"
+              className="h-full w-full object-cover"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-[#c7b5a2]">
@@ -77,7 +77,7 @@ export default function ProductCard({ product, compact = false }) {
           )}
         </Link>
         {discount > 0 && (
-          <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-emerald-700 px-3 py-1 text-[11px] font-bold tracking-wide text-white">
+          <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-[#ff6a00] px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-sm">
             {discount}% OFF
           </span>
         )}
@@ -98,10 +98,10 @@ export default function ProductCard({ product, compact = false }) {
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a06e46]">
+        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#ff6a00]">
           {isCombo ? "Furniture combo" : product.category || "Furniture"}
         </p>
-        <h3 className="mt-1 line-clamp-2 min-h-12 text-base font-semibold leading-6 text-[#351d0e]">
+        <h3 className="mt-1 line-clamp-2 min-h-12 text-base font-bold leading-6 text-[#351d0e]">
           <Link to={`/products/${productId}`} className="transition hover:text-[#a34720]">
             {product.name}
           </Link>
@@ -114,51 +114,46 @@ export default function ProductCard({ product, compact = false }) {
         <div className="mt-2 flex items-center gap-1.5 text-sm text-[#8b735e]">
           <Star size={15} className="fill-[#d49a46] text-[#d49a46]" />
           <span className="font-semibold text-[#493522]">{rating.toFixed(1)}</span>
-          <span className="text-xs">rating</span>
+          <span className="text-xs">({Number(product.review_count) || 0} Reviews)</span>
         </div>
 
-        <div className={`mt-auto flex items-end justify-between gap-2 ${compact ? "pt-2" : "pt-4"}`}>
+        <div className={`mt-auto ${compact ? "pt-2" : "pt-4"}`}>
           <div>
-            <p className="text-lg font-bold text-[#351d0e]">{formatPrice(price)}</p>
+            <p className="text-lg font-bold text-[#ff6a00]">{formatPrice(price)}</p>
             {mrp > price && <p className="text-xs text-[#9a8979] line-through">{formatPrice(mrp)}</p>}
-            {isCombo && mrp > price && <p className="text-xs font-semibold text-emerald-700">Save {formatPrice(mrp - price)}</p>}
           </div>
-          {cartItem ? (
-            <div className="inline-flex h-10 items-center overflow-hidden rounded-xl border border-primary/30 bg-white">
-              <button
-                type="button"
-                onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) - 1)}
-                disabled={Number(cartItem.quantity) <= 1}
-                aria-label={`Decrease ${product.name} quantity`}
-                className="flex h-full w-9 items-center justify-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Minus size={15} />
-              </button>
-              <span aria-live="polite" className="min-w-7 text-center text-sm font-semibold text-[#351d0e]">
-                {cartItem.quantity}
-              </span>
-              <button
-                type="button"
-                onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) + 1)}
-                disabled={Number(cartItem.quantity) >= availableStock}
-                aria-label={`Increase ${product.name} quantity`}
-                className="flex h-full w-9 items-center justify-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Plus size={15} />
-              </button>
-            </div>
-          ) : (
+          <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => addToCart(product)}
+              onClick={async () => {
+                if (stock <= 0) return;
+                if (!cartItem) await addToCart(product);
+                navigate("/checkout");
+              }}
               disabled={stock <= 0}
-              aria-label={`Add ${product.name} to cart`}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-[#c7b5a2]"
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#ff7a00] px-2 text-xs font-bold text-white transition hover:bg-[#e85d00] disabled:cursor-not-allowed disabled:bg-[#c7b5a2]"
             >
               <ShoppingBag size={16} />
-              <span>Add to cart</span>
+              Buy Now
             </button>
-          )}
+            {cartItem ? (
+              <div className="inline-flex h-10 items-center justify-between overflow-hidden rounded-xl border-2 border-[#ff7a00] bg-white text-[#351d0e]">
+                <button type="button" onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) - 1)} disabled={Number(cartItem.quantity) <= 1} aria-label={`Decrease ${product.name} quantity`} className="flex h-full w-8 items-center justify-center text-[#ff6a00] disabled:opacity-40"><Minus size={14} /></button>
+                <span aria-live="polite" className="text-xs font-bold">{cartItem.quantity}</span>
+                <button type="button" onClick={() => updateCartQuantity(cartItem.id, Number(cartItem.quantity) + 1)} disabled={Number(cartItem.quantity) >= availableStock} aria-label={`Increase ${product.name} quantity`} className="flex h-full w-8 items-center justify-center text-[#ff6a00] disabled:opacity-40"><Plus size={14} /></button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => addToCart(product)}
+                disabled={stock <= 0}
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border-2 border-[#ff7a00] bg-white px-2 text-xs font-bold text-[#351d0e] transition hover:bg-[#fff3e8] disabled:cursor-not-allowed disabled:border-[#c7b5a2] disabled:text-[#9a8979]"
+              >
+                <ShoppingBag size={16} className="text-[#ff6a00]" />
+                <span className="truncate">Add to Cart</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </article>

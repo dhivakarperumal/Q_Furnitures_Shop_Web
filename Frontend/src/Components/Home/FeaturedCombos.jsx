@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
 import ComboOfferCard from "../Shop/ComboOfferCard";
@@ -48,15 +49,21 @@ function FeaturedCombos() {
   if (!loading && !error && !combos.length) return null;
 
   return (
-    <section aria-label="Featured furniture combos" className="bg-white py-14 sm:py-16">
-      <PageContainer>
+    <section aria-label="Featured furniture combos" className="relative overflow-hidden bg-gradient-to-r from-[#fffaf4] via-[#fffdf9] to-[#fff8ef] py-14 sm:py-16">
+      <div className="pointer-events-none absolute -bottom-16 -left-16 h-36 w-36 rounded-full bg-[#ffd0a7]/45" />
+      <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full border-[18px] border-[#ffd4b1]/45" />
+      <PageContainer className="relative">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a06e46]">Designed to go together</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#351d0e] sm:text-4xl">Featured combos</h2>
+            <p className="inline-flex rounded-full bg-[#ff6a00] px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white">Designed to go together</p>
+            <h2 className="relative mt-2 pb-3 text-3xl font-black tracking-tight text-[#351d0e] after:absolute after:bottom-0 after:left-0 after:h-1 after:w-20 after:rounded-full after:bg-[#ff7a1a] sm:text-4xl">Featured <span className="text-[#ff7a1a]">Combos</span></h2>
             <p className="mt-2 text-sm text-[#8b735e] sm:text-base">Complete your space and save with a curated bundle.</p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
+            <Link to="/combo" className="group inline-flex items-center gap-2 rounded-full border-2 border-[#ff7a1a] px-5 py-2.5 text-sm font-bold text-[#ff6a00] transition hover:bg-[#ff7a1a] hover:text-white sm:text-base">
+              See All
+              <ArrowRight size={18} className="transition-transform group-hover:translate-x-0.5" />
+            </Link>
             <div className="hidden items-center gap-2 sm:flex">
               <button
                 type="button"
