@@ -24,33 +24,33 @@ export default function CustomFurnitureBanner() {
           </div>
 
           <div className="relative flex flex-col items-center justify-center bg-gradient-to-br from-[#fffaf4] via-[#fff5e9] to-[#ffeddc] px-4 py-6 text-center sm:px-8 lg:px-5 lg:py-5">
-            <p className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[#542b16] sm:text-xs">
-              <span className="h-px w-8 bg-[#ed9a5c] sm:w-12" />
+            <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.18em] text-[#542b16] sm:text-[10px]">
+              <span className="h-px w-6 bg-[#ed9a5c] sm:w-9" />
               Your Idea, Our Craft
-              <span className="h-px w-8 bg-[#ed9a5c] sm:w-12" />
+              <span className="h-px w-6 bg-[#ed9a5c] sm:w-9" />
             </p>
             <h2
               id="custom-furniture-title"
-              className="mt-3 whitespace-nowrap text-[clamp(1.7rem,3.2vw,3rem)] font-black leading-none tracking-tight text-[#3b1e0e]"
+              className="mt-3 whitespace-nowrap text-[clamp(1.4rem,2.5vw,2.3rem)] font-black leading-none tracking-tight text-[#3b1e0e]"
             >
               Custom <span className="text-[#f36b0b]">Furniture</span>
             </h2>
             <div className="mt-2 flex items-center gap-3">
-              <span className="h-[3px] w-8 rounded-full bg-[#f36b0b] sm:w-12" />
-              <p className="whitespace-nowrap text-lg font-bold text-[#3b1e0e] sm:text-2xl">
+              <span className="h-[2px] w-6 rounded-full bg-[#f36b0b] sm:w-9" />
+              <p className="whitespace-nowrap text-base font-bold text-[#3b1e0e] sm:text-lg">
                 Tailored for You
               </p>
-              <span className="h-[3px] w-8 rounded-full bg-[#f36b0b] sm:w-12" />
+              <span className="h-[2px] w-6 rounded-full bg-[#f36b0b] sm:w-9" />
             </div>
-            <p className="mt-2 text-sm font-medium text-[#69594d] sm:text-base">
+            <p className="mt-2 text-xs font-medium text-[#69594d] sm:text-sm">
               Design. Personalize. Make it yours.
             </p>
             <Link
               to="/contactus"
-              className="mt-4 inline-flex min-h-11 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[#ed4b00] to-[#ff7100] px-7 py-2.5 text-sm font-bold text-white shadow-[0_6px_14px_rgba(232,85,0,0.24)] transition hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+              className="mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ed4b00] to-[#ff7100] px-6 py-2 text-xs font-bold text-white shadow-[0_6px_14px_rgba(232,85,0,0.24)] transition hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
             >
               Explore More
-              <ArrowRight size={19} aria-hidden="true" />
+              <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
 
@@ -60,10 +60,10 @@ export default function CustomFurnitureBanner() {
           >
             {benefits.map(({ label, Icon }) => (
               <li key={label} className="flex flex-col items-center gap-1.5 text-center text-[#25160d]">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ffdbb3] text-[#a94308] sm:h-14 sm:w-14">
-                  <Icon size={25} strokeWidth={2.2} aria-hidden="true" />
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffdbb3] text-[#a94308] sm:h-12 sm:w-12">
+                  <Icon size={21} strokeWidth={2.2} aria-hidden="true" />
                 </span>
-                <span className="max-w-[88px] text-xs font-bold leading-tight sm:text-sm">
+                <span className="max-w-[88px] text-[10px] font-bold leading-tight sm:text-xs">
                   {label}
                 </span>
               </li>
