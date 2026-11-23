@@ -10,7 +10,7 @@ const benefits = [
 
 export default function CustomFurnitureBanner() {
   return (
-    <section aria-labelledby="custom-furniture-title" className="py-5 sm:py-7">
+    <section aria-labelledby="custom-furniture-title" className="py-2 sm:py-3">
       <PageContainer>
         <div className="grid overflow-hidden rounded-[26px] border border-[#f5d6b8] bg-[#fff8ef] shadow-[0_12px_30px_rgba(115,66,28,0.12)] lg:min-h-[240px] lg:grid-cols-[1.05fr_1.08fr_0.87fr]">
           <div className="relative min-h-[190px] overflow-hidden bg-[#f7dfc7] lg:min-h-[240px]">
