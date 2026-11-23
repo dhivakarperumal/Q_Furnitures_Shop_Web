@@ -19,7 +19,7 @@ function FeaturedCombos() {
         }
         const featuredCombos = data.combos.filter((combo) =>
           (combo.featured === true || combo.featured === 1),
-        ).slice(0, 5);
+        );
         if (active) setCombos(featuredCombos);
       })
       .catch((requestError) => {
@@ -79,8 +79,8 @@ function FeaturedCombos() {
         </div>
 
         {loading ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }, (_, index) => (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+            {Array.from({ length: 5 }, (_, index) => (
               <div key={index} className="aspect-[4/5] animate-pulse rounded-2xl bg-[#f1e9df]" />
             ))}
           </div>
@@ -93,7 +93,7 @@ function FeaturedCombos() {
             aria-label="Featured combos"
           >
             {combos.map((combo) => (
-              <div key={combo.id} className="w-[min(82vw,300px)] shrink-0 snap-start sm:w-[min(44vw,300px)] lg:w-[calc((100%-3.75rem)/4)]">
+              <div key={combo.id} className="w-[min(82vw,300px)] shrink-0 snap-start sm:w-[min(44vw,300px)] lg:w-[calc((100%-3.75rem)/4)] xl:w-[calc((100%-5rem)/5)]">
                 <ComboOfferCard combo={combo} />
               </div>
             ))}
