@@ -78,15 +78,15 @@ export default function ComboOfferCard({ combo }) {
 
       <div className="flex flex-1 flex-col p-4">
         <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#ff6a00]">Furniture combo</p>
-        <h3 className="mt-1 line-clamp-2 min-h-12 text-base font-bold leading-6 text-[#351d0e]">
+        <h3 className="mt-0.5 truncate whitespace-nowrap text-base font-bold leading-6 text-[#351d0e]" title={combo.name}>
           <Link to={`/combo/${combo.id}`} className="transition hover:text-[#a34720]">{combo.name}</Link>
         </h3>
-        <div className="mt-2 flex items-center gap-1.5 text-sm text-[#8b735e]">
+        <div className="mt-1 flex items-center gap-1.5 text-sm text-[#8b735e]">
           <Star size={15} className="fill-[#d49a46] text-[#d49a46]" />
           <span className="font-semibold text-[#493522]">{(Number(combo.rating) || 0).toFixed(1)}</span>
           <span className="text-xs">({Number(combo.review_count) || 0} Reviews)</span>
         </div>
-        <div className="mt-auto pt-4">
+        <div className="mt-auto pt-2">
           <div className="flex items-end gap-2">
             <div className="min-w-0">
               <p className="text-lg font-bold text-[#ff6a00]">{formatPrice(price)}</p>

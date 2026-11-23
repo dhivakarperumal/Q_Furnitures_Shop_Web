@@ -101,7 +101,7 @@ export default function ProductCard({ product, compact = false }) {
         <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#ff6a00]">
           {isCombo ? "Furniture combo" : product.category || "Furniture"}
         </p>
-        <h3 className="mt-1 line-clamp-2 min-h-12 text-base font-bold leading-6 text-[#351d0e]">
+        <h3 className="mt-0.5 truncate whitespace-nowrap text-base font-bold leading-6 text-[#351d0e]" title={product.name}>
           <Link to={`/products/${productId}`} className="transition hover:text-[#a34720]">
             {product.name}
           </Link>
@@ -111,13 +111,13 @@ export default function ProductCard({ product, compact = false }) {
             Includes {comboItemCount} {comboItemCount === 1 ? "product" : "products"}
           </p>
         )}
-        <div className="mt-2 flex items-center gap-1.5 text-sm text-[#8b735e]">
+        <div className="mt-1 flex items-center gap-1.5 text-sm text-[#8b735e]">
           <Star size={15} className="fill-[#d49a46] text-[#d49a46]" />
           <span className="font-semibold text-[#493522]">{rating.toFixed(1)}</span>
           <span className="text-xs">({Number(product.review_count) || 0} Reviews)</span>
         </div>
 
-        <div className={`mt-auto ${compact ? "pt-2" : "pt-4"}`}>
+        <div className={`mt-auto ${compact ? "pt-1" : "pt-2"}`}>
           <div>
             <p className="text-lg font-bold text-[#ff6a00]">{formatPrice(price)}</p>
             {mrp > price && <p className="text-xs text-[#9a8979] line-through">{formatPrice(mrp)}</p>}
