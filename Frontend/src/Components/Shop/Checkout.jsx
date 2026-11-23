@@ -24,6 +24,7 @@ import { StoreContext } from "../../PrivateRouter/StoreContext";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
 import { INDIAN_STATES, INDIAN_UNION_TERRITORIES } from "../../utils/indianStates";
+import { BUY_NOW_STORAGE_KEY } from "../../utils/buyNow";
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 const checkoutAmountFormatter = new Intl.NumberFormat("en-IN", {
@@ -61,7 +62,7 @@ const Checkout = () => {
   const [buyNowItem, setBuyNowItem] = useState(() => {
     if (location.state?.buyNowItem) return location.state.buyNowItem;
     try {
-      const stored = sessionStorage.getItem("qf_buy_now_item");
+      const stored = sessionStorage.getItem(BUY_NOW_STORAGE_KEY);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -94,13 +95,16 @@ const Checkout = () => {
 
   useEffect(() => {
     if (buyNowItem) {
-      sessionStorage.setItem("qf_buy_now_item", JSON.stringify(buyNowItem));
+      sessionStorage.setItem(BUY_NOW_STORAGE_KEY, JSON.stringify(buyNowItem));
     } else {
-      sessionStorage.removeItem("qf_buy_now_item");
+      sessionStorage.removeItem(BUY_NOW_STORAGE_KEY);
     }
   }, [buyNowItem]);
 
   useEffect(() => {
+    if (location.state?.buyNowItem) {
+      setBuyNowItem(location.state.buyNowItem);
+    }
     if (location.state?.cartCheckout) {
       setBuyNowItem(null);
     }

@@ -20,6 +20,7 @@ import api from "../../api";
 import { AuthContext } from "../../PrivateRouter/AuthContext";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
 import { resolveMediaUrl } from "../../utils/media";
+import { openBuyNowCheckout } from "../../utils/buyNow";
 import { getProductStock } from "../../utils/stock";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
@@ -310,20 +311,16 @@ function ProductDetails() {
       navigate("/login");
       return;
     }
-    navigate("/checkout", {
-      state: {
-        buyNowItem: {
-          product_id: product.id ?? product.product_id,
-          quantity,
-          variant_color: String(variant?.colorName || variant?.color || variant?.colour || "Default"),
-          variant_size: effectiveSize,
-          name: product.name,
-          image: resolveMediaUrl(gallery[activeImage] || gallery[0] || product.image || ""),
-          price: Number(variant?.offer_price ?? variant?.selling_price ?? product.offer_price ?? product.selling_price ?? product.mrp) || 0,
-          item_type: "product",
-          combo_items: [],
-        },
-      },
+    openBuyNowCheckout(navigate, {
+      product_id: product.id ?? product.product_id,
+      quantity,
+      variant_color: String(variant?.colorName || variant?.color || variant?.colour || "Default"),
+      variant_size: effectiveSize,
+      name: product.name,
+      image: resolveMediaUrl(gallery[activeImage] || gallery[0] || product.image || ""),
+      price: Number(variant?.offer_price ?? variant?.selling_price ?? product.offer_price ?? product.selling_price ?? product.mrp) || 0,
+      item_type: "product",
+      combo_items: [],
     });
   };
 

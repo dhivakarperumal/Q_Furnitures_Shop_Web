@@ -3,6 +3,7 @@ import { Armchair, Heart, Minus, Plus, ShoppingBag, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
 import { resolveMediaUrl } from "../../utils/media";
+import { openBuyNowCheckout } from "../../utils/buyNow";
 
 function getComboImage(combo) {
   let images = combo.images;
@@ -102,18 +103,14 @@ export default function ComboOfferCard({ combo }) {
               type="button"
               onClick={async () => {
                 if (availableStock <= 0) return;
-                navigate("/checkout", {
-                  state: {
-                    buyNowItem: {
-                      combo_id: combo.id,
-                      quantity: 1,
-                      name: combo.name,
-                      image,
-                      price,
-                      item_type: "combo",
-                      combo_items: Array.isArray(combo.combo_items) ? combo.combo_items : [],
-                    },
-                  },
+                openBuyNowCheckout(navigate, {
+                  combo_id: combo.id,
+                  quantity: 1,
+                  name: combo.name,
+                  image,
+                  price,
+                  item_type: "combo",
+                  combo_items: Array.isArray(combo.combo_items) ? combo.combo_items : [],
                 });
               }}
               disabled={availableStock <= 0}

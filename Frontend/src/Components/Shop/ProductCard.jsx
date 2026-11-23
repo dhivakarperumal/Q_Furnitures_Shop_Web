@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
 import { resolveMediaUrl } from "../../utils/media";
 import { getProductStock } from "../../utils/stock";
+import { openBuyNowCheckout } from "../../utils/buyNow";
 
 function getProductImage(product) {
   let images = product.images;
@@ -127,20 +128,16 @@ export default function ProductCard({ product, compact = false }) {
               type="button"
               onClick={async () => {
                 if (stock <= 0) return;
-                navigate("/checkout", {
-                  state: {
-                    buyNowItem: {
-                      product_id: productId,
-                      quantity: 1,
-                      variant_color: defaultVariantColor,
-                      variant_size: defaultVariantSize,
-                      name: product.name,
-                      image,
-                      price,
-                      item_type: "product",
-                      combo_items: [],
-                    },
-                  },
+                openBuyNowCheckout(navigate, {
+                  product_id: productId,
+                  quantity: 1,
+                  variant_color: defaultVariantColor,
+                  variant_size: defaultVariantSize,
+                  name: product.name,
+                  image,
+                  price,
+                  item_type: "product",
+                  combo_items: [],
                 });
               }}
               disabled={stock <= 0}
