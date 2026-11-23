@@ -138,7 +138,16 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
                       >
                         {item.name || "Product"}
                       </button>
-                      <button type="button" onClick={() => toggleWishlist(item)} aria-label={`Remove ${item.name || "item"}`} className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Remove "${item.name || "this item"}" from your wishlist?`)) {
+                            toggleWishlist(item);
+                          }
+                        }}
+                        aria-label={`Remove ${item.name || "item"}`}
+                        className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                      >
                         <FiTrash2 size={16} />
                       </button>
                     </div>

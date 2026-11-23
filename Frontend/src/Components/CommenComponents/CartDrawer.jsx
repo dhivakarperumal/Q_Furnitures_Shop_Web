@@ -122,7 +122,11 @@ const CartDrawer = ({ isOpen, onClose }) => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => {
+                            if (window.confirm(`Remove "${item.name || "this item"}" from your cart?`)) {
+                              removeFromCart(item.id);
+                            }
+                          }}
                           aria-label={`Remove ${item.name || "item"}`}
                           className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
                         >
