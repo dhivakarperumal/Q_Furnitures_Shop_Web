@@ -61,14 +61,14 @@ export default function ProductCard({ product, compact = false }) {
 
   return (
     <article className={`group flex h-full flex-col overflow-hidden border border-[#eee4d8] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(53,29,14,0.12)] ${compact ? "rounded-xl shadow-[0_3px_12px_rgba(53,29,14,0.05)]" : "rounded-2xl shadow-[0_8px_24px_rgba(53,29,14,0.06)]"}`}>
-      <div className="relative aspect-[4/3] overflow-hidden bg-[#f7f1e9]">
+      <div className="relative aspect-[5/4] overflow-hidden bg-[#f7f1e9]">
         <Link to={`/products/${productId}`} aria-label={`View ${product.name} details`} className="absolute inset-0">
           {image ? (
             <img
               src={image}
               alt={product.name}
               loading="lazy"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-[#c7b5a2]">
