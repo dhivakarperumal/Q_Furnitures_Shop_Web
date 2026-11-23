@@ -52,15 +52,15 @@ function ComboOffers() {
           </div>
 
           {loading ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 4 }, (_, index) => (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+              {Array.from({ length: 5 }, (_, index) => (
                 <div key={index} className="aspect-[4/5] animate-pulse rounded-2xl bg-[#f1e9df]" />
               ))}
             </div>
           ) : error ? (
             <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-6 text-center text-sm text-red-800">{error}</p>
           ) : combos.length ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
               {combos.map((combo) => <ComboOfferCard key={combo.id} combo={combo} />)}
             </div>
           ) : (
