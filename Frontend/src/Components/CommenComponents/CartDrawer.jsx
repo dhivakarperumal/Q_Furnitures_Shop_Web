@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiMinus, FiPlus, FiShoppingCart, FiTrash2, FiX } from "react-icons/fi";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
+import { resolveMediaUrl } from "../../utils/media";
 
 const CartDrawer = ({ isOpen, onClose }) => {
   const { cart, loadingCart, removeFromCart, updateCartQuantity } = useContext(StoreContext);
@@ -106,7 +107,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                       className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                       <img
-                        src={item.image || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
+                        src={resolveMediaUrl(item.image) || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
                         alt={item.name || "Product"}
                         className="h-20 w-16 rounded-lg object-cover"
                       />

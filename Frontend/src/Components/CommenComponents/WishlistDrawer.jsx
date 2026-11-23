@@ -3,12 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiHeart, FiShoppingCart, FiX, FiTrash2 } from "react-icons/fi";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
-
-const resolveImageUrl = (image) => {
-  if (!image || typeof image !== "string" || /^(https?:|data:|blob:)/i.test(image)) return image;
-  const backendUrl = (import.meta.env.VITE_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
-  return `${backendUrl}${image.startsWith("/") ? image : `/${image}`}`;
-};
+import { resolveMediaUrl } from "../../utils/media";
 
 const WishlistDrawer = ({ isOpen, onClose }) => {
   const { wishlist, loadingWishlist, toggleWishlist, addToCart, addComboToCart } = useContext(StoreContext);
@@ -124,7 +119,7 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
                     className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <img
-                      src={resolveImageUrl(item.image) || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
+                      src={resolveMediaUrl(item.image) || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
                       alt={item.name || "Product"}
                       className="h-20 w-16 rounded-lg object-cover"
                     />
