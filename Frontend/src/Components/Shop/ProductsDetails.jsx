@@ -20,6 +20,7 @@ import api from "../../api";
 import { AuthContext } from "../../PrivateRouter/AuthContext";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
 import { resolveMediaUrl } from "../../utils/media";
+import { openBuyNowCheckout } from "../../utils/buyNow";
 import { getProductStock } from "../../utils/stock";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
@@ -304,14 +305,23 @@ function ProductDetails() {
     setQuantity(1);
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = () => {
     if (!user?.user_id) {
       toast.error("Please login to continue with your purchase");
       navigate("/login");
       return;
     }
-    const added = await addToCart(product, variant, effectiveSize, quantity);
-    if (added) navigate("/checkout");
+    openBuyNowCheckout(navigate, {
+      product_id: product.id ?? product.product_id,
+      quantity,
+      variant_color: String(variant?.colorName || variant?.color || variant?.colour || "Default"),
+      variant_size: effectiveSize,
+      name: product.name,
+      image: resolveMediaUrl(gallery[activeImage] || gallery[0] || product.image || ""),
+      price: Number(variant?.offer_price ?? variant?.selling_price ?? product.offer_price ?? product.selling_price ?? product.mrp) || 0,
+      item_type: "product",
+      combo_items: [],
+    });
   };
 
   const handleReviewSubmit = async (event) => {

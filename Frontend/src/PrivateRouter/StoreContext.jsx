@@ -3,14 +3,9 @@ import { toast } from "react-hot-toast";
 import api from "../api";
 import { AuthContext } from "./AuthContext";
 import { getProductStock } from "../utils/stock";
+import { resolveMediaUrl } from "../utils/media";
 
 export const StoreContext = createContext();
-
-const resolveStoredImage = (image) => {
-    if (!image || typeof image !== "string" || /^(https?:|data:|blob:)/i.test(image)) return image;
-    const backendUrl = (import.meta.env.VITE_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
-    return `${backendUrl}${image.startsWith("/") ? image : `/${image}`}`;
-};
 
 export const StoreProvider = ({ children }) => {
     const { user } = useContext(AuthContext);
@@ -44,7 +39,7 @@ export const StoreProvider = ({ children }) => {
                     userId: user.user_id,
                     items: (Array.isArray(res.data) ? res.data : []).map(item => ({
                         ...item,
-                        image: resolveStoredImage(item.image),
+                        image: resolveMediaUrl(item.image),
                     })),
                 });
             }
@@ -69,7 +64,10 @@ export const StoreProvider = ({ children }) => {
             if (requestSequence === wishlistFetchSequence.current) {
                 setWishlistState({
                     userId: user.user_id,
-                    items: Array.isArray(res.data) ? res.data : [],
+                    items: (Array.isArray(res.data) ? res.data : []).map(item => ({
+                        ...item,
+                        image: resolveMediaUrl(item.image),
+                    })),
                 });
             }
         } catch (err) {

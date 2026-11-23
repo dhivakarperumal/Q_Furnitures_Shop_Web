@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Check,
   CheckCircle2,
@@ -24,6 +24,7 @@ import { StoreContext } from "../../PrivateRouter/StoreContext";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
 import { INDIAN_STATES, INDIAN_UNION_TERRITORIES } from "../../utils/indianStates";
+import { BUY_NOW_STORAGE_KEY } from "../../utils/buyNow";
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 const checkoutAmountFormatter = new Intl.NumberFormat("en-IN", {
@@ -55,8 +56,18 @@ function loadRazorpay() {
 }
 
 const Checkout = () => {
+  const location = useLocation();
   const { user } = useContext(AuthContext);
   const { cart, loadingCart, clearCart } = useContext(StoreContext);
+  const [buyNowItem, setBuyNowItem] = useState(() => {
+    if (location.state?.buyNowItem) return location.state.buyNowItem;
+    try {
+      const stored = sessionStorage.getItem(BUY_NOW_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [submitting, setSubmitting] = useState(false);
   const [locating, setLocating] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
@@ -81,6 +92,28 @@ const Checkout = () => {
     zip_code: "",
     payment_method: "Cash",
   });
+
+  useEffect(() => {
+    if (buyNowItem) {
+      sessionStorage.setItem(BUY_NOW_STORAGE_KEY, JSON.stringify(buyNowItem));
+    } else {
+      sessionStorage.removeItem(BUY_NOW_STORAGE_KEY);
+    }
+  }, [buyNowItem]);
+
+  useEffect(() => {
+    if (location.state?.buyNowItem) {
+      setBuyNowItem(location.state.buyNowItem);
+    }
+    if (location.state?.cartCheckout) {
+      setBuyNowItem(null);
+    }
+  }, [location.state]);
+
+  const checkoutItems = useMemo(
+    () => buyNowItem ? [buyNowItem] : cart,
+    [buyNowItem, cart],
+  );
 
   useEffect(() => {
     let active = true;
@@ -204,14 +237,14 @@ const Checkout = () => {
     );
   }, [addressSearch, savedAddresses]);
 
-  const subtotal = cart.reduce((total, item) => {
+  const subtotal = checkoutItems.reduce((total, item) => {
     const lineTotal = Math.round(
       (Number(item.price || 0) * Number(item.quantity || 0) + Number.EPSILON) * 100,
     ) / 100;
     return Math.round((total + lineTotal + Number.EPSILON) * 100) / 100;
   }, 0);
-  const hasComboItems = cart.some((item) => item.item_type === "combo" || item.combo_id != null);
-  const hasProductItems = cart.some((item) => item.item_type !== "combo" && item.combo_id == null);
+  const hasComboItems = checkoutItems.some((item) => item.item_type === "combo" || item.combo_id != null);
+  const hasProductItems = checkoutItems.some((item) => item.item_type !== "combo" && item.combo_id == null);
   const orderComposition = hasComboItems && hasProductItems
     ? "Mixed"
     : hasComboItems
@@ -323,12 +356,28 @@ const Checkout = () => {
       throw new Error("The order was created but no order number was returned.");
     }
     setCreatedOrderId(data.order_id);
-    await clearCart();
+    if (!buyNowItem) {
+      await clearCart();
+    } else {
+      sessionStorage.removeItem("qf_buy_now_item");
+      setBuyNowItem(null);
+    }
     toast.success("Your order has been placed.");
   };
 
   const getCheckoutPayload = () => ({
     ...form,
+    ...(buyNowItem ? {
+      buy_now_items: [{
+        product_id: buyNowItem.product_id,
+        combo_id: buyNowItem.combo_id,
+        quantity: buyNowItem.quantity,
+        variant_color: buyNowItem.variant_color,
+        variant_size: buyNowItem.variant_size,
+      }].map((item) => Object.fromEntries(
+        Object.entries(item).filter(([, value]) => value !== undefined && value !== null),
+      )),
+    } : {}),
     ...(form.fulfillment_type === "Pickup" ? {
       street_address: "",
       city: "",
@@ -357,7 +406,7 @@ const Checkout = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (submitting || cart.length === 0) return;
+    if (submitting || checkoutItems.length === 0) return;
     if (!taxSettings) {
       toast.error("Current GST settings are unavailable. Please retry before placing your order.");
       return;
@@ -454,9 +503,9 @@ const Checkout = () => {
           <div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-[#ffdfc5]/40 blur-3xl" />
         </div>
         <PageContainer>
-          {loadingCart ? (
-            <div className="mt-6 rounded-xl border border-[#e5d8ca] bg-white p-8 text-center text-sm text-[#8b735e]">Loading your cart...</div>
-          ) : cart.length === 0 ? (
+          {loadingCart && !buyNowItem ? (
+            <div className="mt-6 rounded-xl border border-[#e5d8ca] bg-white p-8 text-center text-sm text-[#8b735e]">Loading checkout...</div>
+          ) : checkoutItems.length === 0 ? (
             <section className="mx-auto mt-8 max-w-xl rounded-2xl border border-dashed border-[#d9c4aa] bg-white px-5 py-14 text-center">
               <h1 className="text-xl font-semibold text-[#351d0e]">Your cart is empty</h1>
               <p className="mt-2 text-sm text-[#8b735e]">Add something beautiful before checking out.</p>
@@ -713,11 +762,11 @@ const Checkout = () => {
                       </p>
                     </div>
                     </div>
-                    <span className="text-xs font-semibold text-[#725d4b]">{cart.length} {cart.length === 1 ? "item" : "items"}</span>
+                    <span className="text-xs font-semibold text-[#725d4b]">{checkoutItems.length} {checkoutItems.length === 1 ? "item" : "items"}</span>
                   </div>
                   <div className="p-4 sm:p-5">
                     <ul className="max-h-[360px] space-y-3 overflow-y-auto pr-1">
-                      {cart.map((item) => (
+                      {checkoutItems.map((item) => (
                         <li key={item.id} className="flex items-center justify-between gap-3 border-b border-[#f0e8df] pb-3 last:border-0">
                           <div className="flex min-w-0 items-center gap-3">
                             <img src={item.image || "/images/logo.png"} alt="" className="h-16 w-16 shrink-0 rounded-lg bg-[#f7efe5] p-1 object-contain" />
@@ -744,7 +793,7 @@ const Checkout = () => {
                     </ul>
                     <div className="mt-3 space-y-2 border-t border-[#eee4d8] pt-3 text-xs sm:text-sm">
                       <div className="flex justify-between text-[#725d4b]">
-                        <span>Subtotal ({cart.length} {cart.length === 1 ? "item" : "items"})</span>
+                        <span>Subtotal ({checkoutItems.length} {checkoutItems.length === 1 ? "item" : "items"})</span>
                         <span className="font-semibold text-[#351d0e]">{formatCheckoutAmount(subtotal)}</span>
                       </div>
                       <div className="flex justify-between text-[#725d4b]">
@@ -787,7 +836,7 @@ const Checkout = () => {
                     )}
                     <button
                       type="submit"
-                      disabled={submitting || !cart.length || !taxSettings}
+                      disabled={submitting || !checkoutItems.length || !taxSettings}
                       className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#351d0e] px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#a34720] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <LockKeyhole size={16} />

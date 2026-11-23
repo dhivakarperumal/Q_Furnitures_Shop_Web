@@ -277,6 +277,102 @@ function createCartService(pool) {
   }
 
   return {
+    async resolveBuyNowItems(userId, input) {
+      if (!Array.isArray(input) || input.length !== 1) {
+        throw cartError(400, "Buy Now requires exactly one item.");
+      }
+      const source = input[0];
+      if (!source || typeof source !== "object" || Array.isArray(source)) {
+        throw cartError(400, "The Buy Now item is invalid.");
+      }
+
+      if (source.combo_id != null) {
+        if (source.product_id != null) throw cartError(400, "Choose either a product or a combo.");
+        const comboId = normalizePositiveInteger(source.combo_id, "Combo ID", Number.MAX_SAFE_INTEGER);
+        const quantity = normalizePositiveInteger(source.quantity ?? 1, "Quantity");
+        const [comboRows] = await pool.execute(
+          "SELECT * FROM combos WHERE id = ? LIMIT 1",
+          [comboId],
+        );
+        if (!comboRows[0]) throw cartError(404, "Combo was not found.");
+        const combo = toCombo(comboRows[0]);
+        if (combo.status !== "Active") throw cartError(409, "This combo is not available for sale.");
+        const availableStock = await getComboAvailability(pool, combo.combo_items, { strict: true });
+        if (quantity > availableStock) {
+          throw cartError(409, `Only ${availableStock} combo${availableStock === 1 ? "" : "s"} available.`);
+        }
+        const price = Number(combo.offer_price);
+        if (!Number.isFinite(price) || price < 0) {
+          throw cartError(409, "A valid price is unavailable for this combo.");
+        }
+        return [{
+          id: `buy-now-${comboId}`,
+          product_id: null,
+          combo_id: comboId,
+          item_type: "combo",
+          quantity,
+          price,
+          total_price: Number((price * quantity).toFixed(2)),
+          name: combo.name,
+          image: getComboImage(combo),
+          colorName: "",
+          color: "",
+          size: "",
+          combo_items: combo.combo_items,
+          available_stock: availableStock,
+        }];
+      }
+
+      const productId = normalizePositiveInteger(source.product_id, "Product ID", Number.MAX_SAFE_INTEGER);
+      const quantity = normalizePositiveInteger(source.quantity ?? 1, "Quantity");
+      const color = typeof source.variant_color === "string" ? source.variant_color.trim().slice(0, 100) : "";
+      const size = typeof source.variant_size === "string" ? source.variant_size.trim().slice(0, 100) : "";
+      const [rows] = await pool.execute(
+        `SELECT p.*, ps.available_stock, ps.reserved_stock, ps.damaged_stock,
+                ps.minimum_stock, ps.stock_type, ps.deduction_rule
+         FROM products p
+         LEFT JOIN product_stock ps ON ps.product_id = p.id
+         WHERE p.id = ? LIMIT 1`,
+        [productId],
+      );
+      if (!rows[0]) throw cartError(404, "Product was not found.");
+      if (rows[0].status !== "Active") throw cartError(409, "This product is not available for sale.");
+      const product = toProduct(rows[0]);
+      const selectedVariant = getSelectedVariant(product, color, size);
+      const canonicalColor = selectedVariant
+        ? String(selectedVariant.colorName || selectedVariant.color || selectedVariant.colour || color || "Default").slice(0, 100)
+        : color || "Default";
+      const canonicalSize = selectedVariant
+        ? String(
+          selectedVariant.size ||
+          (selectedVariant.sizesStock && Object.prototype.hasOwnProperty.call(selectedVariant.sizesStock, size)
+            ? size
+            : size || selectedVariant.selectedSizes?.[0] || "Free Size"),
+        ).slice(0, 100)
+        : size || "Free Size";
+      const availableStock = getAvailableStock(product, selectedVariant, canonicalSize);
+      if (quantity > availableStock) {
+        throw cartError(409, `Only ${availableStock} item${availableStock === 1 ? "" : "s"} available.`);
+      }
+      const price = getUnitPrice(product, selectedVariant);
+      return [{
+        id: `buy-now-${productId}-${canonicalColor}-${canonicalSize}`,
+        product_id: productId,
+        combo_id: null,
+        item_type: "product",
+        quantity,
+        price,
+        total_price: Number((price * quantity).toFixed(2)),
+        name: product.name,
+        image: getCartImage(product, selectedVariant),
+        colorName: canonicalColor,
+        color: canonicalColor,
+        size: canonicalSize,
+        combo_items: [],
+        available_stock: availableStock,
+      }];
+    },
+
     async list(userId) {
       const [rows] = await pool.execute(
         `SELECT * FROM \`cart\`

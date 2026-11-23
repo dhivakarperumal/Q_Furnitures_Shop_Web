@@ -12,6 +12,17 @@ const backendUrl = (
 
 export function resolveMediaUrl(image) {
   if (!image || typeof image !== "string") return "";
-  if (/^(https?:|data:|blob:)/i.test(image)) return image;
+  if (/^(data:|blob:)/i.test(image)) return image;
+  if (/^https?:\/\//i.test(image)) {
+    try {
+      const url = new URL(image);
+      if (/^(localhost|127\.0\.0\.1)$/i.test(url.hostname)) {
+        return `${backendUrl}${url.pathname}${url.search}${url.hash}`;
+      }
+      return image;
+    } catch {
+      return image;
+    }
+  }
   return `${backendUrl}${image.startsWith("/") ? image : `/${image}`}`;
 }

@@ -3,12 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiHeart, FiShoppingCart, FiX, FiTrash2 } from "react-icons/fi";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
-
-const resolveImageUrl = (image) => {
-  if (!image || typeof image !== "string" || /^(https?:|data:|blob:)/i.test(image)) return image;
-  const backendUrl = (import.meta.env.VITE_BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
-  return `${backendUrl}${image.startsWith("/") ? image : `/${image}`}`;
-};
+import { resolveMediaUrl } from "../../utils/media";
 
 const WishlistDrawer = ({ isOpen, onClose }) => {
   const { wishlist, loadingWishlist, toggleWishlist, addToCart, addComboToCart } = useContext(StoreContext);
@@ -32,6 +27,16 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
   const goTo = (path) => {
     onClose();
     navigate(path);
+  };
+
+  const openItemDetails = (item) => {
+    if (item.item_type === "combo" || item.combo_id) {
+      const comboId = item.combo_id ?? item.id;
+      if (comboId) goTo(`/combo/${comboId}`);
+      return;
+    }
+    const productId = item.product_id ?? item.productId ?? item.id;
+    if (productId) goTo(`/products/${productId}`);
   };
 
   const handleAddToCart = async (item) => {
@@ -107,15 +112,37 @@ const WishlistDrawer = ({ isOpen, onClose }) => {
             <div className="space-y-4">
               {wishlist.map((item) => (
                 <div key={getFavoriteKey(item)} className="flex gap-3 rounded-lg border border-gray-200 p-3">
-                  <img
-                    src={resolveImageUrl(item.image) || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
-                    alt={item.name || "Product"}
-                    className="h-20 w-16 shrink-0 rounded-lg object-cover"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => openItemDetails(item)}
+                    aria-label={`View ${item.name || "item"} details`}
+                    className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    <img
+                      src={resolveMediaUrl(item.image) || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
+                      alt={item.name || "Product"}
+                      className="h-20 w-16 rounded-lg object-cover"
+                    />
+                  </button>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="truncate text-sm font-semibold text-gray-800">{item.name || "Product"}</h3>
-                      <button type="button" onClick={() => toggleWishlist(item)} aria-label={`Remove ${item.name || "item"}`} className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500">
+                      <button
+                        type="button"
+                        onClick={() => openItemDetails(item)}
+                        className="min-w-0 truncate text-left text-sm font-semibold text-gray-800 transition hover:text-primary"
+                      >
+                        {item.name || "Product"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Remove "${item.name || "this item"}" from your wishlist?`)) {
+                            toggleWishlist(item);
+                          }
+                        }}
+                        aria-label={`Remove ${item.name || "item"}`}
+                        className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                      >
                         <FiTrash2 size={16} />
                       </button>
                     </div>

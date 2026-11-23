@@ -24,6 +24,7 @@ import { resolveMediaUrl } from "../../utils/media";
 import PageContainer from "../CommenComponents/PageContainer";
 import PageHeader from "../CommenComponents/PageHeader";
 import ComboOfferCard from "./ComboOfferCard";
+import { openBuyNowCheckout } from "../../utils/buyNow";
 
 function parseImages(value) {
   if (typeof value === "string") {
@@ -340,13 +341,21 @@ function ComboDetails() {
     }
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = () => {
     if (!user?.user_id) {
       toast.error("Please login to continue with your purchase");
       navigate("/login");
       return;
     }
-    if (await addComboToCart(combo, selectedQuantity)) navigate("/checkout");
+    openBuyNowCheckout(navigate, {
+      combo_id: combo.id,
+      quantity: selectedQuantity,
+      name: combo.name,
+      image: resolveMediaUrl(gallery[activeImageIndex] || gallery[0] || combo.image || ""),
+      price: Number(combo.offer_price ?? combo.selling_price) || 0,
+      item_type: "combo",
+      combo_items: Array.isArray(combo.combo_items) ? combo.combo_items : [],
+    });
   };
 
   return (

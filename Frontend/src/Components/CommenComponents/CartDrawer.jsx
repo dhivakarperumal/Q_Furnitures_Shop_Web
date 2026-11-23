@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiMinus, FiPlus, FiShoppingCart, FiTrash2, FiX } from "react-icons/fi";
 import { StoreContext } from "../../PrivateRouter/StoreContext";
+import { resolveMediaUrl } from "../../utils/media";
 
 const CartDrawer = ({ isOpen, onClose }) => {
   const { cart, loadingCart, removeFromCart, updateCartQuantity } = useContext(StoreContext);
@@ -28,6 +29,16 @@ const CartDrawer = ({ isOpen, onClose }) => {
   const goTo = (path) => {
     onClose();
     navigate(path);
+  };
+
+  const openItemDetails = (item) => {
+    if (item.item_type === "combo" && item.combo_id) {
+      goTo(`/combo/${item.combo_id}`);
+      return;
+    }
+    if (item.product_id) {
+      goTo(`/products/${item.product_id}`);
+    }
   };
 
   return createPortal(
@@ -89,17 +100,34 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 const itemSubtotal = Number(item.price || 0) * Number(item.quantity || 0);
                 return (
                   <div key={item.id} className="flex gap-3 rounded-lg border border-gray-200 p-3">
-                    <img
-                      src={item.image || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
-                      alt={item.name || "Product"}
-                      className="h-20 w-16 shrink-0 rounded-lg object-cover"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => openItemDetails(item)}
+                      aria-label={`View ${item.name || "item"} details`}
+                      className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    >
+                      <img
+                        src={resolveMediaUrl(item.image) || "https://ui-avatars.com/api/?name=Product&background=f3f4f6&color=240046"}
+                        alt={item.name || "Product"}
+                        className="h-20 w-16 rounded-lg object-cover"
+                      />
+                    </button>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="truncate text-sm font-semibold text-gray-800">{item.name}</h3>
                         <button
                           type="button"
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => openItemDetails(item)}
+                          className="min-w-0 truncate text-left text-sm font-semibold text-gray-800 transition hover:text-primary"
+                        >
+                          {item.name}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Remove "${item.name || "this item"}" from your cart?`)) {
+                              removeFromCart(item.id);
+                            }
+                          }}
                           aria-label={`Remove ${item.name || "item"}`}
                           className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
                         >
@@ -167,7 +195,10 @@ const CartDrawer = ({ isOpen, onClose }) => {
             </div>
             <button
               type="button"
-              onClick={() => goTo("/checkout")}
+              onClick={() => {
+                onClose();
+                navigate("/checkout", { state: { cartCheckout: true } });
+              }}
               className="w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:bg-primary-dark"
             >
               Checkout
