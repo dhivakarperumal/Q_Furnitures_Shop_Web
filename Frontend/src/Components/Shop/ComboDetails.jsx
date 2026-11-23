@@ -398,19 +398,34 @@ function ComboDetails() {
                       <img
                         src={resolveMediaUrl(gallery[activeImageIndex] || gallery[0])}
                         alt={combo.name}
-                        className="h-full w-full object-contain"
+                        className="h-full w-full cursor-zoom-in object-contain"
                         onPointerMove={(event) => {
                           if (event.pointerType === "touch") return;
                           const bounds = event.currentTarget.getBoundingClientRect();
                           const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
                           const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
-                          setZoomPosition({ x, y });
+                          setZoomPosition({
+                            x,
+                            y,
+                            lensX: Math.max(0.2, Math.min(0.8, x)),
+                            lensY: Math.max(0.2, Math.min(0.8, y)),
+                          });
                         }}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-[#c7b5a2]">
                         <Armchair size={76} strokeWidth={1.1} />
                       </div>
+                    )}
+                    {zoomPosition && (
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute h-2/5 w-2/5 -translate-x-1/2 -translate-y-1/2 border-2 border-white/90 bg-white/25 shadow-[0_0_0_1px_rgba(53,29,14,0.35)]"
+                        style={{
+                          left: `${zoomPosition.lensX * 100}%`,
+                          top: `${zoomPosition.lensY * 100}%`,
+                        }}
+                      />
                     )}
                     {discount > 0 && (
                       <span className="absolute left-4 top-4 rounded-full bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white">
