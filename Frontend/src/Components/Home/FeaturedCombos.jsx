@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
 import api from "../../api";
 import PageContainer from "../CommenComponents/PageContainer";
 import ComboOfferCard from "../Shop/ComboOfferCard";
@@ -76,7 +75,6 @@ function FeaturedCombos() {
                 <ArrowRight size={18} />
               </button>
             </div>
-            {/* <Link to="/combo" className="text-sm font-semibold text-[#a34720] transition hover:underline">View all combo offers</Link> */}
           </div>
         </div>
 

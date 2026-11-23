@@ -134,7 +134,7 @@ const HomeCategories = () => {
           <div className="flex gap-3 overflow-hidden sm:gap-4">
             {Array.from({ length: 4 }, (_, index) => (
               <div key={index} className="w-28 shrink-0 sm:w-32">
-                <div className="aspect-square animate-pulse rounded-2xl bg-[#f1e9df]" />
+                <div className="aspect-square animate-pulse rounded-full bg-[#f1e9df]" />
                 <div className="mx-auto mt-3 h-3 w-2/3 animate-pulse rounded bg-[#f1e9df]" />
               </div>
             ))}
@@ -153,7 +153,7 @@ const HomeCategories = () => {
         ) : categories.length ? (
           <div
             ref={sliderRef}
-            className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 sm:gap-4"
+            className="flex snap-x snap-mandatory justify-start gap-3 overflow-x-auto scroll-smooth pb-2 sm:gap-4 lg:justify-center"
             aria-label="Furniture categories"
           >
             {categories.map((category) => {
@@ -166,9 +166,9 @@ const HomeCategories = () => {
                 >
                   <Link
                     to={`/shop?category=${encodeURIComponent(category.name)}`}
-                    className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+                    className="group block rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
                   >
-                    <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-[#f6eee5] to-[#eee1d3]">
+                    <div className="relative aspect-square overflow-hidden rounded-full bg-gradient-to-br from-[#f6eee5] to-[#eee1d3]">
                       {image ? (
                         <img
                           src={image}
