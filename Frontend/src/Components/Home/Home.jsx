@@ -17,10 +17,10 @@ const Home = () => (
     <HomeCategories />
     <FeaturedProducts />
     <OfferBanners />
+    <ShopByRoom />
     <FeaturedCombos />
     <CustomFurnitureBanner />
     <TopRatedProducts />
-    <ShopByRoom />
     <OfferProducts />
     <FestiveSaleBanner />
     <HomeReviews />
