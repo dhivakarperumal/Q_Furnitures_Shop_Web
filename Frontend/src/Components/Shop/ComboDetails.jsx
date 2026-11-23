@@ -72,6 +72,7 @@ function ComboDetails() {
   const [comboResult, setComboResult] = useState({ key: "", combo: null, error: "" });
   const [reloadKey, setReloadKey] = useState(0);
   const [activeImage, setActiveImage] = useState(0);
+  const [zoomPosition, setZoomPosition] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [componentResult, setComponentResult] = useState({ key: "", components: [], error: "" });
   const [relatedResult, setRelatedResult] = useState({ key: "", combos: [], error: "" });
@@ -92,6 +93,7 @@ function ComboDetails() {
 
   useEffect(() => {
     setActiveImage(0);
+    setZoomPosition(null);
   }, [id]);
 
   useEffect(() => {
@@ -387,13 +389,23 @@ function ComboDetails() {
               </Link>
 
               <section className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
-                <div className="relative">
+                <div
+                  className={`relative ${zoomPosition ? "z-30" : ""}`}
+                  onPointerLeave={() => setZoomPosition(null)}
+                >
                   <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-[#f4ece2]">
                     {gallery.length ? (
                       <img
                         src={resolveMediaUrl(gallery[activeImageIndex] || gallery[0])}
                         alt={combo.name}
                         className="h-full w-full object-contain"
+                        onPointerMove={(event) => {
+                          if (event.pointerType === "touch") return;
+                          const bounds = event.currentTarget.getBoundingClientRect();
+                          const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+                          const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+                          setZoomPosition({ x, y });
+                        }}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-[#c7b5a2]">
@@ -426,6 +438,22 @@ function ComboDetails() {
                       </>
                     )}
                   </div>
+                  {zoomPosition && gallery.length > 0 && (
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-full top-0 z-40 ml-4 hidden aspect-[4/3] w-full overflow-hidden rounded-3xl border border-[#e8d8c7] bg-[#f4ece2] shadow-2xl lg:block"
+                    >
+                      <img
+                        src={resolveMediaUrl(gallery[activeImageIndex] || gallery[0])}
+                        alt=""
+                        className="h-full w-full object-contain"
+                        style={{
+                          transform: "scale(2)",
+                          transformOrigin: `${zoomPosition.x * 100}% ${zoomPosition.y * 100}%`,
+                        }}
+                      />
+                    </div>
+                  )}
                   {gallery.length > 1 && (
                     <div className="mt-3 grid grid-cols-5 gap-3">
                       {gallery.map((image, index) => (
