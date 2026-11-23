@@ -1,52 +1,74 @@
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Gem, House, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageContainer from "../CommenComponents/PageContainer";
 
-const steps = ["Choose Design", "Select Material", "Custom Size", "Get a Quote"];
+const benefits = [
+  { label: "Custom Design", Icon: Pencil },
+  { label: "Premium Quality", Icon: Gem },
+  { label: "Perfect Fit", Icon: House },
+];
 
 export default function CustomFurnitureBanner() {
   return (
-    <section aria-labelledby="custom-furniture-title" className="py-5 sm:py-7">
+    <section aria-labelledby="custom-furniture-title" className="py-0">
       <PageContainer>
-        <div className="grid items-center gap-4 rounded-2xl border border-[#f0dfcd] bg-white p-3 shadow-[0_8px_24px_rgba(53,29,14,0.07)] sm:p-4 lg:grid-cols-[160px_220px_minmax(0,1fr)_max-content] lg:gap-4">
-          <div className="relative h-24 overflow-hidden rounded-xl bg-[#f7eadb] sm:h-28 lg:h-[76px]">
+        <div className="grid overflow-hidden rounded-[26px] border border-[#f5d6b8] bg-[#fff8ef] shadow-[0_12px_30px_rgba(115,66,28,0.12)] lg:min-h-[240px] lg:grid-cols-[1.05fr_1.08fr_0.87fr]">
+          <div className="relative min-h-[190px] overflow-hidden bg-[#f7dfc7] lg:min-h-[240px]">
             <img
               src="/images/pageheader.png"
-              alt="Warm, contemporary furniture in a living room"
+              alt="Warm living room with contemporary furniture"
               loading="lazy"
-              className="h-full w-full object-cover object-[72%_center]"
+              className="absolute inset-0 h-full w-full object-cover object-[72%_center]"
             />
-            <span className="absolute bottom-2 left-2 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#a34720]">
-              Made for you
-            </span>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-r from-transparent to-[#fff3e4]/35" />
           </div>
 
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#a06e46]">Your idea, our craft</p>
-            <h2 id="custom-furniture-title" className="mt-1 text-xl font-extrabold leading-tight text-[#351d0e] sm:text-2xl">
-              Custom Furniture
-              <span className="block text-[#e96b0b]">Tailored for You</span>
+          <div className="relative flex flex-col items-center justify-center bg-gradient-to-br from-[#fffaf4] via-[#fff5e9] to-[#ffeddc] px-4 py-6 text-center sm:px-8 lg:px-5 lg:py-5">
+            <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.18em] text-[#542b16] sm:text-[10px]">
+              <span className="h-px w-6 bg-[#ed9a5c] sm:w-9" />
+              Your Idea, Our Craft
+              <span className="h-px w-6 bg-[#ed9a5c] sm:w-9" />
+            </p>
+            <h2
+              id="custom-furniture-title"
+              className="mt-3 whitespace-nowrap text-[clamp(1.4rem,2.5vw,2.3rem)] font-black leading-none tracking-tight text-[#3b1e0e]"
+            >
+              Custom <span className="text-[#f36b0b]">Furniture</span>
             </h2>
+            <div className="mt-2 flex items-center gap-3">
+              <span className="h-[2px] w-6 rounded-full bg-[#f36b0b] sm:w-9" />
+              <p className="whitespace-nowrap text-base font-bold text-[#3b1e0e] sm:text-lg">
+                Tailored for You
+              </p>
+              <span className="h-[2px] w-6 rounded-full bg-[#f36b0b] sm:w-9" />
+            </div>
+            <p className="mt-2 text-xs font-medium text-[#69594d] sm:text-sm">
+              Design. Personalize. Make it yours.
+            </p>
+            <Link
+              to="/contactus"
+              className="mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ed4b00] to-[#ff7100] px-6 py-2 text-xs font-bold text-white shadow-[0_6px_14px_rgba(232,85,0,0.24)] transition hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
+            >
+              Explore More
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
           </div>
 
-          <ol aria-label="Custom furniture process" className="flex flex-wrap items-center gap-x-4 gap-y-2 lg:gap-x-5">
-            {steps.map((step) => (
-              <li key={step} className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-[#594333]">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#fff0df] text-[#e96b0b]">
-                  <Check size={12} strokeWidth={3} aria-hidden="true" />
+          <ul
+            aria-label="Custom furniture benefits"
+            className="grid grid-cols-2 items-center gap-x-2 gap-y-4 bg-gradient-to-br from-[#fff4e5] to-[#ffecd6] px-4 py-6 sm:grid-cols-3 lg:grid-cols-3 lg:gap-x-0 lg:px-3 lg:py-5"
+          >
+            {benefits.map(({ label, Icon }) => (
+              <li key={label} className="flex flex-col items-center gap-1.5 text-center text-[#25160d]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffdbb3] text-[#a94308] sm:h-12 sm:w-12">
+                  <Icon size={21} strokeWidth={2.2} aria-hidden="true" />
                 </span>
-                {step}
+                <span className="max-w-[88px] text-[10px] font-bold leading-tight sm:text-xs">
+                  {label}
+                </span>
               </li>
             ))}
-          </ol>
-
-          <Link
-            to="/contactus"
-            className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#f07816] to-[#df5d00] px-4 py-3 text-xs font-bold text-white shadow-md shadow-[#e87500]/20 transition hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e87500]"
-          >
-            Request Custom Furniture
-            <ArrowRight size={16} aria-hidden="true" />
-          </Link>
+          </ul>
         </div>
       </PageContainer>
     </section>
