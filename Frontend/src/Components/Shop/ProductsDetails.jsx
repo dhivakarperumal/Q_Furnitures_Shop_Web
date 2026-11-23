@@ -80,6 +80,7 @@ function ProductDetails() {
   const [productError, setProductError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [activeImage, setActiveImage] = useState(0);
+  const [zoomPosition, setZoomPosition] = useState(null);
   const [activeVariant, setActiveVariant] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -128,6 +129,7 @@ function ProductDetails() {
 
   useEffect(() => {
     setActiveImage(0);
+    setZoomPosition(null);
     setActiveVariant(0);
     setSelectedSize("");
     setQuantity(1);
