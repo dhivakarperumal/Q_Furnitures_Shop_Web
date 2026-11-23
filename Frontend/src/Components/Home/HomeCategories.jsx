@@ -169,7 +169,7 @@ const HomeCategories = () => {
                         <Armchair size={20} strokeWidth={2} />
                       </div>
                     </div>
-                    <h3 className="mt-6 line-clamp-2 text-center text-sm font-bold leading-tight text-[#351d0e] transition-colors group-hover:text-[#e87500] sm:text-base">
+                    <h3 className="mt-6 overflow-hidden truncate whitespace-nowrap text-center text-sm font-bold leading-tight text-[#351d0e] transition-colors group-hover:text-[#e87500] sm:text-base" title={category.name}>
                       {category.name}
                     </h3>
                   </Link>
